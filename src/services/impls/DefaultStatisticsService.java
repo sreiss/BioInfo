@@ -1,106 +1,121 @@
 package services.impls;
 
+import com.google.inject.Inject;
 import models.Gene;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.jdeferred.DeferredManager;
+import org.jdeferred.DonePipe;
+import org.jdeferred.Promise;
+import org.jdeferred.impl.DeferredObject;
+import org.jdeferred.multiple.MasterProgress;
+import org.jdeferred.multiple.MultipleResults;
+import org.jdeferred.multiple.OneReject;
+import services.contracts.GeneService;
 import services.contracts.StatisticsService;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 public class DefaultStatisticsService implements StatisticsService {
+    private final GeneService geneService;
+    private final DeferredManager deferredManager;
 
-    private void computeStatsSequenceForTrinucleotides(String sequence, Gene gene) {
-
+    @Inject
+    public DefaultStatisticsService(GeneService geneService, DeferredManager deferredManager) {
+        this.geneService = geneService;
+        this.deferredManager = deferredManager;
     }
 
-    public static class TrinuStatRunnable implements Runnable
-    {
-        private String seq;
-        private Gene gen;
+    private Promise<Gene, Throwable, Void> computeTrinucleotidesProbabilities(final Gene gene) {
+        return deferredManager.when(new Callable<Gene>() {
+            @Override
+            public Gene call() throws Exception {
+                Set<String> keys = gene.getTrinuStatPhase0().keySet();
+                double tmp1, tmp2 = (double) gene.getTotalTrinucleotide();
+                for(String key: keys){
+                    tmp1 = (double) gene.getTrinuStatPhase0().get(key);
+                    gene.getTrinuProbaPhase0().put(key, (tmp1 / tmp2) * 100.0);
 
-        public TrinuStatRunnable(String s, Gene g)
-        {
-            this.seq = s;
-            this.gen = g;
-        }
+                    tmp1 = (double) gene.getTrinuStatPhase1().get(key);
+                    gene.getTrinuProbaPhase1().put(key, (tmp1 / tmp2) * 100.0);
 
-        @Override
-        public void run()
-        {
-            this.gen = Cds.statsSequenceTrinucleo(this.seq, this.gen);
-            this.gen.calculProbaTrinu();
-        }
-    }
-
-    public static class TrinuProbaRunnable implements Runnable
-    {
-        private Gene gen;
-
-        public TrinuProbaRunnable(Gene g)
-        {
-            this.gen = g;
-        }
-
-        @Override
-        public void run()
-        {
-            gen.calculProbaTrinu();
-        }
-    }
-
-    public static class DinuStatRunnable implements Runnable
-    {
-        private String seq;
-        private Gene gen;
-
-        public DinuStatRunnable(String s, Gene g)
-        {
-            this.seq = s;
-            this.gen = g;
-        }
-
-        @Override
-        public void run()
-        {
-            this.gen = Cds.statsSequenceDinucleo(this.seq, this.gen);
-            this.gen.calculProbaDinu();
-        }
-    }
-
-    public static class DinuProbaRunnable implements Runnable
-    {
-        private Gene gen;
-
-        public DinuProbaRunnable(Gene g)
-        {
-            this.gen = g;
-        }
-
-        @Override
-        public void run()
-        {
-            gen.calculProbaDinu();
-        }
-    }
-
-    public void computeStatistics(Gene gene) {
-        trinu = new Thread(new TrinuDinuRunnable.TrinuStatRunnable(sequence,g));
-        dinu = new Thread(new TrinuDinuRunnable.DinuStatRunnable(sequence,g));
-
-        threadList.add(trinu);
-        threadList.add(dinu);
-
-        executorService.submit(trinu);
-        executorService.submit(dinu);
-
-        for (Thread thread : threadList) {
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                    tmp1 = (double) gene.getTrinuStatPhase2().get(key);
+                    gene.getTrinuProbaPhase2().put(key, (tmp1 / tmp2) * 100.0);
+                }
+                return gene;
             }
-        }
+        });
     }
 
+    private Promise<Gene, Throwable, Void> computeDinucleotideProbabilities(final Gene gene) {
+        return deferredManager.when(new Callable<Gene>() {
+            @Override
+            public Gene call() throws Exception {
+                Set<String> keys = gene.getDinuStatPhase0().keySet();
+                double tmp1, tmp2 = (double) gene.getTotalDinucleotide();
+                for(String key: keys){
+                    tmp1 = (double) gene.getDinuStatPhase0().get(key);
+                    gene.getDinuProbaPhase0().put(key, (tmp1 / tmp2) * 100.0);
+
+                    tmp1 = (double) gene.getDinuStatPhase1().get(key);
+                    gene.getDinuProbaPhase1().put(key, (tmp1 / tmp2) * 100.0);
+                }
+                return gene;
+            }
+        });
+    }
+
+    private Promise<Gene, Throwable, Void> computeTrinucleotidesProbabilities(String sequence, Gene gene) {
+        return geneService.extractStatisticsSequenceForTrinucleotides(sequence, gene)
+                .then(new DonePipe<Gene, Gene, Throwable, Void>() {
+                    @Override
+                    public Promise<Gene, Throwable, Void> pipeDone(Gene gene) {
+                        return computeTrinucleotidesProbabilities(gene);
+                    }
+                });
+    }
+
+    private Promise<Gene, Throwable, Void> computeDinucleotideProbabilities(String sequence, Gene gene) {
+        return geneService.extractStatisticsSequenceForDinucleotides(sequence, gene)
+                    .then(new DonePipe<Gene, Gene, Throwable, Void>() {
+                        @Override
+                        public Promise<Gene, Throwable, Void> pipeDone(Gene gene) {
+                            return computeDinucleotideProbabilities(gene);
+                        }
+                    });
+    }
+
+    public Promise<Gene, Throwable, Void> computeStatistics(final List<String> sequences) {
+        return geneService.createGene()
+                .then(new DonePipe<Gene, List<Promise<Gene, Throwable, Void>>, Throwable, Void>() {
+                    @Override
+                    public Promise<List<Promise<Gene, Throwable, Void>>, Throwable, Void> pipeDone(Gene gene) {
+                        List<Promise<Gene, Throwable, Void>> promises = new ArrayList<Promise<Gene, Throwable, Void>>();
+                        for (String sequence: sequences) {
+                            promises.add(computeTrinucleotidesProbabilities(sequence, gene));
+                            promises.add(computeDinucleotideProbabilities(sequence, gene));
+                        }
+                        return new DeferredObject<List<Promise<Gene, Throwable, Void>>, Throwable, Void>().resolve(promises);
+                    }
+                })
+                .then(new DonePipe<List<Promise<Gene,Throwable,Void>>, MultipleResults, OneReject, MasterProgress>() {
+                    @Override
+                    public Promise<MultipleResults, OneReject, MasterProgress> pipeDone(List<Promise<Gene, Throwable, Void>> promises) {
+                        return deferredManager.when(promises.toArray(new Promise[promises.size()]));
+                    }
+                })
+                .then(new DonePipe<MultipleResults, Gene, Throwable, Void>() {
+                    @Override
+                    public Promise<Gene, Throwable, Void> pipeDone(MultipleResults oneResults) {
+                        return new DeferredObject<Gene, Throwable, Void>().resolve(new Gene());
+                    }
+                });
+    }
+
+    /*
     public void file() {
         XSSFCell tmpCell;
         XSSFRow row;
@@ -127,38 +142,5 @@ public class DefaultStatisticsService implements StatisticsService {
             Proba.put(key, (tmp1 / tmp2) * 100.0);
         }
     }
-
-    public void calculProbaTrinu()
-    {
-        Set<String> keys = this.trinuStatPhase0.keySet();
-        double tmp1, tmp2 = (double) this.totalTrinucleotide;
-        for(String key: keys){
-            tmp1 = (double) this.trinuStatPhase0.get(key);
-//        	this.trinuProbaPhase0.put(key, Math.round(((tmp1 / tmp2) * 100.0) * 100.0) / 100.0);
-            this.trinuProbaPhase0.put(key, (tmp1 / tmp2) * 100.0);
-
-            tmp1 = (double) this.trinuStatPhase1.get(key);
-//        	this.trinuProbaPhase1.put(key, Math.round(((tmp1 / tmp2) * 100.0) * 100.0) / 100.0);
-            this.trinuProbaPhase1.put(key, (tmp1 / tmp2) * 100.0);
-
-            tmp1 = (double) this.trinuStatPhase2.get(key);
-//        	this.trinuProbaPhase2.put(key, Math.round(((tmp1 / tmp2) * 100.0) * 100.0) / 100.0);
-            this.trinuProbaPhase2.put(key, (tmp1 / tmp2) * 100.0);
-        }
-    }
-
-    public void calculProbaDinu()
-    {
-        Set<String> keys = this.dinuStatPhase0.keySet();
-        double tmp1, tmp2 = (double) this.totalDinucleotide;
-        for(String key: keys){
-            tmp1 = (double) this.dinuStatPhase0.get(key);
-//            this.dinuProbaPhase0.put(key, Math.round(((tmp1 / tmp2) * 100.0) * 100.0) / 100.0);
-            this.dinuProbaPhase0.put(key, (tmp1 / tmp2) * 100.0);
-
-            tmp1 = (double) this.dinuStatPhase1.get(key);
-//            this.dinuProbaPhase1.put(key, Math.round(((tmp1 / tmp2) * 100.0) * 100.0) / 100.0);
-            this.dinuProbaPhase1.put(key, (tmp1 / tmp2) * 100.0);
-        }
-    }
+    */
 }

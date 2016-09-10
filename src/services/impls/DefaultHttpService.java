@@ -85,7 +85,7 @@ public class DefaultHttpService implements HttpService {
     /**
      * Executes multiple get requests and returns a Promise.
      */
-    public Promise<MultipleResults, OneReject, MasterProgress> get(final String[] urls) {
+    public Promise<MultipleResults, OneReject, MasterProgress> get(final List<String> urls) {
         return deferredManager.when(new Callable<List<Promise<HttpResponse, Throwable, Void>>>() {
             @Override
             public List<Promise<HttpResponse, Throwable, Void>> call() throws Exception {

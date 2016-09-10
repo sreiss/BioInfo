@@ -7,8 +7,10 @@ import org.jdeferred.multiple.MasterProgress;
 import org.jdeferred.multiple.MultipleResults;
 import org.jdeferred.multiple.OneReject;
 
+import java.util.List;
+
 public interface HttpService {
     Promise<HttpResponse, Throwable, Void> get(final String url);
     Promise<HttpResponse, Throwable, Void> post(final String url, HttpContent content);
-    Promise<MultipleResults, OneReject, MasterProgress> get(final String[] urls);
+    Promise<MultipleResults, OneReject, MasterProgress> get(final List<String> urls);
 }

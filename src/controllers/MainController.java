@@ -1,6 +1,8 @@
 package controllers;
 
 import com.google.inject.Inject;
+import models.Kingdom;
+import models.Organism;
 import org.jdeferred.*;
 import org.jdeferred.multiple.MasterProgress;
 import services.contracts.DataService;
@@ -46,7 +48,10 @@ public class MainController {
 
     public void acquire() {
         view.updateGlobalProgressionText("Begining the acquisition, the startup might take some time...");
-        dataService.acquire()
+        Kingdom[] kingdoms = {
+                Kingdom.Eukaryota
+        };
+        dataService.acquire(kingdoms)
                 .progress(new ProgressCallback<MasterProgress>() {
                     @Override
                     public void onProgress(MasterProgress masterProgress) {

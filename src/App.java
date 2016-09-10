@@ -21,7 +21,7 @@ public class App extends AbstractModule {
         bind(HttpTransport.class).to(NetHttpTransport.class);
         bind(ParseService.class).to(DefaultParseService.class);
         bind(DataService.class).to(DefaultDataService.class);
-        bind(ExcelService.class).to(DefaultExcelService.class);
+        bind(FileService.class).to(DefaultFileService.class);
         bind(ConfigService.class).to(DefaultConfigService.class);
         bind(StatisticsService.class).to(DefaultStatisticsService.class);
         bind(GeneService.class).to(DefaultGeneService.class);
