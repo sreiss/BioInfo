@@ -7,6 +7,6 @@ import org.jdeferred.multiple.MultipleResults;
 import org.jdeferred.multiple.OneReject;
 
 public interface DataService {
-    Promise<Void, Throwable, MasterProgress> acquire(Kingdom[] kingdoms);
-    Promise<Void, Throwable, MasterProgress> saveData();
+    Promise<Void, Throwable, Void> acquire(Kingdom[] kingdoms);
+    Promise<Void, Throwable, Void> saveData();
 }

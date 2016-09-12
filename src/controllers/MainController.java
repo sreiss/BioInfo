@@ -52,6 +52,7 @@ public class MainController {
                 Kingdom.Eukaryota
         };
         dataService.acquire(kingdoms)
+                /*
                 .progress(new ProgressCallback<MasterProgress>() {
                     @Override
                     public void onProgress(MasterProgress masterProgress) {
@@ -59,6 +60,7 @@ public class MainController {
                         view.updateGlobalProgressionBar(masterProgress.getDone());
                     }
                 })
+                */
                 .done(new DoneCallback<Void>() {
                     @Override
                     public void onDone(Void result) {

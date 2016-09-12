@@ -89,7 +89,7 @@ public class DefaultStatisticsService implements StatisticsService {
     }
 
     public Promise<Gene, Throwable, Void> computeStatistics(final List<String> sequences) {
-        return geneService.createGene()
+        return geneService.createGene("", 0, 0)
                 .then(new DonePipe<Gene, List<Promise<Gene, Throwable, Void>>, Throwable, Void>() {
                     @Override
                     public Promise<List<Promise<Gene, Throwable, Void>>, Throwable, Void> pipeDone(Gene gene) {
@@ -110,7 +110,7 @@ public class DefaultStatisticsService implements StatisticsService {
                 .then(new DonePipe<MultipleResults, Gene, Throwable, Void>() {
                     @Override
                     public Promise<Gene, Throwable, Void> pipeDone(MultipleResults oneResults) {
-                        return new DeferredObject<Gene, Throwable, Void>().resolve(new Gene());
+                        return new DeferredObject<Gene, Throwable, Void>().resolve(new Gene("", 0, 0));
                     }
                 });
     }

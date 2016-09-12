@@ -2,6 +2,7 @@ package services.impls;
 
 import com.google.api.client.http.HttpResponse;
 import com.google.inject.Inject;
+import com.sun.org.apache.xalan.internal.xsltc.compiler.util.Util;
 import com.sun.org.apache.xpath.internal.operations.Or;
 import models.Kingdom;
 import models.Organism;
@@ -9,12 +10,10 @@ import org.jdeferred.*;
 import org.jdeferred.multiple.MasterProgress;
 import org.jdeferred.multiple.MultipleResults;
 import org.jdeferred.multiple.OneReject;
-import services.contracts.ConfigService;
-import services.contracts.FileService;
-import services.contracts.KingdomService;
-import services.contracts.ParseService;
+import services.contracts.*;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -37,22 +36,29 @@ public class DefaultKingdomService implements KingdomService {
 
     @Override
     public Promise<Void, Throwable, Void> createKingdomTree(final Kingdom kingdom, final HttpResponse response) {
-        return deferredManager.when(new Callable<Promise<List<Organism>, Throwable, Void>>() {
-            @Override
-            public Promise<List<Organism>, Throwable, Void> call() throws Exception {
-                return parseService.extractOrganismList(response.getContent(), kingdom.getId());
-            }
-        }).then(new DoneFilter<List<Organism>, Promise<MultipleResults, OneReject, MasterProgress>>() {
-            @Override
-            public Promise<MultipleResults, OneReject, MasterProgress> filterDone(List<Organism> organisms) {
-                List<String> paths = new ArrayList<String>();
-                for (Organism organism: organisms) {
-                    paths.add(configService.getProperty("dataDir")
-                            + "/" + kingdom.getLabel()
-                            + "/" + organism.getGroup()
-                            + "/" + organism.getSubGroup()
-                            + "/" + organism.getName());
-                }
+        return deferredManager.when(new UtilService.VoidCallable())
+                .then(new DonePipe<Void, List<Organism>, Throwable, Void>() {
+                    @Override
+                    public Promise<List<Organism>, Throwable, Void> pipeDone(Void aVoid) {
+                        try {
+                            return parseService.extractOrganismList(response.getContent(), kingdom.getId());
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            return null;
+                        }
+                    }
+                })
+                .then(new DonePipe<List<Organism>, MultipleResults, OneReject, MasterProgress>() {
+                    @Override
+                    public Promise<MultipleResults, OneReject, MasterProgress> pipeDone(List<Organism> organisms) {
+                        List<String> paths = new ArrayList<String>();
+                        for (Organism organism: organisms) {
+                            paths.add(configService.getProperty("dataDir")
+                                    + "/" + kingdom.getLabel()
+                                    + "/" + organism.getGroup()
+                                    + "/" + organism.getSubGroup()
+                                    + "/" + organism.getName());
+                        }
                 /*
                 String line = bufferedReader.readLine();
                 while ((line = bufferedReader.readLine()) != null)
@@ -71,17 +77,16 @@ public class DefaultKingdomService implements KingdomService {
                             res.add(new Ids(ids, organism.name, organism.group, organism.subGroup, organism.updatedDate, kingdom));
                         }
                     }
-                }*/
+                }
+                */
 
-                return fileService.createDirectories(paths);
-            }
-        }).then(new DonePipe<MultipleResults, Void, Throwable, Void>() {
-
-            @Override
-            public Promise<Void, Throwable, Void> pipeDone(MultipleResults oneResults) {
-                return null;
-            }
-        });
-
+                        return fileService.createDirectories(paths);
+                    }
+                }).then(new DonePipe<MultipleResults, Void, Throwable, Void>() {
+                    @Override
+                    public Promise<Void, Throwable, Void> pipeDone(MultipleResults oneResults) {
+                        return null;
+                    }
+                });
     }
 }

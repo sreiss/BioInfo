@@ -9,6 +9,7 @@ import org.jdeferred.multiple.MasterProgress;
 import org.jdeferred.multiple.MultipleResults;
 import org.jdeferred.multiple.OneReject;
 import services.contracts.HttpService;
+import services.contracts.UtilService;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -86,25 +87,22 @@ public class DefaultHttpService implements HttpService {
      * Executes multiple get requests and returns a Promise.
      */
     public Promise<MultipleResults, OneReject, MasterProgress> get(final List<String> urls) {
-        return deferredManager.when(new Callable<List<Promise<HttpResponse, Throwable, Void>>>() {
-            @Override
-            public List<Promise<HttpResponse, Throwable, Void>> call() throws Exception {
-                List<Promise<HttpResponse, Throwable, Void>> promises = new ArrayList<Promise<HttpResponse, Throwable, Void>>();
-                for (final String url: urls) {
-                    promises.add(get(url));
-                }
-                return promises;
-            }
-        }).then(new DonePipe<List<Promise<HttpResponse, Throwable, Void>>, MultipleResults, OneReject, MasterProgress>() {
-            @Override
-            public Promise<MultipleResults, OneReject, MasterProgress> pipeDone(List<Promise<HttpResponse, Throwable, Void>> promises) {
-                return deferredManager.when(promises.toArray(new Promise[promises.size()]));
-            }
-        }).fail(new FailCallback<OneReject>() {
-            @Override
-            public void onFail(OneReject oneReject) {
-                get(urls);
-            }
-        });
+        return deferredManager.when(new UtilService.VoidCallable())
+                .then(new DonePipe<Void, MultipleResults, OneReject, MasterProgress>() {
+                    @Override
+                    public Promise<MultipleResults, OneReject, MasterProgress> pipeDone(Void aVoid) {
+                        List<Promise<HttpResponse, Throwable, Void>> promises = new ArrayList<Promise<HttpResponse, Throwable, Void>>();
+                        for (final String url: urls) {
+                            promises.add(get(url));
+                        }
+                        return deferredManager.when(promises.toArray(new Promise[promises.size()]));
+                    }
+                })
+                .fail(new FailCallback<OneReject>() {
+                    @Override
+                    public void onFail(OneReject oneReject) {
+                        get(urls);
+                    }
+                });
     }
 }

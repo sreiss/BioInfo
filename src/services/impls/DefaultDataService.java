@@ -34,7 +34,7 @@ public class DefaultDataService implements DataService {
     }
 
     @Override
-    public Promise<Void, Throwable, MasterProgress> acquire(Kingdom[] kingdoms) {
+    public Promise<Void, Throwable, Void> acquire(Kingdom[] kingdoms) {
         List<String> urls = new ArrayList<String>();
         for (Kingdom kingdom: kingdoms) {
             urls.add(generateKingdomGeneListUrl(kingdom));
@@ -47,9 +47,9 @@ public class DefaultDataService implements DataService {
                         //httpService.deleteObserver(MainController.this);
                     }
                 })
-                .then(new DonePipe<MultipleResults, Void, Throwable, MasterProgress>() {
+                .then(new DonePipe<MultipleResults, Void, Throwable, Void>() {
                     @Override
-                    public Promise<Void, Throwable, MasterProgress> pipeDone(MultipleResults oneResults) {
+                    public Promise<Void, Throwable, Void> pipeDone(MultipleResults oneResults) {
                         for (OneResult oneResult: oneResults) {
 
                         }
@@ -58,11 +58,11 @@ public class DefaultDataService implements DataService {
                 });
     }
 
-    public Promise<Void, Throwable, MasterProgress> saveData() {
+    public Promise<Void, Throwable, Void> saveData() {
         return deferredManager.when(configService.getProperty("dataDir"), fileService.createWorkbook())
-                .then(new DonePipe<MultipleResults, Void, Throwable, MasterProgress>() {
+                .then(new DonePipe<MultipleResults, Void, Throwable, Void>() {
                     @Override
-                    public Promise<Void, Throwable, MasterProgress> pipeDone(MultipleResults oneResults) {
+                    public Promise<Void, Throwable, Void> pipeDone(MultipleResults oneResults) {
                         String dataDir = ((String) oneResults.get(0).getResult());
                         XSSFWorkbook workbook = ((XSSFWorkbook) oneResults.get(1).getResult());
 
