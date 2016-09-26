@@ -1,13 +1,14 @@
 package services.impls;
 
+import com.google.api.client.http.HttpResponse;
 import com.google.inject.Inject;
 import models.Kingdom;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jdeferred.*;
+import org.jdeferred.impl.DeferredObject;
 import org.jdeferred.multiple.MasterProgress;
 import org.jdeferred.multiple.MultipleResults;
 import org.jdeferred.multiple.OneReject;
-import org.jdeferred.multiple.OneResult;
 import services.contracts.*;
 
 import java.util.ArrayList;
@@ -34,40 +35,36 @@ public class DefaultDataService implements DataService {
     }
 
     @Override
-    public Promise<Void, Throwable, Void> acquire(Kingdom[] kingdoms) {
+    public Promise<Void, Throwable, Object> acquire(Kingdom[] kingdoms) {
         List<String> urls = new ArrayList<String>();
         for (Kingdom kingdom: kingdoms) {
             urls.add(generateKingdomGeneListUrl(kingdom));
         }
 
         return this.httpService.get(urls)
-                .always(new AlwaysCallback<MultipleResults, OneReject>() {
+                .then(new DonePipe<List<HttpResponse>, Void, Throwable, Object>() {
                     @Override
-                    public void onAlways(Promise.State state, MultipleResults oneResults, OneReject oneReject) {
-                        //httpService.deleteObserver(MainController.this);
-                    }
-                })
-                .then(new DonePipe<MultipleResults, Void, Throwable, Void>() {
-                    @Override
-                    public Promise<Void, Throwable, Void> pipeDone(MultipleResults oneResults) {
-                        for (OneResult oneResult: oneResults) {
-
-                        }
-                        return saveData();
+                    public Promise<Void, Throwable, Object> pipeDone(List<HttpResponse> httpResponses) {
+                        return saveData(httpResponses);
                     }
                 });
     }
 
-    public Promise<Void, Throwable, Void> saveData() {
+    public Promise<Void, Throwable, Object> saveData(List<HttpResponse> responses) {
         return deferredManager.when(configService.getProperty("dataDir"), fileService.createWorkbook())
-                .then(new DonePipe<MultipleResults, Void, Throwable, Void>() {
+                .then(new DonePipe<MultipleResults, Void, Throwable, Object>() {
                     @Override
-                    public Promise<Void, Throwable, Void> pipeDone(MultipleResults oneResults) {
+                    public Promise<Void, Throwable, Object> pipeDone(MultipleResults oneResults) {
                         String dataDir = ((String) oneResults.get(0).getResult());
                         XSSFWorkbook workbook = ((XSSFWorkbook) oneResults.get(1).getResult());
 
                         workbook.createSheet("test");
                         return fileService.writeWorkbook(workbook, dataDir, "test.xlsx");
+                    }
+                }, new FailPipe<OneReject, Void, Throwable, Object>() {
+                    @Override
+                    public Promise<Void, Throwable, Object> pipeFail(OneReject oneReject) {
+                        return new DeferredObject<Void, Throwable, Object>().reject((Throwable) oneReject.getReject());
                     }
                 });
     }

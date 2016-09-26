@@ -6,6 +6,7 @@ import models.Organism;
 import org.jdeferred.*;
 import org.jdeferred.multiple.MasterProgress;
 import services.contracts.DataService;
+import services.contracts.TaskProgress;
 import views.MainWindow;
 
 import javax.swing.*;
@@ -36,14 +37,6 @@ public class MainController {
                 ((JButton) e.getSource()).setEnabled(false);
             }
         });
-
-        dataService.saveData()
-                .done(new DoneCallback<Void>() {
-                    @Override
-                    public void onDone(Void aVoid) {
-                        System.out.println("Test excel file created.");
-                    }
-                });
     }
 
     public void acquire() {
@@ -52,19 +45,26 @@ public class MainController {
                 Kingdom.Eukaryota
         };
         dataService.acquire(kingdoms)
-                /*
-                .progress(new ProgressCallback<MasterProgress>() {
+                .progress(new ProgressCallback<Object>() {
                     @Override
-                    public void onProgress(MasterProgress masterProgress) {
-                        view.setGlobalProgressionBar(masterProgress.getTotal());
-                        view.updateGlobalProgressionBar(masterProgress.getDone());
+                    public void onProgress(Object progress) {
+                        view.setGlobalProgressionBar(((TaskProgress) progress).getTotal());
                     }
                 })
-                */
                 .done(new DoneCallback<Void>() {
                     @Override
                     public void onDone(Void result) {
                         System.out.println(result);
+                        view.updateGlobalProgressionText("Update finished.");
+                        view.setGlobalProgressionBar(0);
+                    }
+                })
+                .fail(new FailCallback<Throwable>() {
+                    @Override
+                    public void onFail(Throwable throwable) {
+                        System.err.println(throwable.toString());
+                        view.updateGlobalProgressionText("An error occured.");
+                        view.setGlobalProgressionBar(0);
                     }
                 });
     }

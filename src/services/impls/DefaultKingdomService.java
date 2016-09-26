@@ -3,10 +3,12 @@ package services.impls;
 import com.google.api.client.http.HttpResponse;
 import com.google.inject.Inject;
 import com.sun.org.apache.xalan.internal.xsltc.compiler.util.Util;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import com.sun.org.apache.xpath.internal.operations.Or;
 import models.Kingdom;
 import models.Organism;
 import org.jdeferred.*;
+import org.jdeferred.impl.DeferredObject;
 import org.jdeferred.multiple.MasterProgress;
 import org.jdeferred.multiple.MultipleResults;
 import org.jdeferred.multiple.OneReject;
@@ -48,9 +50,9 @@ public class DefaultKingdomService implements KingdomService {
                         }
                     }
                 })
-                .then(new DonePipe<List<Organism>, MultipleResults, OneReject, MasterProgress>() {
+                .then(new DonePipe<List<Organism>, List<Boolean>, Throwable, Void>() {
                     @Override
-                    public Promise<MultipleResults, OneReject, MasterProgress> pipeDone(List<Organism> organisms) {
+                    public Promise<List<Boolean>, Throwable, Void> pipeDone(List<Organism> organisms) {
                         List<String> paths = new ArrayList<String>();
                         for (Organism organism: organisms) {
                             paths.add(configService.getProperty("dataDir")
@@ -82,10 +84,10 @@ public class DefaultKingdomService implements KingdomService {
 
                         return fileService.createDirectories(paths);
                     }
-                }).then(new DonePipe<MultipleResults, Void, Throwable, Void>() {
+                }).then(new DonePipe<List<Boolean>, Void, Throwable, Void>() {
                     @Override
-                    public Promise<Void, Throwable, Void> pipeDone(MultipleResults oneResults) {
-                        return null;
+                    public Promise<Void, Throwable, Void> pipeDone(List<Boolean> booleen) {
+                        return new DeferredObject<Void, Throwable, Void>().resolve(null);
                     }
                 });
     }

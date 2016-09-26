@@ -9,8 +9,8 @@ import org.jdeferred.multiple.OneReject;
 import java.util.List;
 
 public interface FileService {
-    Promise<MultipleResults, OneReject, MasterProgress> createDirectories(List<String> paths);
+    Promise<List<Boolean>, Throwable, Void> createDirectories(List<String> paths);
     Promise<Boolean, Throwable, Void> createDirectory(String path);
     Promise<XSSFWorkbook, Throwable, Void> createWorkbook();
-    Promise<Void, Throwable, Void> writeWorkbook(XSSFWorkbook workbook, String path, String fileName);
+    Promise<Void, Throwable, Object> writeWorkbook(XSSFWorkbook workbook, String path, String fileName);
 }

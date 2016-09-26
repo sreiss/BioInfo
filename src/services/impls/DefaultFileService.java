@@ -4,9 +4,11 @@ import com.google.inject.Inject;
 import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jdeferred.*;
+import org.jdeferred.impl.DeferredObject;
 import org.jdeferred.multiple.MasterProgress;
 import org.jdeferred.multiple.MultipleResults;
 import org.jdeferred.multiple.OneReject;
+import org.jdeferred.multiple.OneResult;
 import services.contracts.FileService;
 import services.contracts.UtilService;
 
@@ -74,7 +76,7 @@ public class DefaultFileService implements FileService {
     }
 
     @Override
-    public Promise<MultipleResults, OneReject, MasterProgress> createDirectories(final List<String> paths) {
+    public Promise<List<Boolean>, Throwable, Void> createDirectories(final List<String> paths) {
         return deferredManager.when(new UtilService.VoidCallable())
                 .then(new DonePipe<Void, MultipleResults, OneReject, MasterProgress>() {
                     @Override
@@ -84,6 +86,16 @@ public class DefaultFileService implements FileService {
                             promises.add(createDirectory(path));
                         }
                         return deferredManager.when(promises.toArray(new Promise[promises.size()]));
+                    }
+                })
+                .then(new DonePipe<MultipleResults, List<Boolean>, Throwable, Void>() {
+                    @Override
+                    public Promise<List<Boolean>, Throwable, Void> pipeDone(MultipleResults oneResults) {
+                        List<Boolean> results = new ArrayList<Boolean>();
+                        for (OneResult oneResult: oneResults) {
+                            results.add((Boolean) oneResult.getResult());
+                        }
+                        return new DeferredObject<List<Boolean>, Throwable, Void>().resolve(results);
                     }
                 });
     }
@@ -109,8 +121,8 @@ public class DefaultFileService implements FileService {
     }
 
     @Override
-    public Promise<Void, Throwable, Void> writeWorkbook(final XSSFWorkbook workbook, final String path, final String fileName) {
-        return deferredManager.when(new Callable<Void>() {
+    public Promise<Void, Throwable, Object> writeWorkbook(final XSSFWorkbook workbook, final String path, final String fileName) {
+        return deferredManager.when(new DeferredCallable<Void, Object>() {
             @Override
             public Void call() throws Exception {
                 FileOutputStream stream = new FileOutputStream(path + fileName);

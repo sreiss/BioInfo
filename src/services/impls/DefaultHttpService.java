@@ -8,7 +8,9 @@ import org.jdeferred.impl.DeferredObject;
 import org.jdeferred.multiple.MasterProgress;
 import org.jdeferred.multiple.MultipleResults;
 import org.jdeferred.multiple.OneReject;
+import org.jdeferred.multiple.OneResult;
 import services.contracts.HttpService;
+import services.contracts.TaskProgress;
 import services.contracts.UtilService;
 
 import java.io.IOException;
@@ -35,15 +37,15 @@ public class DefaultHttpService implements HttpService {
         this.rateLimiter = rateLimiter;
     }
 
-    private Promise<HttpResponse, Throwable, Void> request(Method method, String url) {
+    private Promise<HttpResponse, Throwable, Object> request(Method method, String url) {
         return request(method, url, null);
     }
 
     /**
      * Returns a promise to handle the HttpResponse.
      */
-    private Promise<HttpResponse, Throwable, Void> request(final Method method, final String url, final HttpContent content) {
-        return deferredManager.when(new Callable<HttpResponse>() {
+    private Promise<HttpResponse, Throwable, Object> request(final Method method, final String url, final HttpContent content) {
+        return deferredManager.when(new DeferredCallable<HttpResponse, Object>() {
             public HttpResponse call() throws IOException {
                 rateLimiter.acquire();
                 GenericUrl genericUrl = new GenericUrl(url);
@@ -60,11 +62,11 @@ public class DefaultHttpService implements HttpService {
                 }
                 return request.execute();
             }
-        }).then(new DonePipe<HttpResponse, HttpResponse, Throwable, Void>() {
+        }).then(new DonePipe<HttpResponse, HttpResponse, Throwable, Object>() {
             @Override
-            public Promise<HttpResponse, Throwable, Void> pipeDone(HttpResponse response) {
+            public Promise<HttpResponse, Throwable, Object> pipeDone(HttpResponse response) {
                 System.out.println("[" + new Date() + "] Requête terminée : " + url);
-                return new DeferredObject<HttpResponse, Throwable, Void>().resolve(response);
+                return new DeferredObject<HttpResponse, Throwable, Object>().resolve(response);
             }
         });
     }
@@ -72,36 +74,63 @@ public class DefaultHttpService implements HttpService {
     /**
      * Executes a get request and returns a Promise.
      */
-    public Promise<HttpResponse, Throwable, Void> get(final String url) {
+    public Promise<HttpResponse, Throwable, Object> get(final String url) {
         return request(Method.GET, url);
     }
 
     /**
      * Executes a post request and returns a Promise.
      */
-    public Promise<HttpResponse, Throwable, Void> post(final String url, HttpContent content) {
+    public Promise<HttpResponse, Throwable, Object> post(final String url, HttpContent content) {
         return request(Method.POST, url, content);
     }
 
     /**
      * Executes multiple get requests and returns a Promise.
      */
-    public Promise<MultipleResults, OneReject, MasterProgress> get(final List<String> urls) {
-        return deferredManager.when(new UtilService.VoidCallable())
+    public Promise<List<HttpResponse>, Throwable, Object> get(final List<String> urls) {
+        return deferredManager.when(new DeferredCallable<Void, Object>() {
+            @Override
+            public Void call() throws Exception {
+                notify(new TaskProgress(urls.size()));
+                return null;
+            }
+        })
                 .then(new DonePipe<Void, MultipleResults, OneReject, MasterProgress>() {
                     @Override
                     public Promise<MultipleResults, OneReject, MasterProgress> pipeDone(Void aVoid) {
-                        List<Promise<HttpResponse, Throwable, Void>> promises = new ArrayList<Promise<HttpResponse, Throwable, Void>>();
+                        List<Promise<HttpResponse, Throwable, Object>> promises = new ArrayList<Promise<HttpResponse, Throwable, Object>>();
                         for (final String url: urls) {
                             promises.add(get(url));
                         }
                         return deferredManager.when(promises.toArray(new Promise[promises.size()]));
                     }
                 })
-                .fail(new FailCallback<OneReject>() {
+                .then(new DonePipe<MultipleResults, List<HttpResponse>, Throwable, Object>() {
                     @Override
-                    public void onFail(OneReject oneReject) {
-                        get(urls);
+                    public Promise<List<HttpResponse>, Throwable, Object> pipeDone(MultipleResults oneResults) {
+                        List<HttpResponse> responses = new ArrayList<HttpResponse>();
+                        for (OneResult oneResult: oneResults) {
+                            responses.add((HttpResponse) oneResult.getResult());
+                        }
+                        return new DeferredObject<List<HttpResponse>, Throwable, Object>().resolve(responses);
+                    }
+                }, new FailPipe<OneReject, List<HttpResponse>, Throwable, Object>() {
+                    @Override
+                    public Promise<List<HttpResponse>, Throwable, Object> pipeFail(OneReject oneReject) {
+                        return new DeferredObject<List<HttpResponse>, Throwable, Object>().reject((Throwable) oneReject.getReject());
+                    }
+                })
+                .then(new DonePipe<List<HttpResponse>, List<HttpResponse>, Throwable, Object>() {
+                    @Override
+                    public Promise<List<HttpResponse>, Throwable, Object> pipeDone(List<HttpResponse> responses) {
+                        return new DeferredObject<List<HttpResponse>, Throwable, Object>().resolve(responses);
+                    }
+                }, new FailPipe<Throwable, List<HttpResponse>, Throwable, Object>() {
+                    @Override
+                    public Promise<List<HttpResponse>, Throwable, Object> pipeFail(Throwable throwable) {
+                        // Retry on fail.
+                        return get(urls);
                     }
                 });
     }
