@@ -175,6 +175,10 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
         optionsLabel = new JLabel();
         optionsLabel.setText("Kingdoms");
         optionsPannel.add(optionsLabel);
+        final JScrollPane scrollPane1 = new JScrollPane();
+        mainPanel.add(scrollPane1, BorderLayout.WEST);
+        logTextArea = new JTextArea();
+        scrollPane1.setViewportView(logTextArea);
     }
 
     /**

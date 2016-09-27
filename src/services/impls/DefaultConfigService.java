@@ -24,7 +24,7 @@ public class DefaultConfigService implements ConfigService {
             @Override
             public String call() throws Exception {
                 Properties properties = new Properties();
-                String propertiesFileName = "BioInfo/config.properties";
+                String propertiesFileName = "config.properties";
                 InputStream inputStream = getClass().getClassLoader().getResourceAsStream(propertiesFileName);
 
                 properties.load(inputStream);
