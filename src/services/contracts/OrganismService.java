@@ -6,5 +6,5 @@ import org.jdeferred.Promise;
 import java.util.Date;
 
 public interface OrganismService {
-    Promise<Organism, Throwable, Void> createOrganism(String name, String group, String subGroup, Date updateDate, String[] geneIds, String kingdomId);
+    Promise<Organism, Throwable, Object> createOrganism(String name, String group, String subGroup, Date updateDate, String[] geneIds, String kingdomId);
 }

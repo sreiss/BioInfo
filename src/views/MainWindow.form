@@ -117,6 +117,35 @@
               </component>
             </children>
           </grid>
+          <grid id="9eea9" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="1">
+            <constraints border-constraint="Center"/>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <component id="1e6ac" class="javax.swing.JCheckBox" binding="eukaryotaCheckBox">
+                <constraints/>
+                <properties>
+                  <selected value="true"/>
+                  <text value="Eukaryota"/>
+                </properties>
+              </component>
+              <component id="5117a" class="javax.swing.JCheckBox" binding="virusesCheckBox">
+                <constraints/>
+                <properties>
+                  <selected value="true"/>
+                  <text value="Viruses"/>
+                </properties>
+              </component>
+              <component id="6396e" class="javax.swing.JCheckBox" binding="prokaryotesCheckBox">
+                <constraints/>
+                <properties>
+                  <horizontalAlignment value="11"/>
+                  <selected value="true"/>
+                  <text value="Prokaryota"/>
+                </properties>
+              </component>
+            </children>
+          </grid>
         </children>
       </grid>
       <scrollpane id="abd97">

@@ -7,5 +7,5 @@ import java.io.InputStream;
 import java.util.List;
 
 public interface ParseService {
-    Promise<List<Organism>, Throwable, Void> extractOrganismList(InputStream inputStream, String kingdomId);
+    Promise<List<Organism>, Throwable, Object> extractOrganismList(InputStream inputStream, String kingdomId);
 }

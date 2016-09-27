@@ -2,9 +2,9 @@ package services.impls;
 
 import com.google.inject.Inject;
 import models.CodingSequence;
-import models.Gene;
 import models.Kingdom;
 import models.Organism;
+import org.jdeferred.DeferredCallable;
 import org.jdeferred.DeferredManager;
 import org.jdeferred.DonePipe;
 import org.jdeferred.Promise;
@@ -15,14 +15,11 @@ import org.jdeferred.multiple.OneReject;
 import org.jdeferred.multiple.OneResult;
 import services.contracts.OrganismService;
 import services.contracts.ParseService;
-import services.contracts.StatisticsService;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -112,11 +109,11 @@ public class DefaultParseService implements ParseService {
     }
 
     @Override
-    public Promise<List<Organism>, Throwable, Void> extractOrganismList(final InputStream inputStream, final String kingdomId) {
-        return deferredManager.when(new Callable<List<Promise<Organism, Throwable, Void>>>() {
+    public Promise<List<Organism>, Throwable, Object> extractOrganismList(final InputStream inputStream, final String kingdomId) {
+        return deferredManager.when(new DeferredCallable<List<Promise<Organism, Throwable, Object>>, Object>() {
             @Override
-            public List<Promise<Organism, Throwable, Void>> call() throws Exception {
-                List<Promise<Organism, Throwable, Void>> promises = new ArrayList<Promise<Organism, Throwable, Void>>();
+            public List<Promise<Organism, Throwable, Object>> call() throws Exception {
+                List<Promise<Organism, Throwable, Object>> promises = new ArrayList<Promise<Organism, Throwable, Object>>();
                 DateFormat dateFormat = new SimpleDateFormat("dd/mm/yyyy", Locale.FRENCH);
                 String sep = "\t";
 
@@ -124,6 +121,7 @@ public class DefaultParseService implements ParseService {
 
                 InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
                 BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+                bufferedReader.readLine();
                 while ((line = bufferedReader.readLine()) != null) {
                     String[] data = line.split(sep);
 
@@ -180,25 +178,43 @@ public class DefaultParseService implements ParseService {
 
                 return promises;
             }
-        }).then(new DonePipe<List<Promise<Organism, Throwable, Void>>, MultipleResults, OneReject, MasterProgress>() {
+        }).then(new DonePipe<List<Promise<Organism, Throwable, Object>>, MultipleResults, OneReject, MasterProgress>() {
             @Override
-            public Promise<MultipleResults, OneReject, MasterProgress> pipeDone(List<Promise<Organism, Throwable, Void>> promises) {
+            public Promise<MultipleResults, OneReject, MasterProgress> pipeDone(List<Promise<Organism, Throwable, Object>> promises) {
                 return deferredManager.when(promises.toArray(new Promise[promises.size()]));
             }
-        }).then(new DonePipe<MultipleResults, List<Organism>, Throwable, Void>() {
+        }).then(new DonePipe<MultipleResults, List<Organism>, Throwable, Object>() {
             @Override
-            public Promise<List<Organism>, Throwable, Void> pipeDone(MultipleResults oneResults) {
+            public Promise<List<Organism>, Throwable, Object> pipeDone(MultipleResults oneResults) {
                 List<Organism> organisms = new ArrayList<Organism>();
                 for (OneResult oneResult: oneResults) {
                     organisms.add((Organism) oneResult.getResult());
                 }
-                return new DeferredObject<List<Organism>, Throwable, Void>().resolve(organisms);
+                return new DeferredObject<List<Organism>, Throwable, Object>().resolve(organisms);
             }
         });
     }
 
-    private String[] extractGeneIds(String line)
+    private String[] extractGeneIds(String segmentsColumn)
     {
+        String[] segments;
+        if (segmentsColumn.compareTo("-") == 0) {
+            return null;
+        } else {
+            segments = segmentsColumn.split(";");
+            if (segments.length > 0) {
+                for (int i = 0; i < segments.length; i++) {
+                    String segment = segments[i];
+                    String[] segmentParts = segment.split(":");
+                    if (segmentParts.length == 2) {
+                        segment = segmentParts[1];
+                    }
+                    segments[i] = segment.split("/")[0];
+                }
+            }
+            return segments;
+        }
+        /*
         String[] res;
         if(line.compareTo("-") != 0)
         {
@@ -207,7 +223,12 @@ public class DefaultParseService implements ParseService {
             {
                 for(int i=0;i<res.length;i++)
                 {
-                    res[i] = res[i].split(":")[1].split("/")[0];
+                    String segment = res[i];
+                    String[] segmentParts = segment.split(":");
+                    if (segmentParts.length == 2) {
+                        segment = segmentParts[1];
+                    }
+                    res[i] = segment.split("/")[0];
                 }
             }
             else
@@ -219,5 +240,6 @@ public class DefaultParseService implements ParseService {
             res = null;
         }
         return res;
+        */
     }
 }

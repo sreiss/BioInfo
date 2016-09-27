@@ -2,6 +2,7 @@ package services.impls;
 
 import com.google.inject.Inject;
 import models.Organism;
+import org.jdeferred.DeferredCallable;
 import org.jdeferred.DeferredManager;
 import org.jdeferred.Promise;
 import services.contracts.OrganismService;
@@ -18,8 +19,8 @@ public class DefaultOrganismService implements OrganismService {
     }
 
     @Override
-    public Promise<Organism, Throwable, Void> createOrganism(final String name, final String group, final String subGroup, final Date updateDate, final String[] geneIds, final String kingdomId) {
-        return deferredManager.when(new Callable<Organism>() {
+    public Promise<Organism, Throwable, Object> createOrganism(final String name, final String group, final String subGroup, final Date updateDate, final String[] geneIds, final String kingdomId) {
+        return deferredManager.when(new DeferredCallable<Organism, Object>() {
             @Override
             public Organism call() throws Exception {
                 return new Organism(name, group, subGroup, updateDate, geneIds, kingdomId);

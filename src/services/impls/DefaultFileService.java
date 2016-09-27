@@ -76,7 +76,7 @@ public class DefaultFileService implements FileService {
     }
 
     @Override
-    public Promise<List<Boolean>, Throwable, Void> createDirectories(final List<String> paths) {
+    public Promise<List<Boolean>, Throwable, Object> createDirectories(final List<String> paths) {
         return deferredManager.when(new UtilService.VoidCallable())
                 .then(new DonePipe<Void, MultipleResults, OneReject, MasterProgress>() {
                     @Override
@@ -88,14 +88,14 @@ public class DefaultFileService implements FileService {
                         return deferredManager.when(promises.toArray(new Promise[promises.size()]));
                     }
                 })
-                .then(new DonePipe<MultipleResults, List<Boolean>, Throwable, Void>() {
+                .then(new DonePipe<MultipleResults, List<Boolean>, Throwable, Object>() {
                     @Override
-                    public Promise<List<Boolean>, Throwable, Void> pipeDone(MultipleResults oneResults) {
+                    public Promise<List<Boolean>, Throwable, Object> pipeDone(MultipleResults oneResults) {
                         List<Boolean> results = new ArrayList<Boolean>();
                         for (OneResult oneResult: oneResults) {
                             results.add((Boolean) oneResult.getResult());
                         }
-                        return new DeferredObject<List<Boolean>, Throwable, Void>().resolve(results);
+                        return new DeferredObject<List<Boolean>, Throwable, Object>().resolve(results);
                     }
                 });
     }

@@ -26,6 +26,7 @@ public class App extends AbstractModule {
         bind(StatisticsService.class).to(DefaultStatisticsService.class);
         bind(GeneService.class).to(DefaultGeneService.class);
         bind(OrganismService.class).to(DefaultOrganismService.class);
+        bind(KingdomService.class).to(DefaultKingdomService.class);
     }
 
     @Provides

@@ -29,6 +29,9 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
     private JPanel rightPannel;
     private JPanel optionsPannel;
     private JTextArea logTextArea;
+    private JCheckBox virusesCheckBox;
+    private JCheckBox prokaryotesCheckBox;
+    private JCheckBox eukaryotaCheckBox;
 
     public JTree getKingdomTree() {
         return kingdomTree;
@@ -70,6 +73,7 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
 
     public void setGlobalProgressionBar(int taskCount) {
         globalProgressionBar.setMaximum(taskCount);
+        globalProgressionBar.setIndeterminate(false);
         if (taskCount > 0) {
             progressionLabel.setText("Traitement de " + taskCount + " éléments.");
         }
@@ -108,6 +112,26 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
         int progress = currentTask.getProgress();
         updateGlobalProgressionBar(progress);
         //}
+    }
+
+    public JButton getExecuteButton() {
+        return executeButton;
+    }
+
+    public JButton getInterruptButton() {
+        return interruptButton;
+    }
+
+    public JCheckBox getEukaryotaCheckBox() {
+        return eukaryotaCheckBox;
+    }
+
+    public JCheckBox getProkaryotesCheckBox() {
+        return prokaryotesCheckBox;
+    }
+
+    public JCheckBox getVirusesCheckBox() {
+        return virusesCheckBox;
     }
 
     /**
@@ -175,6 +199,22 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
         optionsLabel = new JLabel();
         optionsLabel.setText("Kingdoms");
         optionsPannel.add(optionsLabel);
+        final JPanel panel1 = new JPanel();
+        panel1.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        rightPannel.add(panel1, BorderLayout.CENTER);
+        eukaryotaCheckBox = new JCheckBox();
+        eukaryotaCheckBox.setSelected(true);
+        eukaryotaCheckBox.setText("Eukaryota");
+        panel1.add(eukaryotaCheckBox);
+        virusesCheckBox = new JCheckBox();
+        virusesCheckBox.setSelected(true);
+        virusesCheckBox.setText("Viruses");
+        panel1.add(virusesCheckBox);
+        prokaryotesCheckBox = new JCheckBox();
+        prokaryotesCheckBox.setHorizontalAlignment(11);
+        prokaryotesCheckBox.setSelected(true);
+        prokaryotesCheckBox.setText("Prokaryota");
+        panel1.add(prokaryotesCheckBox);
         final JScrollPane scrollPane1 = new JScrollPane();
         mainPanel.add(scrollPane1, BorderLayout.WEST);
         logTextArea = new JTextArea();

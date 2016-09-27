@@ -7,6 +7,6 @@ import org.jdeferred.Promise;
 import java.util.List;
 
 public interface DataService {
-    Promise<Void, Throwable, Object> acquire(Kingdom[] kingdoms);
-    Promise<Void, Throwable, Object> saveData(List<HttpResponse> responses);
+    Promise<Void, Throwable, Object> acquire(List<Kingdom> kingdoms);
+    Promise<Void, Throwable, Object> saveData(List<HttpResponse> responses, List<Kingdom> kingdoms);
 }

@@ -2,9 +2,7 @@ package controllers;
 
 import com.google.inject.Inject;
 import models.Kingdom;
-import models.Organism;
 import org.jdeferred.*;
-import org.jdeferred.multiple.MasterProgress;
 import services.contracts.DataService;
 import services.contracts.TaskProgress;
 import views.MainWindow;
@@ -12,6 +10,8 @@ import views.MainWindow;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainController {
     private final DataService dataService;
@@ -24,13 +24,16 @@ public class MainController {
         view.setTitle("Test");
         view.pack();
         view.setVisible(true);
+
         view.addExecuteListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 acquire();
                 ((JButton) e.getSource()).setEnabled(false);
+                view.getInterruptButton().setEnabled(true);
             }
         });
+
         view.addInteruptListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -41,10 +44,28 @@ public class MainController {
 
     public void acquire() {
         view.updateGlobalProgressionText("Begining the acquisition, the startup might take some time...");
-        Kingdom[] kingdoms = {
-                Kingdom.Eukaryota
-        };
+
+        List<Kingdom> kingdoms = new ArrayList<Kingdom>();
+
+        if (view.getEukaryotaCheckBox().isSelected()) {
+            kingdoms.add(Kingdom.Eukaryota);
+        }
+        if (view.getProkaryotesCheckBox().isSelected()) {
+            kingdoms.add(Kingdom.Prokaryotes);
+        }
+        if (view.getVirusesCheckBox().isSelected()) {
+            kingdoms.add(Kingdom.Viruses);
+        }
+
         dataService.acquire(kingdoms)
+                .always(new AlwaysCallback<Void, Throwable>() {
+                    @Override
+                    public void onAlways(Promise.State state, Void aVoid, Throwable throwable) {
+                        view.getExecuteButton().setEnabled(true);
+                        view.getInterruptButton().setEnabled(false);
+                        view.setGlobalProgressionBar(0);
+                    }
+                })
                 .progress(new ProgressCallback<Object>() {
                     @Override
                     public void onProgress(Object progress) {
@@ -54,7 +75,6 @@ public class MainController {
                 .done(new DoneCallback<Void>() {
                     @Override
                     public void onDone(Void result) {
-                        System.out.println(result);
                         view.updateGlobalProgressionText("Update finished.");
                         view.setGlobalProgressionBar(0);
                     }

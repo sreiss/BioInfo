@@ -4,6 +4,8 @@ import com.google.api.client.http.HttpResponse;
 import models.Kingdom;
 import org.jdeferred.Promise;
 
+import java.io.InputStream;
+
 public interface KingdomService {
-    Promise<Void, Throwable, Void> createKingdomTree(Kingdom kingdom, HttpResponse response);
+    Promise<Void, Throwable, Object> createKingdomTree(Kingdom kingdom, InputStream inputStream);
 }

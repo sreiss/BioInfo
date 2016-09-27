@@ -37,30 +37,42 @@ public class DefaultKingdomService implements KingdomService {
     }
 
     @Override
-    public Promise<Void, Throwable, Void> createKingdomTree(final Kingdom kingdom, final HttpResponse response) {
-        return deferredManager.when(new UtilService.VoidCallable())
-                .then(new DonePipe<Void, List<Organism>, Throwable, Void>() {
+    public Promise<Void, Throwable, Object> createKingdomTree(final Kingdom kingdom, final InputStream inputStream) {
+        return deferredManager.when(configService.getProperty("dataDir"), parseService.extractOrganismList(inputStream, kingdom.getId()))
+                .then(new DonePipe<MultipleResults, List<Boolean>, Throwable, Object>() {
                     @Override
-                    public Promise<List<Organism>, Throwable, Void> pipeDone(Void aVoid) {
-                        try {
-                            return parseService.extractOrganismList(response.getContent(), kingdom.getId());
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                            return null;
-                        }
-                    }
-                })
-                .then(new DonePipe<List<Organism>, List<Boolean>, Throwable, Void>() {
-                    @Override
-                    public Promise<List<Boolean>, Throwable, Void> pipeDone(List<Organism> organisms) {
+                    public Promise<List<Boolean>, Throwable, Object> pipeDone(MultipleResults oneResults) {
+                        String dataDir = (String) oneResults.get(0).getResult();
+                        List<Organism> organisms = (List<Organism>) oneResults.get(1).getResult();
+
                         List<String> paths = new ArrayList<String>();
                         for (Organism organism: organisms) {
-                            paths.add(configService.getProperty("dataDir")
+                            paths.add(dataDir
                                     + "/" + kingdom.getLabel()
                                     + "/" + organism.getGroup()
                                     + "/" + organism.getSubGroup()
                                     + "/" + organism.getName());
                         }
+                        return fileService.createDirectories(paths);
+                    }
+                })
+                .then(new DonePipe<List<Boolean>, Void, Throwable, Object>() {
+                    @Override
+                    public Promise<Void, Throwable, Object> pipeDone(List<Boolean> booleen) {
+                        return new DeferredObject<Void, Throwable, Object>().resolve(null);
+                    }
+                });
+
+//                    @Override
+//                    public Promise<List<Boolean>, Throwable, Object> pipeDone(List<Organism> organisms) {
+//                        List<String> paths = new ArrayList<String>();
+//                        for (Organism organism: organisms) {
+//                            paths.add(
+//                                    + "/" + kingdom.getLabel()
+//                                    + "/" + organism.getGroup()
+//                                    + "/" + organism.getSubGroup()
+//                                    + "/" + organism.getName());
+//                        }
                 /*
                 String line = bufferedReader.readLine();
                 while ((line = bufferedReader.readLine()) != null)
@@ -81,14 +93,5 @@ public class DefaultKingdomService implements KingdomService {
                     }
                 }
                 */
-
-                        return fileService.createDirectories(paths);
-                    }
-                }).then(new DonePipe<List<Boolean>, Void, Throwable, Void>() {
-                    @Override
-                    public Promise<Void, Throwable, Void> pipeDone(List<Boolean> booleen) {
-                        return new DeferredObject<Void, Throwable, Void>().resolve(null);
-                    }
-                });
     }
 }
