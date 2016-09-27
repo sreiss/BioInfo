@@ -20,3 +20,5 @@ data
 
 # Lib docs #
 *.html
+
+*.eml
