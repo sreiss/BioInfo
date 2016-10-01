@@ -1,6 +1,7 @@
 package services.impls;
 
 import com.google.inject.Inject;
+import com.sun.javaws.exceptions.InvalidArgumentException;
 import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jdeferred.*;
@@ -11,10 +12,16 @@ import org.jdeferred.multiple.OneReject;
 import org.jdeferred.multiple.OneResult;
 import services.contracts.FileService;
 import services.contracts.UtilService;
+import sun.plugin.converter.util.NotDirectoryException;
 
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeModel;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -73,6 +80,56 @@ public class DefaultFileService implements FileService {
     @Inject
     public DefaultFileService(DeferredManager deferredManager) {
         this.deferredManager = deferredManager;
+    }
+
+    private DefaultMutableTreeNode buildTreeRoot(DefaultMutableTreeNode root, File file) {
+        DefaultMutableTreeNode children = new DefaultMutableTreeNode(file.getName());
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            if (files != null) {
+                for (File f : files) {
+                    if (file.isDirectory()) {
+                        root.add(buildTreeRoot(children, f));
+                    } else {
+                        root.add(children);
+                    }
+                }
+            }
+        }
+        return root;
+    }
+
+    @Override
+    public Promise<TreeModel, Throwable, Object> buildTree(String path) {
+        return deferredManager.when(new DeferredCallable<TreeModel, Object>() {
+            @Override
+            public TreeModel call() throws Exception {
+                DefaultMutableTreeNode root = buildTreeRoot(new DefaultMutableTreeNode(), new File("./data/"));
+                return new DefaultTreeModel(root);
+            }
+        });
+    }
+
+    @Override
+    public Promise<List<File>, Throwable, Object> readDirectory(final String path) {
+        return deferredManager.when(new DeferredCallable<List<File>, Object>() {
+            @Override
+            public List<File> call() throws Exception {
+                List<File> files = null;
+                File file = new File(path);
+                if (file.isDirectory()) {
+                    File[] filesArray = file.listFiles();
+                    if (filesArray != null) {
+                        files = new ArrayList<File>(Arrays.asList(filesArray));
+                    } else {
+                        throw new FileNotFoundException(path);
+                    }
+                } else {
+                    throw new NotDirectoryException(path);
+                }
+                return files;
+            }
+        });
     }
 
     @Override
