@@ -102,7 +102,6 @@ public class MainController {
                     public void onAlways(Promise.State state, Void aVoid, Throwable throwable) {
                         view.getExecuteButton().setEnabled(true);
                         view.getInterruptButton().setEnabled(false);
-                        view.setGlobalProgressionBar(0);
                     }
                 })
                 .progress(new ProgressCallback<Object>() {

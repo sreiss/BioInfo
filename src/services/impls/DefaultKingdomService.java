@@ -1,26 +1,17 @@
 package services.impls;
 
-import com.google.api.client.http.HttpResponse;
 import com.google.inject.Inject;
-import com.sun.org.apache.xalan.internal.xsltc.compiler.util.Util;
-import com.sun.org.apache.xpath.internal.operations.Bool;
-import com.sun.org.apache.xpath.internal.operations.Or;
 import models.Kingdom;
 import models.Organism;
 import org.jdeferred.*;
 import org.jdeferred.impl.DeferredObject;
-import org.jdeferred.multiple.MasterProgress;
 import org.jdeferred.multiple.MultipleResults;
-import org.jdeferred.multiple.OneReject;
 import services.contracts.*;
 
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Callable;
 
 public class DefaultKingdomService implements KingdomService {
     private final ParseService parseService;
@@ -37,29 +28,33 @@ public class DefaultKingdomService implements KingdomService {
     }
 
     @Override
-    public Promise<Void, Throwable, Object> createKingdomTree(final Kingdom kingdom, final InputStream inputStream) {
+    public Promise<List<Organism>, Throwable, Object> createKingdomTree(final Kingdom kingdom, final InputStream inputStream) {
+        final Organism[][] organisms = new Organism[1][1];
         return deferredManager.when(configService.getProperty("dataDir"), parseService.extractOrganismList(inputStream, kingdom.getId()))
                 .then(new DonePipe<MultipleResults, List<Boolean>, Throwable, Object>() {
                     @Override
                     public Promise<List<Boolean>, Throwable, Object> pipeDone(MultipleResults oneResults) {
                         String dataDir = (String) oneResults.get(0).getResult();
-                        List<Organism> organisms = (List<Organism>) oneResults.get(1).getResult();
+                        List<Organism> organismList = (List<Organism>) oneResults.get(1).getResult();
+                        organisms[0] = organismList.toArray(new Organism[organismList.size()]);
 
                         List<String> paths = new ArrayList<String>();
-                        for (Organism organism: organisms) {
-                            paths.add(dataDir
+                        for (Organism organism: organisms[0]) {
+                            String path = dataDir
                                     + "/" + kingdom.getLabel()
                                     + "/" + organism.getGroup()
                                     + "/" + organism.getSubGroup()
-                                    + "/" + organism.getName());
+                                    + "/" + organism.getName();
+                            organism.setPath(path);
+                            paths.add(path);
                         }
                         return fileService.createDirectories(paths);
                     }
                 })
-                .then(new DonePipe<List<Boolean>, Void, Throwable, Object>() {
+                .then(new DonePipe<List<Boolean>, List<Organism>, Throwable, Object>() {
                     @Override
-                    public Promise<Void, Throwable, Object> pipeDone(List<Boolean> booleen) {
-                        return new DeferredObject<Void, Throwable, Object>().resolve(null);
+                    public Promise<List<Organism>, Throwable, Object> pipeDone(List<Boolean> booleen) {
+                        return new DeferredObject<List<Organism>, Throwable, Object>().resolve(Arrays.asList(organisms[0]));
                     }
                 });
 

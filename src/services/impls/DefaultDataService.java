@@ -2,6 +2,7 @@ package services.impls;
 
 import com.google.api.client.http.HttpResponse;
 import com.google.inject.Inject;
+import com.sun.org.apache.xpath.internal.operations.Or;
 import models.Kingdom;
 import models.Organism;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -68,11 +69,11 @@ public class DefaultDataService implements DataService {
                 .then(new DonePipe<Void, MultipleResults, OneReject, MasterProgress>() {
                     @Override
                     public Promise<MultipleResults, OneReject, MasterProgress> pipeDone(Void aVoid) {
-                        List<Promise<Void, Throwable, Object>> promises = new ArrayList<Promise<Void, Throwable, Object>>();
+                        List<Promise<List<Organism>, Throwable, Object>> promises = new ArrayList<Promise<List<Organism>, Throwable, Object>>();
 
                         for (int i = 0; i < responses.size(); i++) {
                             HttpResponse response = responses.get(i);
-                            Promise<Void, Throwable, Object> promise = null;
+                            Promise<List<Organism>, Throwable, Object> promise = null;
                             try {
                                 promise = kingdomService.createKingdomTree(kingdoms.get(i), response.getContent());
                                 promises.add(promise);
@@ -87,6 +88,7 @@ public class DefaultDataService implements DataService {
                 .then(new DonePipe<MultipleResults, Void, Throwable, Object>() {
                     @Override
                     public Promise<Void, Throwable, Object> pipeDone(MultipleResults oneResults) {
+                        //TODO: Treatment.
                         return new DeferredObject<Void, Throwable, Object>().resolve(null);
                     }
                 }, new FailPipe<OneReject, Void, Throwable, Object>() {

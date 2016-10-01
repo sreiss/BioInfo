@@ -23,7 +23,9 @@ public class Organism {
 
     private Kingdom kingdom;
     private String kingdomId;
-    
+
+    private String path;
+
     public String[] id;
     public String[] geneIds;
     private int idIndex=9;
@@ -37,6 +39,7 @@ public class Organism {
         this.updatedDate = updateDate;
         this.kingdomId = kingdomId;
         this.geneIds = geneIds;
+        this.path = path;
 
 //        String[] data = s.split(sep);
 //
@@ -156,5 +159,13 @@ public class Organism {
 
     public void setKingdomId(String kingdomId) {
         this.kingdomId = kingdomId;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
     }
 }

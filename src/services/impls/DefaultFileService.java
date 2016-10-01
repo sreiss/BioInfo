@@ -28,46 +28,6 @@ import java.util.concurrent.Callable;
 public class DefaultFileService implements FileService {
     private final DeferredManager deferredManager;
 
-    // Callables.
-
-    /*
-    private class CreateDirectoryCallable implements Callable<Boolean> {
-        private final String path;
-
-        public CreateDirectoryCallable(String path) {
-            this.path = path;
-        }
-
-        @Override
-        public Boolean call() throws Exception {
-            return (new File(path)).mkdirs();
-        }
-    }
-    */
-
-    /*
-    private class WriteWorkbookCallable implements Callable<Void> {
-        private final XSSFWorkbook workbook;
-        private final String path;
-        private final String fileName;
-
-        public WriteWorkbookCallable(XSSFWorkbook workbook, String path, String fileName) {
-            this.workbook = workbook;
-            this.path = path;
-            this.fileName = fileName;
-        }
-
-        @Override
-        public Void call() throws Exception {
-            FileOutputStream stream = new FileOutputStream(path + fileName);
-            workbook.write(stream);
-            stream.close();
-            workbook.close();
-            return null;
-        }
-    }
-    */
-
     /*
     private class CreateWorkbookCallable implements Callable<XSSFWorkbook> {
         @Override
@@ -83,6 +43,9 @@ public class DefaultFileService implements FileService {
     }
 
     private DefaultMutableTreeNode buildTreeRoot(DefaultMutableTreeNode root, File file) {
+        if (root == null) {
+            root = new DefaultMutableTreeNode(file.getName());
+        }
         DefaultMutableTreeNode children = new DefaultMutableTreeNode(file.getName());
         if (file.isDirectory()) {
             File[] files = file.listFiles();
