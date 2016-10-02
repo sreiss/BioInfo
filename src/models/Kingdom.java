@@ -32,4 +32,8 @@ public enum Kingdom {
     public List<Organism> getOrganisms() {
         return organisms;
     }
+
+    public void setOrganisms(List<Organism> organisms) {
+        this.organisms = organisms;
+    }
 }

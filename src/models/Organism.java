@@ -27,10 +27,10 @@ public class Organism {
     private String path;
 
     public String[] id;
-    public String[] geneIds;
+    private String[] geneIds;
     private int idIndex=9;
     
-    public ArrayList<Gene> listGene;
+    private ArrayList<Gene> genes;
 
     public Organism(String name, String group, String subGroup, Date updateDate, String[] geneIds, String kingdomId) throws ParseException {
         this.name = name;
@@ -39,7 +39,7 @@ public class Organism {
         this.updatedDate = updateDate;
         this.kingdomId = kingdomId;
         this.geneIds = geneIds;
-        this.path = path;
+        this.genes = new ArrayList<Gene>();
 
 //        String[] data = s.split(sep);
 //
@@ -167,5 +167,21 @@ public class Organism {
 
     public void setPath(String path) {
         this.path = path;
+    }
+
+    public String[] getGeneIds() {
+        return geneIds;
+    }
+
+    public void setGeneIds(String[] geneIds) {
+        this.geneIds = geneIds;
+    }
+
+    public ArrayList<Gene> getGenes() {
+        return genes;
+    }
+
+    public void setGenes(ArrayList<Gene> genes) {
+        this.genes = genes;
     }
 }

@@ -3,6 +3,7 @@ package services.impls;
 import com.google.api.client.http.HttpResponse;
 import com.google.inject.Inject;
 import com.sun.org.apache.xpath.internal.operations.Or;
+import models.Gene;
 import models.Kingdom;
 import models.Organism;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -11,6 +12,7 @@ import org.jdeferred.impl.DeferredObject;
 import org.jdeferred.multiple.MasterProgress;
 import org.jdeferred.multiple.MultipleResults;
 import org.jdeferred.multiple.OneReject;
+import org.jdeferred.multiple.OneResult;
 import services.contracts.*;
 
 import java.io.BufferedReader;
@@ -18,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class DefaultDataService implements DataService {
@@ -27,15 +30,17 @@ public class DefaultDataService implements DataService {
     private final ConfigService configService;
     private final DeferredManager deferredManager;
     private final KingdomService kingdomService;
+    private final OrganismService organismService;
 
     @Inject
-    public DefaultDataService(HttpService httpService, ParseService parseService, FileService fileService, ConfigService configService, DeferredManager deferredManager, KingdomService kingdomService) {
+    public DefaultDataService(HttpService httpService, ParseService parseService, FileService fileService, ConfigService configService, DeferredManager deferredManager, KingdomService kingdomService, OrganismService organismService) {
         this.httpService = httpService;
         this.parseService = parseService;
         this.fileService = fileService;
         this.configService = configService;
         this.deferredManager = deferredManager;
         this.kingdomService = kingdomService;
+        this.organismService = organismService;
     }
 
     private String generateKingdomGeneListUrl(Kingdom kingdom) {
@@ -69,11 +74,11 @@ public class DefaultDataService implements DataService {
                 .then(new DonePipe<Void, MultipleResults, OneReject, MasterProgress>() {
                     @Override
                     public Promise<MultipleResults, OneReject, MasterProgress> pipeDone(Void aVoid) {
-                        List<Promise<List<Organism>, Throwable, Object>> promises = new ArrayList<Promise<List<Organism>, Throwable, Object>>();
+                        List<Promise<Kingdom, Throwable, Object>> promises = new ArrayList<Promise<Kingdom, Throwable, Object>>();
 
                         for (int i = 0; i < responses.size(); i++) {
                             HttpResponse response = responses.get(i);
-                            Promise<List<Organism>, Throwable, Object> promise = null;
+                            Promise<Kingdom, Throwable, Object> promise = null;
                             try {
                                 promise = kingdomService.createKingdomTree(kingdoms.get(i), response.getContent());
                                 promises.add(promise);
@@ -85,16 +90,29 @@ public class DefaultDataService implements DataService {
                         return deferredManager.when(promises.toArray(new Promise[promises.size()]));
                     }
                 })
-                .then(new DonePipe<MultipleResults, Void, Throwable, Object>() {
+                .then(new DonePipe<MultipleResults, List<Kingdom>, Throwable, Object>() {
                     @Override
-                    public Promise<Void, Throwable, Object> pipeDone(MultipleResults oneResults) {
-                        //TODO: Treatment.
-                        return new DeferredObject<Void, Throwable, Object>().resolve(null);
+                    public Promise<List<Kingdom>, Throwable, Object> pipeDone(MultipleResults oneResults) {
+                        DeferredObject<List<Kingdom>, Throwable, Object> deferred = new DeferredObject<List<Kingdom>, Throwable, Object>();
+                        List<Kingdom> kingdoms = new ArrayList<Kingdom>();
+                        for (OneResult oneResult: oneResults) {
+                            kingdoms.add((Kingdom) oneResult.getResult());
+                        }
+                        deferred.resolve(kingdoms);
+                        return deferred.promise();
                     }
-                }, new FailPipe<OneReject, Void, Throwable, Object>() {
+                }, new FailPipe<OneReject, List<Kingdom>, Throwable, Object>() {
                     @Override
-                    public Promise<Void, Throwable, Object> pipeFail(OneReject oneReject) {
-                        return new DeferredObject<Void, Throwable, Object>().reject((Throwable) oneReject.getReject());
+                    public Promise<List<Kingdom>, Throwable, Object> pipeFail(OneReject oneReject) {
+                        return new DeferredObject<List<Kingdom>, Throwable, Object>().reject((Throwable) oneReject.getReject());
+                    }
+                })
+                .then(new DonePipe<List<Kingdom>, Void, Throwable, Object>() {
+                    @Override
+                    public Promise<Void, Throwable, Object> pipeDone(List<Kingdom> kingdoms) {
+                        DeferredObject<Void, Throwable, Object> deferred = new DeferredObject<Void, Throwable, Object>();
+                        deferred.resolve(null);
+                        return deferred.promise();
                     }
                 });
 

@@ -5,7 +5,13 @@ public class TaskProgress {
     private int progress;
     private String text;
     private Type type;
-    private enum Type {
+    private Step step;
+
+    public enum Step {
+        DirectoriesCreationFinished
+    }
+
+    public enum Type {
         Text,
         Number
     }
@@ -15,9 +21,10 @@ public class TaskProgress {
         this.type = type;
     }
 
-    public TaskProgress(int total, Type type) {
+    public TaskProgress(int total, Type type, Step step) {
         this.total = total;
         this.type = type;
+        this.step = step;
     }
 
     public int getTotal() {
@@ -36,4 +43,11 @@ public class TaskProgress {
         return type;
     }
 
+    public Step getStep() {
+        return step;
+    }
+
+    public void setStep(Step step) {
+        this.step = step;
+    }
 }

@@ -107,7 +107,18 @@ public class MainController {
                 .progress(new ProgressCallback<Object>() {
                     @Override
                     public void onProgress(Object progress) {
-                        view.setGlobalProgressionBar(((TaskProgress) progress).getTotal());
+                        if (progress instanceof TaskProgress) {
+                            TaskProgress taskProgress = (TaskProgress) progress;
+                            switch (taskProgress.getStep()) {
+                                case DirectoriesCreationFinished:
+                                    view.updateGlobalProgressionText("Répertoires créés.");
+                                    refreshTree();
+                                    break;
+                                default:
+                                    view.setGlobalProgressionBar(((TaskProgress) progress).getTotal());
+                                    break;
+                            }
+                        }
                     }
                 })
                 .done(new DoneCallback<Void>() {

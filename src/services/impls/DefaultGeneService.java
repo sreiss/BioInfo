@@ -3,6 +3,8 @@ package services.impls;
 import com.google.inject.Inject;
 import models.CodingSequence;
 import models.Gene;
+import org.jdeferred.Deferred;
+import org.jdeferred.DeferredCallable;
 import org.jdeferred.DeferredManager;
 import org.jdeferred.Promise;
 import services.contracts.GeneService;
@@ -13,13 +15,17 @@ import java.util.concurrent.Callable;
 public class DefaultGeneService implements GeneService {
     private final DeferredManager deferredManager;
 
+    public String generateUrlForGene(String id) {
+        return "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id="+id+"&rettype=fasta_cds_na&retmode=text";
+    }
+
     @Inject
     public DefaultGeneService(DeferredManager deferredManager) {
         this.deferredManager = deferredManager;
     }
 
-    public Promise<Gene, Throwable, Void> createGene(final String name, final int totalDinucleotides, final int totalTrinucleotides) {
-        return deferredManager.when(new Callable<Gene>() {
+    public Promise<Gene, Throwable, Object> createGene(final String name, final int totalDinucleotides, final int totalTrinucleotides) {
+        return deferredManager.when(new DeferredCallable<Gene, Object>() {
             @Override
             public Gene call() throws Exception {
                 Gene gene = new Gene(name, totalDinucleotides, totalTrinucleotides);
