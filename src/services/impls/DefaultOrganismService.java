@@ -16,10 +16,7 @@ import services.contracts.HttpService;
 import services.contracts.OrganismService;
 import services.contracts.UtilService;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 public class DefaultOrganismService implements OrganismService {
@@ -73,6 +70,39 @@ public class DefaultOrganismService implements OrganismService {
                     }
                 });
 
+    }
+
+    @Override
+    public Promise<List<Organism>, Throwable, Object> processGenes(final List<Organism> organisms) {
+        return deferredManager.when(new UtilService.VoidCallable())
+                .then(new DonePipe<Void, MultipleResults, OneReject, MasterProgress>() {
+                    @Override
+                    public Promise<MultipleResults, OneReject, MasterProgress> pipeDone(Void aVoid) {
+                        List<Promise<List<Gene>, Throwable, Object>> genes = new ArrayList<Promise<List<Gene>, Throwable, Object>>();
+                        for (Organism organism: organisms) {
+                            if (organism.getGeneIds() != null) {
+                                genes.add(geneService.processGenes(Arrays.asList(organism.getGeneIds())));
+                            } else {
+                                genes.add(new DeferredObject<List<Gene>, Throwable, Object>().resolve(null).promise());
+                            }
+                        }
+                        return deferredManager.when(genes.toArray(new Promise[genes.size()]));
+                    }
+                })
+                .then(new DonePipe<MultipleResults, List<Organism>, Throwable, Object>() {
+                    @Override
+                    public Promise<List<Organism>, Throwable, Object> pipeDone(MultipleResults oneResults) {
+                        for (int i = 0; i < organisms.size(); i++) {
+                            organisms.get(i).setGenes((ArrayList<Gene>) oneResults.get(i).getResult());
+                        }
+                        return new DeferredObject<List<Organism>, Throwable, Object>().resolve(organisms).promise();
+                    }
+                }, new FailPipe<OneReject, List<Organism>, Throwable, Object>() {
+                    @Override
+                    public Promise<List<Organism>, Throwable, Object> pipeFail(OneReject oneReject) {
+                        return new DeferredObject<List<Organism>, Throwable, Object>().reject((Throwable) oneReject.getReject()).promise();
+                    }
+                });
     }
 
     @Override

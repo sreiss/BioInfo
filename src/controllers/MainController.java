@@ -108,15 +108,20 @@ public class MainController {
                     @Override
                     public void onProgress(Object progress) {
                         if (progress instanceof TaskProgress) {
-                            TaskProgress taskProgress = (TaskProgress) progress;
-                            switch (taskProgress.getStep()) {
-                                case DirectoriesCreationFinished:
-                                    view.updateGlobalProgressionText("Répertoires créés.");
-                                    refreshTree();
-                                    break;
-                                default:
-                                    view.setGlobalProgressionBar(((TaskProgress) progress).getTotal());
-                                    break;
+                            synchronized (this) {
+                                TaskProgress taskProgress = (TaskProgress) progress;
+                                switch (taskProgress.getStep()) {
+                                    case KingdomsCreation:
+                                        view.updateGlobalProgressionText("Kingdoms creation started.");
+                                        break;
+                                    case DirectoriesCreationFinished:
+                                        view.updateGlobalProgressionText("Directories created.");
+                                        refreshTree();
+                                        break;
+                                    default:
+                                        view.setGlobalProgressionBar(((TaskProgress) progress).getTotal());
+                                        break;
+                                }
                             }
                         }
                     }
@@ -124,16 +129,20 @@ public class MainController {
                 .done(new DoneCallback<Void>() {
                     @Override
                     public void onDone(Void result) {
-                        view.updateGlobalProgressionText("Update finished.");
-                        view.setGlobalProgressionBar(0);
+                        synchronized (this) {
+                            view.updateGlobalProgressionText("Update finished.");
+                            view.setGlobalProgressionBar(0);
+                        }
                     }
                 })
                 .fail(new FailCallback<Throwable>() {
                     @Override
                     public void onFail(Throwable throwable) {
-                        System.err.println(throwable.toString());
-                        view.updateGlobalProgressionText("An error occured.");
-                        view.setGlobalProgressionBar(0);
+                        synchronized (this) {
+                            System.err.println(throwable.toString());
+                            view.updateGlobalProgressionText("An error occured.");
+                            view.setGlobalProgressionBar(0);
+                        }
                     }
                 });
     }

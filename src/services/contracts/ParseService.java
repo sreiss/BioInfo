@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface ParseService {
     Promise<List<Organism>, Throwable, Object> extractOrganismList(InputStream inputStream, String kingdomId);
+    Promise<List<String>, Throwable, Object> extractSequences(final InputStream inputStream);
 }

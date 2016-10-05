@@ -1,29 +1,82 @@
 package services.impls;
 
+import com.google.api.client.http.HttpResponse;
 import com.google.inject.Inject;
 import models.CodingSequence;
 import models.Gene;
-import org.jdeferred.Deferred;
-import org.jdeferred.DeferredCallable;
-import org.jdeferred.DeferredManager;
-import org.jdeferred.Promise;
-import services.contracts.GeneService;
+import org.jdeferred.*;
+import org.jdeferred.impl.DeferredObject;
+import org.jdeferred.multiple.MasterProgress;
+import org.jdeferred.multiple.MultipleResults;
+import org.jdeferred.multiple.OneReject;
+import org.jdeferred.multiple.OneResult;
+import services.contracts.*;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 public class DefaultGeneService implements GeneService {
     private final DeferredManager deferredManager;
+    private final StatisticsService statisticsService;
+    private final HttpService httpService;
+    private final ParseService parseService;
 
     public String generateUrlForGene(String id) {
         return "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id="+id+"&rettype=fasta_cds_na&retmode=text";
     }
 
     @Inject
-    public DefaultGeneService(DeferredManager deferredManager) {
+    public DefaultGeneService(DeferredManager deferredManager, StatisticsService statisticsService, HttpService httpService, ParseService parseService) {
         this.deferredManager = deferredManager;
+        this.statisticsService = statisticsService;
+        this.httpService = httpService;
+        this.parseService = parseService;
     }
 
+    @Override
+    public Promise<List<Gene>, Throwable, Object> processGenes(final List<String> geneIds) {
+        if (geneIds != null) {
+            List<String> urls = new ArrayList<String>();
+            for (String geneId: geneIds) {
+                urls.add(generateUrlForGene(geneId));
+            }
+            return httpService.get(urls)
+                    .then(new DonePipe<List<HttpResponse>, MultipleResults, OneReject, MasterProgress>() {
+                        @Override
+                        public Promise<MultipleResults, OneReject, MasterProgress> pipeDone(List<HttpResponse> responses) {
+                            List<Promise<List<String>, Throwable, Object>> sequences = new ArrayList<Promise<List<String>, Throwable, Object>>();
+                            for (int i = 0; i < geneIds.size(); i++) {
+                                try {
+                                    sequences.add(parseService.extractSequences(responses.get(i).getContent()));
+                                } catch (IOException e) {
+                                    sequences.add(null);
+                                }
+                            }
+                            return deferredManager.when(sequences.toArray(new Promise[sequences.size()]));
+                        }
+                    })
+                    .then(new DonePipe<MultipleResults, List<Gene>, Throwable, Object>() {
+                        @Override
+                        public Promise<List<Gene>, Throwable, Object> pipeDone(MultipleResults oneResults) {
+                            List<Gene> genes = new ArrayList<Gene>();
+                            for (int i = 0; i < geneIds.size(); i++) {
+                                genes.add(new Gene(geneIds.get(i), 0, 0));
+                            }
+                            return new DeferredObject<List<Gene>, Throwable, Object>().resolve(genes).promise();
+                        }
+                    });
+        } else {
+            return new DeferredObject<List<Gene>, Throwable, Object>()
+                    .resolve(null)
+                    .promise();
+        }
+    }
+
+    @Override
     public Promise<Gene, Throwable, Object> createGene(final String name, final int totalDinucleotides, final int totalTrinucleotides) {
         return deferredManager.when(new DeferredCallable<Gene, Object>() {
             @Override

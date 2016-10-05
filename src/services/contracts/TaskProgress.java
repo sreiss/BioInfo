@@ -8,7 +8,7 @@ public class TaskProgress {
     private Step step;
 
     public enum Step {
-        DirectoriesCreationFinished
+        KingdomsCreation, DirectoriesCreationFinished
     }
 
     public enum Type {

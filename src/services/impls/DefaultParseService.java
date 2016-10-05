@@ -48,62 +48,68 @@ public class DefaultParseService implements ParseService {
                 && !Pattern.compile(CodingSequence.REGEX_ATGC).matcher(sequence).find();
     }
 
-    public Promise<List<String>, Throwable, Void> extractSequences(final BufferedReader reader) {
-        return deferredManager.when(new Callable<List<String>>() {
+    public Promise<List<String>, Throwable, Object> extractSequences(final InputStream inputStream) {
+        return deferredManager.when(new DeferredCallable<List<String>, Object>() {
             @Override
             public List<String> call() throws Exception {
-                List<String> sequences = new ArrayList<String>();
-                String line;
-                boolean running;
+                synchronized (this) {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                    List<String> sequences = new ArrayList<String>();
+                    String line;
+                    boolean running;
 
-                while ((line = reader.readLine()) != null) {
-                    if (line.startsWith(CodingSequence.START_CDS_INFO)) {
-                        Pattern pattern = Pattern.compile(CodingSequence.REGEX_COMPLETE);
-                        Matcher matcher = pattern.matcher(line);
+                    while ((line = reader.readLine()) != null) {
+                        if (line.startsWith(CodingSequence.START_CDS_INFO)) {
+                            Pattern pattern = Pattern.compile(CodingSequence.REGEX_COMPLETE);
+                            Matcher matcher = pattern.matcher(line);
 
-                        if (matcher.find()) {
-                            String s = matcher.group();
-                            pattern = Pattern.compile(CodingSequence.REGEX_LOCATOR);
-                            matcher = pattern.matcher(s);
-                            boolean locatorsOk = true;
-                            while (matcher.find() && locatorsOk) {
-                                locatorsOk = checkLocator(matcher.group());
-                            }
+                            if (matcher.find()) {
+                                String s = matcher.group();
+                                pattern = Pattern.compile(CodingSequence.REGEX_LOCATOR);
+                                matcher = pattern.matcher(s);
+                                boolean locatorsOk = true;
+                                while (matcher.find() && locatorsOk) {
+                                    locatorsOk = checkLocator(matcher.group());
+                                }
 
-                            if (locatorsOk) {
-                                String sequence = "", line2;
+                                if (locatorsOk) {
+                                    String sequence = "", line2;
 
-                                running = true;
-                                while (running) {
-                                    reader.mark(1);
-                                    int character = reader.read();
-                                    if (character == -1) {
-                                        running = false;
-                                    } else {
-                                        reader.reset();
-                                        if (character == CodingSequence.START_CDS_INFO.charAt(0)) {
+                                    running = true;
+                                    while (running) {
+                                        reader.mark(1);
+                                        int character = reader.read();
+                                        if (character == -1) {
                                             running = false;
                                         } else {
-                                            line2 = reader.readLine();
-                                            if (line2 == null) {
+                                            reader.reset();
+                                            if (character == CodingSequence.START_CDS_INFO.charAt(0)) {
                                                 running = false;
                                             } else {
-                                                sequence += line2;
+                                                line2 = reader.readLine();
+                                                if (line2 == null) {
+                                                    running = false;
+                                                } else {
+                                                    sequence += line2;
+                                                }
                                             }
                                         }
                                     }
+
+                                    if (checkSequence(sequence)) {
+                                        sequences.add(sequence);
+                                    }
                                 }
 
-                                if (checkSequence(sequence)) {
-                                    sequences.add(sequence);
-                                }
                             }
-
                         }
                     }
-                }
 
-                return sequences;
+                    reader.close();
+                    inputStream.close();
+
+                    return sequences;
+                }
             }
         });
     }

@@ -65,8 +65,15 @@ public class DefaultHttpService implements HttpService {
         }).then(new DonePipe<HttpResponse, HttpResponse, Throwable, Object>() {
             @Override
             public Promise<HttpResponse, Throwable, Object> pipeDone(HttpResponse response) {
-                System.out.println("[" + new Date() + "] Requête terminée : " + url);
+                System.out.println("[" + new Date() + "] Request finished : " + url);
                 return new DeferredObject<HttpResponse, Throwable, Object>().resolve(response);
+            }
+        }, new FailPipe<Throwable, HttpResponse, Throwable, Object>() {
+            @Override
+            public Promise<HttpResponse, Throwable, Object> pipeFail(Throwable throwable) {
+                // retry on fail
+                System.out.println("Request failed, retrying.");
+                return get(url);
             }
         });
     }
@@ -125,12 +132,6 @@ public class DefaultHttpService implements HttpService {
                     @Override
                     public Promise<List<HttpResponse>, Throwable, Object> pipeDone(List<HttpResponse> responses) {
                         return new DeferredObject<List<HttpResponse>, Throwable, Object>().resolve(responses);
-                    }
-                }, new FailPipe<Throwable, List<HttpResponse>, Throwable, Object>() {
-                    @Override
-                    public Promise<List<HttpResponse>, Throwable, Object> pipeFail(Throwable throwable) {
-                        // Retry on fail.
-                        return get(urls);
                     }
                 });
     }
