@@ -5,10 +5,17 @@ import java.util.Set;
 
 public class Gene {
 
+    private double totalProbaTrinu1;
+    private double totalProbaTrinu2;
+    private double totalProbaDinu0;
+    private double totalProbaDinu1;
+    private double totalProbaTrinu0;
     private String name;
     private String path;
     private int totalTrinucleotide;
     private int totalDinucleotide;
+    private int totalCds;
+    private int totalUnprocessedCds;
 
     // Trinucleotide
     private LinkedHashMap<String, Integer> trinuStatPhase0;
@@ -33,6 +40,13 @@ public class Gene {
         this.path = path;
         this.totalTrinucleotide = totalDinucleotide;
         this.totalDinucleotide = totalTrinucleotide;
+        this.totalProbaTrinu0 = 0.0;
+        this.totalProbaTrinu1 = 0.0;
+        this.totalProbaTrinu2 = 0.0;
+        this.totalProbaDinu0 = 0.0;
+        this.totalProbaDinu1 = 0.0;
+        this.totalCds = 0;
+        this.totalUnprocessedCds = 0;
     }
 
     public String getName() {
@@ -141,5 +155,61 @@ public class Gene {
 
     public String getPath() {
         return path;
+    }
+
+    public int getTotalCds() {
+        return totalCds;
+    }
+
+    public void setTotalCds(int totalCds) {
+        this.totalCds = totalCds;
+    }
+
+    public int getTotalUnprocessedCds() {
+        return totalUnprocessedCds;
+    }
+
+    public void setTotalUnprocessedCds(int totalUnprocessedCds) {
+        this.totalUnprocessedCds = totalUnprocessedCds;
+    }
+
+    public double getTotalProbaTrinu1() {
+        return totalProbaTrinu1;
+    }
+
+    public double getTotalProbaTrinu2() {
+        return totalProbaTrinu2;
+    }
+
+    public double getTotalProbaDinu0() {
+        return totalProbaDinu0;
+    }
+
+    public double getTotalProbaDinu1() {
+        return totalProbaDinu1;
+    }
+
+    public double getTotalProbaTrinu0() {
+        return totalProbaTrinu0;
+    }
+
+    public void setTotalProbaTrinu1(double totalProbaTrinu1) {
+        this.totalProbaTrinu1 = totalProbaTrinu1;
+    }
+
+    public void setTotalProbaTrinu2(double totalProbaTrinu2) {
+        this.totalProbaTrinu2 = totalProbaTrinu2;
+    }
+
+    public void setTotalProbaDinu0(double totalProbaDinu0) {
+        this.totalProbaDinu0 = totalProbaDinu0;
+    }
+
+    public void setTotalProbaDinu1(double totalProbaDinu1) {
+        this.totalProbaDinu1 = totalProbaDinu1;
+    }
+
+    public void setTotalProbaTrinu0(double totalProbaTrinu0) {
+        this.totalProbaTrinu0 = totalProbaTrinu0;
     }
 }

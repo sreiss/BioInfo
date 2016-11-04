@@ -7,6 +7,7 @@ import com.google.inject.Inject;
 import models.Gene;
 import models.Kingdom;
 import models.Organism;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import services.contracts.*;
 import java.util.*;
 
@@ -14,12 +15,14 @@ public class DefaultOrganismService implements OrganismService {
     private final GeneService geneService;
     private final ListeningExecutorService executorService;
     private final ProgressService progressService;
+    private final FileService fileService;
 
     @Inject
-    public DefaultOrganismService(GeneService geneService, ListeningExecutorService listeningExecutorService, ProgressService progressService) {
+    public DefaultOrganismService(GeneService geneService, ListeningExecutorService listeningExecutorService, ProgressService progressService, FileService fileService) {
         this.geneService = geneService;
         this.executorService = listeningExecutorService;
         this.progressService = progressService;
+        this.fileService = fileService;
     }
 
     @Override
@@ -66,7 +69,8 @@ public class DefaultOrganismService implements OrganismService {
     private ListenableFuture<Organism> processGenes(Organism organism) {
         String[] geneIds = organism.getGeneIds();
         // We do not return the genes in order not to consume too much memory.
-        ListenableFuture<Void> genesFuture = geneService.processGenes(geneIds, organism.getPath());
+        ListenableFuture<XSSFWorkbook> createWorkbookFuture = fileService.createWorkbook();
+        ListenableFuture<Void> genesFuture = Futures.transformAsync(createWorkbookFuture, workbook -> geneService.processGenes(organism, workbook, geneIds, organism.getPath(), executorService);
         return Futures.transformAsync(genesFuture, aVoid -> returnOrganism(organism), executorService);
     }
 

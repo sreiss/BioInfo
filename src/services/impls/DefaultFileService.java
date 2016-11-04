@@ -1,19 +1,22 @@
 package services.impls;
 
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
 import models.Gene;
+import models.Organism;
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import services.contracts.FileService;
 
+import javax.annotation.Nullable;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
@@ -65,13 +68,23 @@ public class DefaultFileService implements FileService {
         return executorService.submit((Callable<XSSFWorkbook>) XSSFWorkbook::new);
     }
 
+    private ListenableFuture<XSSFWorkbook> returnWorkbook(XSSFWorkbook workbook) {
+        return executorService.submit(() -> workbook);
+    }
+
     @Override
-    public ListenableFuture<Void> writeWorkbook(Gene gene, final XSSFWorkbook workbook, final String path, final String fileName) {
+    public ListenableFuture<XSSFWorkbook> fillWorkbook(Organism organism, Gene gene, final XSSFWorkbook workbook) {
         ListenableFuture<XSSFSheet> createSheetFuture = executorService.submit((Callable<XSSFSheet>) workbook::createSheet);
-        ListenableFuture<XSSFSheet> fillDinuFuture = Futures.transformAsync(createSheetFuture, sheet -> fillFileDinu(gene, workbook, sheet), executorService);
+        ListenableFuture<XSSFSheet> fillFileInfoFuture = Futures.transformAsync(createSheetFuture, sheet -> fillFileInfo(organism, gene, sheet));
+        ListenableFuture<XSSFSheet> fillDinuFuture = Futures.transformAsync(fillFileInfoFuture, sheet -> fillFileDinu(gene, workbook, sheet), executorService);
         ListenableFuture<XSSFSheet> fillTrinuFuture = Futures.transformAsync(fillDinuFuture, sheet -> fillFileTrinu(gene, workbook, sheet), executorService);
-        return Futures.transformAsync(fillTrinuFuture, sheet -> {
-            FileOutputStream stream = new FileOutputStream(path + fileName + ".xlsx");
+        return Futures.transformAsync(fillTrinuFuture, sheet -> returnWorkbook(workbook), executorService);
+    }
+
+    @Override
+    public ListenableFuture<Void> writeWorkbook(XSSFWorkbook workbook, final String path, final String fileName) {
+        return executorService.submit(() -> {
+            FileOutputStream stream = new FileOutputStream(path + "/" + fileName + ".xlsx");
             workbook.write(stream);
             stream.close();
             workbook.close();
@@ -115,16 +128,62 @@ public class DefaultFileService implements FileService {
         return executorService.submit(() -> new File(path).mkdirs());
     }
 
-    private CellStyle buildCellStyleForProba(Workbook workbook) {
+    private CellStyle buildCellStyleForProba(XSSFWorkbook workbook) {
         CellStyle probaStyle = workbook.createCellStyle();
         probaStyle.setDataFormat(workbook.getCreationHelper().createDataFormat().getFormat("0.00"));
         return probaStyle;
     }
 
-    private CellStyle buildCellStyleForNumber(Workbook workbook) {
+    private CellStyle buildCellStyleForNumber(XSSFWorkbook workbook) {
         CellStyle numberStyle = workbook.createCellStyle();
         numberStyle.setDataFormat(workbook.getCreationHelper().createDataFormat().getFormat("0"));
         return numberStyle;
+    }
+
+    private ListenableFuture<XSSFSheet> fillFileInfo(Organism organism, Gene gene, XSSFSheet sheet) {
+        return executorService.submit(() -> {
+            XSSFRow row;
+
+            if ((row = sheet.getRow(0)) == null)
+                row = sheet.createRow(0);
+
+            row.createCell(0).setCellValue("Nom");
+            row.createCell(1).setCellValue(gene.getName());
+
+            if ((row = sheet.getRow(1)) == null)
+                row = sheet.createRow(1);
+
+            row.createCell(0).setCellValue("Chemin");
+            row.createCell(1).setCellValue(organism.getGroup());
+            row.createCell(2).setCellValue(organism.getSubGroup());
+            row.createCell(3).setCellValue(organism.getName());
+
+            if ((row = sheet.getRow(2)) == null)
+                row = sheet.createRow(2);
+
+            row.createCell(0).setCellValue("Nb CDS");
+            row.createCell(1).setCellValue(gene.getTotalCds());
+
+            if ((row = sheet.getRow(3)) == null)
+                row = sheet.createRow(3);
+
+            row.createCell(0).setCellValue("Nb CDS non traités");
+            row.createCell(1).setCellValue(gene.getTotalUnprocessedCds());
+
+            if ((row = sheet.getRow(4)) == null)
+                row = sheet.createRow(4);
+
+            row.createCell(0).setCellValue("Nb trinucléotides");
+            row.createCell(1).setCellValue(gene.getTotalUnprocessedCds());
+
+            if ((row = sheet.getRow(5)) == null)
+                row = sheet.createRow(5);
+
+            row.createCell(0).setCellValue("Nb dinucléotides");
+            row.createCell(1).setCellValue(gene.getTotalDinucleotide());
+
+            return sheet;
+        });
     }
 
     private ListenableFuture<XSSFSheet> fillFileTrinu(Gene g, XSSFWorkbook workbook, XSSFSheet sheet) {
@@ -134,8 +193,8 @@ public class DefaultFileService implements FileService {
             XSSFCell tmpCell;
             XSSFRow row;
 
-            if ((row = sheet.getRow(0)) == null)
-                row = sheet.createRow(0);
+            if ((row = sheet.getRow(7)) == null)
+                row = sheet.createRow(7);
 
             row.createCell(0).setCellValue("Trinucleotide");
             row.createCell(1).setCellValue("Nombre Phase 0");
@@ -145,7 +204,7 @@ public class DefaultFileService implements FileService {
             row.createCell(5).setCellValue("Nombre Phase 2");
             row.createCell(6).setCellValue("Proba Phase 2");
 
-            int i = 1;
+            int i = 8;
             Set<String> keys = g.getTrinuStatPhase0().keySet();
 
             for (String key : keys) {
@@ -164,20 +223,20 @@ public class DefaultFileService implements FileService {
 
                 // Proba phase 0
                 tmpCell = row.createCell(2);
-                tmpCell.setCellValue(g.getDinuProbaPhase0().get(key));
+                tmpCell.setCellValue(g.getTrinuProbaPhase0().get(key));
                 tmpCell.setCellType(CellType.NUMERIC);
                 tmpCell.setCellStyle(probaStyle);
 
                 // NB phase 1
                 tmpCell = row.createCell(3);
-                tmpCell.setCellValue(g.getTrinuStatPhase1().get(key));
+                tmpCell.setCellValue(g.getDinuStatPhase1().get(key));
                 tmpCell.setCellType(CellType.NUMERIC);
                 tmpCell.setCellStyle(numberStyle);
                 //tmp1 += g.trinuStatPhase1.get(key);
 
                 // Proba phase 1
                 tmpCell = row.createCell(4);
-                tmpCell.setCellValue(g.getTrinuProbaPhase1().get(key));
+                tmpCell.setCellValue(g.getTrinuProbaPhase0().get(key));
                 tmpCell.setCellType(CellType.NUMERIC);
                 tmpCell.setCellStyle(probaStyle);
                 //tmpCell.setCellType(XSSFCell.CELL_TYPE_NUMERIC);
@@ -191,7 +250,7 @@ public class DefaultFileService implements FileService {
 
                 // Proba phase 2
                 tmpCell = row.createCell(6);
-                tmpCell.setCellValue(g.getTrinuStatPhase2().get(key));
+                tmpCell.setCellValue(g.getTrinuProbaPhase2().get(key));
                 tmpCell.setCellType(CellType.NUMERIC);
                 tmpCell.setCellStyle(probaStyle);
 
@@ -204,14 +263,32 @@ public class DefaultFileService implements FileService {
             tmpCell = row.createCell(1);
             tmpCell.setCellValue(g.getTotalTrinucleotide());
             tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(numberStyle);
+
+            tmpCell = row.createCell(2);
+            tmpCell.setCellValue(g.getTotalProbaTrinu0());
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(probaStyle);
 
             tmpCell = row.createCell(3);
             tmpCell.setCellValue(g.getTotalTrinucleotide());
             tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(numberStyle);
+
+            tmpCell = row.createCell(4);
+            tmpCell.setCellValue(g.getTotalProbaTrinu1());
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(probaStyle);
 
             tmpCell = row.createCell(5);
             tmpCell.setCellValue(g.getTotalTrinucleotide());
             tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(numberStyle);
+
+            tmpCell = row.createCell(6);
+            tmpCell.setCellValue(g.getTotalProbaTrinu2());
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(probaStyle);
 
             sheet.autoSizeColumn(0);
             sheet.autoSizeColumn(1);
@@ -232,8 +309,8 @@ public class DefaultFileService implements FileService {
             XSSFCell tmpCell;
             XSSFRow row;
 
-            if((row = sheet.getRow(0)) == null )
-                row = sheet.createRow(0);
+            if ((row = sheet.getRow(7)) == null)
+                row = sheet.createRow(7);
 
             row.createCell(8).setCellValue("Dinucleotide");
             row.createCell(9).setCellValue("Nombre Phase 0");
@@ -241,12 +318,11 @@ public class DefaultFileService implements FileService {
             row.createCell(11).setCellValue("Nombre Phase 1");
             row.createCell(12).setCellValue("Proba Phase 1");
 
-            int i = 1;
-            Set<String> keys = g.getDinuProbaPhase0().keySet();
+            int i = 8;
+            Set<String> keys = g.getDinuStatPhase0().keySet();
 
-            for(String key: keys)
-            {
-                if((row = sheet.getRow(i)) == null)
+            for (String key : keys) {
+                if ((row = sheet.getRow(i)) == null)
                     row = sheet.createRow(i);
 
                 // Set Dinicludotide
@@ -279,7 +355,7 @@ public class DefaultFileService implements FileService {
                 i++;
             }
 
-            if((row = sheet.getRow(i)) == null )
+            if ((row = sheet.getRow(i)) == null)
                 row = sheet.createRow(i);
 
             row.createCell(8).setCellValue("Total");
@@ -287,10 +363,22 @@ public class DefaultFileService implements FileService {
             tmpCell = row.createCell(9);
             tmpCell.setCellValue(g.getTotalDinucleotide());
             tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(numberStyle);
+
+            tmpCell = row.createCell(10);
+            tmpCell.setCellValue(g.getTotalProbaDinu0());
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(probaStyle);
 
             tmpCell = row.createCell(11);
-            tmpCell.setCellValue(g.getTotalTrinucleotide());
+            tmpCell.setCellValue(g.getTotalDinucleotide());
             tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(numberStyle);
+
+            tmpCell = row.createCell(12);
+            tmpCell.setCellValue(g.getTotalProbaDinu1());
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(probaStyle);
 
             sheet.autoSizeColumn(8);
             sheet.autoSizeColumn(9);
@@ -301,29 +389,5 @@ public class DefaultFileService implements FileService {
             return sheet;
         });
     }
-
-//    @Override
-//    public Promise<XSSFWorkbook, Throwable, Void> createWorkbook() {
-//        return deferredManager.when(new Callable<XSSFWorkbook>() {
-//            @Override
-//            public XSSFWorkbook call() throws Exception {
-//                return new XSSFWorkbook();
-//            }
-//        });
-//    }
-//
-//    @Override
-//    public Promise<Void, Throwable, Object> writeWorkbook(final XSSFWorkbook workbook, final String path, final String fileName) {
-//        return deferredManager.when(new DeferredCallable<Void, Object>() {
-//            @Override
-//            public Void call() throws Exception {
-//                FileOutputStream stream = new FileOutputStream(path + fileName);
-//                workbook.write(stream);
-//                stream.close();
-//                workbook.close();
-//                return null;
-//            }
-//        });
-//    }
 
 }

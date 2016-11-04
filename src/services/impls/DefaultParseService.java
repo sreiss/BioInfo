@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
 import models.CodingSequence;
+import models.Gene;
 import models.Kingdom;
 import models.Organism;
 import services.contracts.OrganismService;
@@ -39,21 +40,20 @@ public class DefaultParseService implements ParseService {
         this.executorService = listeningExecutorService;
     }
 
-    public static boolean checkLocator(String locator) {
+    private static boolean checkLocator(String locator) {
         String[] indexes = locator.split("\\.\\.");
         return indexes.length == 2 && Integer.parseInt(indexes[0]) < Integer.parseInt(indexes[1]);
     }
 
-    public static boolean checkSequence(String sequence) {
+    private static boolean checkSequence(String sequence) {
         return (sequence.length() % 3 == 0)
                 && CodingSequence.InitCodon.contains(sequence.substring(0, 3))
                 && CodingSequence.StopCodon.contains(sequence.substring(sequence.length() - 3))
                 && !Pattern.compile(CodingSequence.REGEX_ATGC).matcher(sequence).find();
     }
 
-
-
-    public ListenableFuture<List<String>> extractSequences(final InputStream inputStream) {
+    @Override
+    public ListenableFuture<List<String>> extractSequences(final InputStream inputStream, Gene gene) {
         return executorService.submit(() -> {
             synchronized (this) {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
@@ -100,7 +100,11 @@ public class DefaultParseService implements ParseService {
                                 }
 
                                 if (checkSequence(sequence)) {
+                                    gene.setTotalCds(gene.getTotalCds() + 1);
                                     sequences.add(sequence);
+                                } else {
+                                    gene.setTotalCds(gene.getTotalCds() + 1);
+                                    gene.setTotalUnprocessedCds(gene.getTotalUnprocessedCds() + 1);
                                 }
                             }
 
