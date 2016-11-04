@@ -1,8 +1,8 @@
 package services.contracts;
 
-import java.util.LinkedHashMap;
-import java.util.Set;
+import com.google.common.util.concurrent.ListenableFuture;
+import models.Gene;
 
 public interface StatisticsService {
-
+    ListenableFuture<Gene> computeStatistics(Gene gene);
 }

@@ -32,7 +32,7 @@ public class Organism {
     
     private ArrayList<Gene> genes;
 
-    public Organism(String name, String group, String subGroup, Date updateDate, String[] geneIds, String kingdomId) throws ParseException {
+    public Organism(String name, String group, String subGroup, Date updateDate, String[] geneIds, String kingdomId) {
         this.name = name;
         this.group = group;
         this.subGroup = subGroup;

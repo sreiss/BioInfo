@@ -2,7 +2,7 @@
 <form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="views.MainWindow">
   <grid id="27dc6" binding="mainPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
     <constraints>
-      <xy x="20" y="20" width="500" height="400"/>
+      <xy x="20" y="20" width="839" height="590"/>
     </constraints>
     <properties>
       <focusable value="true"/>
@@ -10,40 +10,111 @@
     </properties>
     <border type="none"/>
     <children>
-      <grid id="97005" binding="bottomPannel" layout-manager="BorderLayout" hgap="0" vgap="0">
+      <grid id="97005" binding="topPannel" layout-manager="BorderLayout" hgap="0" vgap="0">
+        <constraints border-constraint="North"/>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <grid id="1eda4" binding="optionsPannel" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="1">
+            <constraints border-constraint="East"/>
+            <properties>
+              <enabled value="true"/>
+            </properties>
+            <border type="none"/>
+            <children>
+              <component id="e0845" class="javax.swing.JLabel" binding="optionsLabel">
+                <constraints/>
+                <properties>
+                  <text value="Kingdoms"/>
+                </properties>
+              </component>
+              <grid id="3515" binding="rightPannel" layout-manager="BorderLayout" hgap="0" vgap="0">
+                <constraints/>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <grid id="9eea9" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="1">
+                    <constraints border-constraint="Center"/>
+                    <properties/>
+                    <border type="none"/>
+                    <children>
+                      <component id="1e6ac" class="javax.swing.JCheckBox" binding="eukaryotaCheckBox">
+                        <constraints/>
+                        <properties>
+                          <selected value="true"/>
+                          <text value="Eukaryota"/>
+                        </properties>
+                      </component>
+                      <component id="5117a" class="javax.swing.JCheckBox" binding="virusesCheckBox">
+                        <constraints/>
+                        <properties>
+                          <selected value="true"/>
+                          <text value="Viruses"/>
+                        </properties>
+                      </component>
+                      <component id="6396e" class="javax.swing.JCheckBox" binding="prokaryotesCheckBox">
+                        <constraints/>
+                        <properties>
+                          <horizontalAlignment value="11"/>
+                          <selected value="true"/>
+                          <text value="Prokaryota"/>
+                        </properties>
+                      </component>
+                    </children>
+                  </grid>
+                </children>
+              </grid>
+            </children>
+          </grid>
+          <scrollpane id="d325a" binding="kingdomScrollPane">
+            <constraints border-constraint="Center"/>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <component id="96313" class="javax.swing.JTree" binding="kingdomTree">
+                <constraints/>
+                <properties>
+                  <editable value="false"/>
+                  <enabled value="true"/>
+                  <rootVisible value="false"/>
+                  <showsRootHandles value="true"/>
+                </properties>
+                <clientProperties>
+                  <JTree.lineStyle class="java.lang.String" value=""/>
+                </clientProperties>
+              </component>
+            </children>
+          </scrollpane>
+        </children>
+      </grid>
+      <grid id="70ada" binding="middlePannel" layout-manager="BorderLayout" hgap="0" vgap="0">
+        <constraints border-constraint="Center"/>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <scrollpane id="5b24d">
+            <constraints border-constraint="Center"/>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <component id="67b35" class="javax.swing.JTextArea" binding="logTextArea">
+                <constraints/>
+                <properties>
+                  <columns value="0"/>
+                  <rows value="0"/>
+                </properties>
+              </component>
+            </children>
+          </scrollpane>
+        </children>
+      </grid>
+      <grid id="8f352" binding="bottomPannel" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="1">
         <constraints border-constraint="South"/>
         <properties/>
         <border type="none"/>
         <children>
-          <grid id="78afc" binding="actionPannel" layout-manager="FlowLayout" hgap="20" vgap="10" flow-align="1">
-            <constraints border-constraint="East"/>
-            <properties/>
-            <border type="none"/>
-            <children>
-              <component id="530bb" class="javax.swing.JButton" binding="executeButton">
-                <constraints/>
-                <properties>
-                  <background color="-1250068"/>
-                  <enabled value="true"/>
-                  <hideActionText value="false"/>
-                  <text value="Execute"/>
-                  <verticalTextPosition value="0"/>
-                </properties>
-                <clientProperties>
-                  <hideActionText class="java.lang.Boolean" value="false"/>
-                </clientProperties>
-              </component>
-              <component id="12234" class="javax.swing.JButton" binding="interruptButton">
-                <constraints/>
-                <properties>
-                  <enabled value="false"/>
-                  <text value="Interrupt"/>
-                </properties>
-              </component>
-            </children>
-          </grid>
           <grid id="4eedc" binding="progressionPannel" layout-manager="BorderLayout" hgap="0" vgap="0">
-            <constraints border-constraint="Center"/>
+            <constraints/>
             <properties/>
             <border type="none"/>
             <children>
@@ -76,60 +147,35 @@
               </grid>
             </children>
           </grid>
-        </children>
-      </grid>
-      <scrollpane id="d325a" binding="kingdomScrollPane">
-        <constraints border-constraint="Center"/>
-        <properties/>
-        <border type="none"/>
-        <children>
-          <component id="96313" class="javax.swing.JTree" binding="kingdomTree">
+          <grid id="78afc" binding="actionPannel" layout-manager="FlowLayout" hgap="20" vgap="10" flow-align="1">
             <constraints/>
-            <properties>
-              <editable value="false"/>
-              <enabled value="true"/>
-              <rootVisible value="false"/>
-              <showsRootHandles value="true"/>
-            </properties>
-            <clientProperties>
-              <JTree.lineStyle class="java.lang.String" value=""/>
-            </clientProperties>
-          </component>
-        </children>
-      </scrollpane>
-      <grid id="3515" binding="rightPannel" layout-manager="BorderLayout" hgap="0" vgap="0">
-        <constraints border-constraint="East"/>
-        <properties/>
-        <border type="none"/>
-        <children>
-          <grid id="1eda4" binding="optionsPannel" layout-manager="FlowLayout" hgap="20" vgap="10" flow-align="3">
-            <constraints border-constraint="North"/>
-            <properties>
-              <enabled value="true"/>
-            </properties>
+            <properties/>
             <border type="none"/>
             <children>
-              <component id="e0845" class="javax.swing.JLabel" binding="optionsLabel">
+              <component id="530bb" class="javax.swing.JButton" binding="executeButton">
                 <constraints/>
                 <properties>
-                  <text value="Kingdoms"/>
+                  <background color="-1250068"/>
+                  <enabled value="true"/>
+                  <hideActionText value="false"/>
+                  <text value="Execute"/>
+                  <verticalTextPosition value="0"/>
+                </properties>
+                <clientProperties>
+                  <hideActionText class="java.lang.Boolean" value="false"/>
+                </clientProperties>
+              </component>
+              <component id="12234" class="javax.swing.JButton" binding="interruptButton">
+                <constraints/>
+                <properties>
+                  <enabled value="false"/>
+                  <text value="Interrupt"/>
                 </properties>
               </component>
             </children>
           </grid>
         </children>
       </grid>
-      <scrollpane id="abd97">
-        <constraints border-constraint="West"/>
-        <properties/>
-        <border type="none"/>
-        <children>
-          <component id="67b35" class="javax.swing.JTextArea" binding="logTextArea">
-            <constraints/>
-            <properties/>
-          </component>
-        </children>
-      </scrollpane>
     </children>
   </grid>
 </form>

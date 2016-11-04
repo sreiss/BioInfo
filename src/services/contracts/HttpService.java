@@ -2,12 +2,11 @@ package services.contracts;
 
 import com.google.api.client.http.HttpContent;
 import com.google.api.client.http.HttpResponse;
-import org.jdeferred.Promise;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.List;
+import java.util.concurrent.Future;
 
 public interface HttpService {
-    Promise<HttpResponse, Throwable, Object> get(final String url);
-    Promise<HttpResponse, Throwable, Object> post(final String url, HttpContent content);
-    Promise<List<HttpResponse>, Throwable, Object> get(final List<String> urls);
+    ListenableFuture<HttpResponse> get(final String url);
 }

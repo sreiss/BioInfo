@@ -1,12 +1,11 @@
 package services.contracts;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import models.Organism;
-import org.jdeferred.Promise;
-
 import java.io.InputStream;
 import java.util.List;
 
 public interface ParseService {
-    Promise<List<Organism>, Throwable, Object> extractOrganismList(InputStream inputStream, String kingdomId);
-    Promise<List<String>, Throwable, Object> extractSequences(final InputStream inputStream);
+    ListenableFuture<List<Organism>> extractOrganismList(InputStream inputStream, String kingdomId);
+    ListenableFuture<List<String>> extractSequences(final InputStream inputStream);
 }
