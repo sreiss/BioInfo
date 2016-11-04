@@ -1,130 +1,134 @@
 package services.impls;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
 import models.CodingSequence;
+import models.Gene;
 import models.Kingdom;
 import models.Organism;
-import org.jdeferred.DeferredCallable;
-import org.jdeferred.DeferredManager;
-import org.jdeferred.DonePipe;
-import org.jdeferred.Promise;
-import org.jdeferred.impl.DeferredObject;
-import org.jdeferred.multiple.MasterProgress;
-import org.jdeferred.multiple.MultipleResults;
-import org.jdeferred.multiple.OneReject;
-import org.jdeferred.multiple.OneResult;
 import services.contracts.OrganismService;
 import services.contracts.ParseService;
+import services.contracts.TaskProgress;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntBinaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class DefaultParseService implements ParseService {
-    private final DeferredManager deferredManager;
     private final OrganismService organismService;
+    private final ListeningExecutorService executorService;
 
-    @Inject
-    public DefaultParseService(DeferredManager deferredManager, OrganismService organismService) {
-        this.deferredManager = deferredManager;
-        this.organismService = organismService;
+    private Date parseDateColumn(String column) throws ParseException {
+        if (column == null || column.equals("-")) return null;
+        DateFormat dateFormat = new SimpleDateFormat("dd/mm/yyyy", Locale.FRENCH);
+        return dateFormat.parse(column);
     }
 
-    public static boolean checkLocator(String locator) {
+    @Inject
+    public DefaultParseService(OrganismService organismService, ListeningExecutorService listeningExecutorService) {
+        this.organismService = organismService;
+        this.executorService = listeningExecutorService;
+    }
+
+    private static boolean checkLocator(String locator) {
         String[] indexes = locator.split("\\.\\.");
         return indexes.length == 2 && Integer.parseInt(indexes[0]) < Integer.parseInt(indexes[1]);
     }
 
-    public static boolean checkSequence(String sequence) {
+    private static boolean checkSequence(String sequence) {
         return (sequence.length() % 3 == 0)
-                && CodingSequence.InitCodon.contains(sequence)
+                && CodingSequence.InitCodon.contains(sequence.substring(0, 3))
                 && CodingSequence.StopCodon.contains(sequence.substring(sequence.length() - 3))
                 && !Pattern.compile(CodingSequence.REGEX_ATGC).matcher(sequence).find();
     }
 
-    public Promise<List<String>, Throwable, Object> extractSequences(final InputStream inputStream) {
-        return deferredManager.when(new DeferredCallable<List<String>, Object>() {
-            @Override
-            public List<String> call() throws Exception {
-                synchronized (this) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-                    List<String> sequences = new ArrayList<String>();
-                    String line;
-                    boolean running;
+    @Override
+    public ListenableFuture<List<String>> extractSequences(final InputStream inputStream, Gene gene) {
+        return executorService.submit(() -> {
+            synchronized (this) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                List<String> sequences = new ArrayList<String>();
+                String line;
+                boolean running;
 
-                    while ((line = reader.readLine()) != null) {
-                        if (line.startsWith(CodingSequence.START_CDS_INFO)) {
-                            Pattern pattern = Pattern.compile(CodingSequence.REGEX_COMPLETE);
-                            Matcher matcher = pattern.matcher(line);
+                while ((line = reader.readLine()) != null) {
+                    if (line.startsWith(CodingSequence.START_CDS_INFO)) {
+                        Pattern pattern = Pattern.compile(CodingSequence.REGEX_COMPLETE);
+                        Matcher matcher = pattern.matcher(line);
 
-                            if (matcher.find()) {
-                                String s = matcher.group();
-                                pattern = Pattern.compile(CodingSequence.REGEX_LOCATOR);
-                                matcher = pattern.matcher(s);
-                                boolean locatorsOk = true;
-                                while (matcher.find() && locatorsOk) {
-                                    locatorsOk = checkLocator(matcher.group());
-                                }
+                        if (matcher.find()) {
+                            String s = matcher.group();
+                            pattern = Pattern.compile(CodingSequence.REGEX_LOCATOR);
+                            matcher = pattern.matcher(s);
+                            boolean locatorsOk = true;
+                            while (matcher.find() && locatorsOk) {
+                                locatorsOk = checkLocator(matcher.group());
+                            }
 
-                                if (locatorsOk) {
-                                    String sequence = "", line2;
+                            if (locatorsOk) {
+                                String sequence = "", line2;
 
-                                    running = true;
-                                    while (running) {
-                                        reader.mark(1);
-                                        int character = reader.read();
-                                        if (character == -1) {
+                                running = true;
+                                while (running) {
+                                    reader.mark(1);
+                                    int character = reader.read();
+                                    if (character == -1) {
+                                        running = false;
+                                    } else {
+                                        reader.reset();
+                                        if (character == CodingSequence.START_CDS_INFO.charAt(0)) {
                                             running = false;
                                         } else {
-                                            reader.reset();
-                                            if (character == CodingSequence.START_CDS_INFO.charAt(0)) {
+                                            line2 = reader.readLine();
+                                            if (line2 == null) {
                                                 running = false;
                                             } else {
-                                                line2 = reader.readLine();
-                                                if (line2 == null) {
-                                                    running = false;
-                                                } else {
-                                                    sequence += line2;
-                                                }
+                                                sequence += line2;
                                             }
                                         }
                                     }
-
-                                    if (checkSequence(sequence)) {
-                                        sequences.add(sequence);
-                                    }
                                 }
 
+                                if (checkSequence(sequence)) {
+                                    gene.setTotalCds(gene.getTotalCds() + 1);
+                                    sequences.add(sequence);
+                                } else {
+                                    gene.setTotalCds(gene.getTotalCds() + 1);
+                                    gene.setTotalUnprocessedCds(gene.getTotalUnprocessedCds() + 1);
+                                }
                             }
+
                         }
                     }
-
-                    reader.close();
-                    inputStream.close();
-
-                    return sequences;
                 }
+
+                reader.close();
+                inputStream.close();
+
+                return sequences;
             }
         });
     }
 
     @Override
-    public Promise<List<Organism>, Throwable, Object> extractOrganismList(final InputStream inputStream, final String kingdomId) {
-        return deferredManager.when(new DeferredCallable<List<Promise<Organism, Throwable, Object>>, Object>() {
-            @Override
-            public List<Promise<Organism, Throwable, Object>> call() throws Exception {
-                List<Promise<Organism, Throwable, Object>> promises = new ArrayList<Promise<Organism, Throwable, Object>>();
-                DateFormat dateFormat = new SimpleDateFormat("dd/mm/yyyy", Locale.FRENCH);
-                String sep = "\t";
+    public ListenableFuture<List<Organism>> extractOrganismList(final InputStream inputStream, final String kingdomId) {
+        return executorService.submit(() -> {
+            List<Organism> organisms = new ArrayList<Organism>();
+            String sep = "\t";
 
-                String line;
+            String line;
 
+            synchronized (DefaultParseService.this) {
                 InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
                 BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
                 bufferedReader.readLine();
@@ -143,18 +147,21 @@ public class DefaultParseService implements ParseService {
                         subGroup = data[5];
                         geneIds = extractGeneIds(data[9]);
                         // TODO: udpateDate index: 15
+                        updateDate = parseDateColumn(data[15]);
                     } else if (Kingdom.Prokaryotes.equals(kingdomId)) {
                         name = data[0];
                         group = data[5];
                         subGroup = data[6];
                         geneIds = extractGeneIds(data[10]);
                         // TODO: updateDate index: 16
+                        updateDate = parseDateColumn(data[16]);
                     } else if (Kingdom.Viruses.equals(kingdomId)) {
                         name = data[0];
                         group = data[2];
                         subGroup = data[3];
                         geneIds = extractGeneIds(data[7]);
                         // TODO: updateDate index: 11
+                        updateDate = parseDateColumn(data[11]);
                     } else {
                         name = null;
                         group = null;
@@ -162,7 +169,7 @@ public class DefaultParseService implements ParseService {
                         geneIds = null;
                     }
 
-                    promises.add(organismService.createOrganism(name, group, subGroup, updateDate, geneIds, kingdomId));
+                    organisms.add(organismService.createOrganism(name, group, subGroup, updateDate, geneIds, kingdomId));
                     /*
                     if (data.length > updatedDateIndex) {
                         if (data[updatedDateIndex].compareTo("-") == 0) {
@@ -181,28 +188,14 @@ public class DefaultParseService implements ParseService {
                 inputStream.close();
                 inputStreamReader.close();
                 bufferedReader.close();
+            }
 
-                return promises;
-            }
-        }).then(new DonePipe<List<Promise<Organism, Throwable, Object>>, MultipleResults, OneReject, MasterProgress>() {
-            @Override
-            public Promise<MultipleResults, OneReject, MasterProgress> pipeDone(List<Promise<Organism, Throwable, Object>> promises) {
-                return deferredManager.when(promises.toArray(new Promise[promises.size()]));
-            }
-        }).then(new DonePipe<MultipleResults, List<Organism>, Throwable, Object>() {
-            @Override
-            public Promise<List<Organism>, Throwable, Object> pipeDone(MultipleResults oneResults) {
-                List<Organism> organisms = new ArrayList<Organism>();
-                for (OneResult oneResult: oneResults) {
-                    organisms.add((Organism) oneResult.getResult());
-                }
-                return new DeferredObject<List<Organism>, Throwable, Object>().resolve(organisms);
-            }
+            return organisms;
         });
+
     }
 
-    private String[] extractGeneIds(String segmentsColumn)
-    {
+    private String[] extractGeneIds(String segmentsColumn){
         String[] segments;
         if (segmentsColumn.compareTo("-") == 0) {
             return null;

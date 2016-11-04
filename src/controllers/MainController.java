@@ -1,62 +1,54 @@
 package controllers;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import models.Kingdom;
-import org.apache.poi.ss.formula.functions.T;
-import org.jdeferred.*;
-import org.jdeferred.impl.DeferredObject;
-import org.jdeferred.multiple.MasterProgress;
-import org.jdeferred.multiple.MultipleResults;
-import org.jdeferred.multiple.OneReject;
-import org.jdeferred.multiple.OneResult;
-import services.contracts.ConfigService;
-import services.contracts.DataService;
-import services.contracts.FileService;
-import services.contracts.TaskProgress;
+import services.contracts.*;
 import views.MainWindow;
-
+import javax.annotation.Nullable;
 import javax.swing.*;
-import javax.swing.tree.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.io.File;
+import javax.swing.tree.TreeModel;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.Observable;
+import java.util.Observer;
+import java.util.concurrent.CancellationException;
 
-public class MainController {
-    private final DataService dataService;
+public class MainController implements Observer {
+    private final KingdomService kingdomService;
     private final MainWindow view;
     private final FileService fileService;
     private final ConfigService configService;
-    private final DeferredManager deferredManager;
+    private final ProgressService progressService;
+    ListenableFuture<List<Kingdom>> currentFuture;
 
     @Inject
-    public MainController(final DataService dataService, final FileService fileService, final ConfigService configService, final DeferredManager deferredManager) throws InterruptedException {
-        this.dataService = dataService;
+    public MainController(final KingdomService kingdomService, final FileService fileService, final ConfigService configService, final ProgressService progressService) throws InterruptedException {
+        this.kingdomService = kingdomService;
         this.fileService = fileService;
         this.configService = configService;
-        this.deferredManager = deferredManager;
+        this.progressService = progressService;
+
+        progressService.addObserver(this);
 
         view = new MainWindow();
         view.setTitle("Test");
         view.pack();
         view.setVisible(true);
 
-        view.addExecuteListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                acquire();
-                ((JButton) e.getSource()).setEnabled(false);
-                view.getInterruptButton().setEnabled(true);
-            }
+        view.addExecuteListener(e -> {
+            acquire();
+            ((JButton) e.getSource()).setEnabled(false);
+            view.getInterruptButton().setEnabled(true);
         });
 
-        view.addInteruptListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                ((JButton) e.getSource()).setEnabled(false);
+        view.addInteruptListener(e -> {
+            if (currentFuture != null) {
+                currentFuture.cancel(true);
             }
+            ((JButton) e.getSource()).setEnabled(false);
         });
 
         view.getKingdomTree().setModel(null);
@@ -66,19 +58,18 @@ public class MainController {
     }
 
     private void refreshTree() {
-        configService.getProperty("dataDir")
-                .then(new DonePipe<String, TreeModel, Throwable, Object>() {
-                    @Override
-                    public Promise<TreeModel, Throwable, Object> pipeDone(String path) {
-                        return fileService.buildTree(path);
-                    }
-                })
-                .then(new DoneCallback<TreeModel>() {
-                    @Override
-                    public void onDone(TreeModel treeModel) {
-                        view.getKingdomTree().setModel(treeModel);
-                    }
-                });
+        String dataDir = configService.getProperty("dataDir");
+        Futures.addCallback(fileService.buildTree(dataDir), new FutureCallback<TreeModel>() {
+            @Override
+            public void onSuccess(@Nullable TreeModel treeModel) {
+                view.getKingdomTree().setModel(treeModel);
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+
+            }
+        });
     }
 
     public void acquire() {
@@ -96,54 +87,59 @@ public class MainController {
             kingdoms.add(Kingdom.Viruses);
         }
 
-        dataService.acquire(kingdoms)
-                .always(new AlwaysCallback<Void, Throwable>() {
-                    @Override
-                    public void onAlways(Promise.State state, Void aVoid, Throwable throwable) {
-                        view.getExecuteButton().setEnabled(true);
-                        view.getInterruptButton().setEnabled(false);
-                    }
-                })
-                .progress(new ProgressCallback<Object>() {
-                    @Override
-                    public void onProgress(Object progress) {
-                        if (progress instanceof TaskProgress) {
-                            synchronized (this) {
-                                TaskProgress taskProgress = (TaskProgress) progress;
-                                switch (taskProgress.getStep()) {
-                                    case KingdomsCreation:
-                                        view.updateGlobalProgressionText("Kingdoms creation started.");
-                                        break;
-                                    case DirectoriesCreationFinished:
-                                        view.updateGlobalProgressionText("Directories created.");
-                                        refreshTree();
-                                        break;
-                                    default:
-                                        view.setGlobalProgressionBar(((TaskProgress) progress).getTotal());
-                                        break;
-                                }
-                            }
-                        }
-                    }
-                })
-                .done(new DoneCallback<Void>() {
-                    @Override
-                    public void onDone(Void result) {
-                        synchronized (this) {
-                            view.updateGlobalProgressionText("Update finished.");
-                            view.setGlobalProgressionBar(0);
-                        }
-                    }
-                })
-                .fail(new FailCallback<Throwable>() {
-                    @Override
-                    public void onFail(Throwable throwable) {
-                        synchronized (this) {
-                            System.err.println(throwable.toString());
-                            view.updateGlobalProgressionText("An error occured.");
-                            view.setGlobalProgressionBar(0);
-                        }
-                    }
-                });
+        ListenableFuture<List<Kingdom>> acquireFuture = kingdomService.createKingdomTrees(kingdoms);
+        currentFuture = acquireFuture;
+        Futures.addCallback(acquireFuture, new FutureCallback<List<Kingdom>>(){
+            @Override
+            public void onSuccess(@Nullable List<Kingdom> kingdoms) {
+                view.updateGlobalProgressionText("Update finished.");
+                view.setGlobalProgressionBar(0);
+                view.getExecuteButton().setEnabled(true);
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                if (throwable instanceof CancellationException) {
+                    view.updateGlobalProgressionText("Processing interrupted.");
+                    view.setGlobalProgressionBar(0);
+                    view.getExecuteButton().setEnabled(true);
+                    view.getInterruptButton().setEnabled(false);
+                } else {
+                    System.err.println(throwable.toString());
+                    view.updateGlobalProgressionText("An error occured.");
+                    view.setGlobalProgressionBar(0);
+                    view.getExecuteButton().setEnabled(true);
+                    view.getInterruptButton().setEnabled(false);
+                }
+            }
+        });
+    }
+
+    @Override
+    public void update(Observable o, Object arg) {
+        if (o instanceof ProgressService) {
+            TaskProgress progress = (TaskProgress) arg;
+            switch (progress.getStep()) {
+                case KingdomGathering:
+                    view.updateGlobalProgressionText("Gathering kingdoms.");
+                    break;
+                case KingdomsCreation:
+                    break;
+                case DirectoriesCreationFinished:
+                    view.updateGlobalProgressionText("Directories created.");
+                    refreshTree();
+                    break;
+                case OrganismProcessing:
+                    view.updateGlobalProgressionText("Processing organisms.");
+                    break;
+                default:
+                    break;
+            }
+            if (view.getGlobalProgressionBar().getMaximum() != progress.getTotal().get()) {
+                view.setGlobalProgressionBar(progress.getTotal().get());
+            }
+            view.updateGlobalProgressionBar(progress.getProgress().get());
+            view.updateGlobalProgressionText(String.format("Progression: %d/%d", progress.getProgress().get(), progress.getTotal().get()));
+        }
     }
 }

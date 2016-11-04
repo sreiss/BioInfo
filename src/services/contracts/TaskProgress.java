@@ -1,46 +1,22 @@
 package services.contracts;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class TaskProgress {
-    private final int total;
-    private int progress;
-    private String text;
-    private Type type;
+    private AtomicInteger total;
+    private AtomicInteger progress;
     private Step step;
+    private String message;
 
     public enum Step {
-        KingdomsCreation, DirectoriesCreationFinished
+        KingdomsCreation, DirectoriesCreationFinished, OrganismTreatment, OrganismProcessing, KingdomGathering
     }
 
-    public enum Type {
-        Text,
-        Number
-    }
-
-    public TaskProgress(int total) {
-        this.total = total;
-        this.type = type;
-    }
-
-    public TaskProgress(int total, Type type, Step step) {
-        this.total = total;
-        this.type = type;
-        this.step = step;
-    }
-
-    public int getTotal() {
-        return total;
-    }
-
-    public int getProgress() {
-        return progress;
-    }
-
-    public void setProgress(int progress) {
-        this.progress = progress;
-    }
-
-    public Type getType() {
-        return type;
+    public TaskProgress() {
+        this.total = new AtomicInteger();
+        this.progress = new AtomicInteger();
+        this.step = null;
+        this.message = null;
     }
 
     public Step getStep() {
@@ -49,5 +25,21 @@ public class TaskProgress {
 
     public void setStep(Step step) {
         this.step = step;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public AtomicInteger getTotal() {
+        return total;
+    }
+
+    public AtomicInteger getProgress() {
+        return progress;
+    }
+
+    public String getMessage() {
+        return message;
     }
 }

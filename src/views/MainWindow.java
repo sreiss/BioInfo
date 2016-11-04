@@ -75,10 +75,10 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
 
     public void setGlobalProgressionBar(int taskCount) {
         globalProgressionBar.setMaximum(taskCount);
-        globalProgressionBar.setIndeterminate(false);
-        if (taskCount > 0) {
-            progressionLabel.setText("Traitement de " + taskCount + " éléments.");
-        }
+        //globalProgressionBar.setIndeterminate(false);
+//        if (taskCount > 0) {
+//            progressionLabel.setText("Traitement de " + taskCount + " éléments.");
+//        }
         progressionPannel.setVisible(true);
     }
 
@@ -89,9 +89,9 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
     }
 
     public void updateGlobalProgressionBar(int value) {
-        if (value < globalProgressionBar.getMaximum()) {
+        if (value <= globalProgressionBar.getMaximum()) {
             globalProgressionBar.setValue(value);
-            progressionLabel.setText("Progression " + value + "/" + globalProgressionBar.getMaximum());
+            //progressionLabel.setText("Progression " + value + "/" + globalProgressionBar.getMaximum());
         } else {
             progressionPannel.setVisible(false);
         }
@@ -100,10 +100,10 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
     public void updateGlobalProgressionText(String text) {
         if (!text.equals("")) {
             progressionLabel.setText(text);
-            globalProgressionBar.setIndeterminate(true);
+            //globalProgressionBar.setIndeterminate(true);
             progressionPannel.setVisible(true);
         } else {
-            globalProgressionBar.setIndeterminate(false);
+           // globalProgressionBar.setIndeterminate(false);
             progressionPannel.setVisible(false);
         }
     }
@@ -134,6 +134,10 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
 
     public JCheckBox getVirusesCheckBox() {
         return virusesCheckBox;
+    }
+
+    public JProgressBar getGlobalProgressionBar() {
+        return globalProgressionBar;
     }
 
     /**
@@ -237,4 +241,6 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
     public JComponent $$$getRootComponent$$$() {
         return mainPanel;
     }
+
+
 }

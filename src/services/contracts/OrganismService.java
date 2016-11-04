@@ -1,16 +1,14 @@
 package services.contracts;
 
-import models.Gene;
+import com.google.common.util.concurrent.ListenableFuture;
+import models.Kingdom;
 import models.Organism;
-import org.jdeferred.Promise;
-
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
 
 public interface OrganismService {
-    Promise<Organism, Throwable, Object> createOrganism(String name, String group, String subGroup, Date updateDate, String[] geneIds, String kingdomId);
-    Promise<List<Organism>, Throwable, Object> extractGenes(List<Organism> organisms);
-    Promise<Organism, Throwable, Object> extractGenes(Organism organism);
-    Promise<List<Organism>, Throwable, Object> processGenes(List<Organism> organisms);
+    Organism createOrganism(String name, String group, String subGroup, Date updateDate, String[] geneIds, String kingdomId);
+    ListenableFuture<Kingdom> processOrganisms(Kingdom kingdom);
+//    ListenableFuture<List<Organism>> extractGenes(List<Organism> organisms);
+//    ListenableFuture<Organism> extractGenes(Organism organism);
+//    ListenableFuture<List<Organism>> processGenes(List<Organism> organisms);
 }
