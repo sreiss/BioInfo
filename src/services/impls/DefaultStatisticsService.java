@@ -1,5 +1,6 @@
 package services.impls;
 
+import com.google.common.base.Function;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -9,20 +10,17 @@ import models.Organism;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import services.contracts.FileService;
-import services.contracts.GeneService;
 import services.contracts.StatisticsService;
-import java.util.ArrayList;
-import java.util.List;
+
+import javax.annotation.Nullable;
 import java.util.Set;
 
 public class DefaultStatisticsService implements StatisticsService {
-    private final GeneService geneService;
     private final ListeningExecutorService executorService;
     private final FileService fileService;
 
     @Inject
-    public DefaultStatisticsService(GeneService geneService, ListeningExecutorService listeningExecutorService, FileService fileService) {
-        this.geneService = geneService;
+    public DefaultStatisticsService(ListeningExecutorService listeningExecutorService, FileService fileService) {
         this.executorService = listeningExecutorService;
         this.fileService = fileService;
     }
@@ -72,16 +70,16 @@ public class DefaultStatisticsService implements StatisticsService {
         });
     }
 
-    private ListenableFuture<Gene> returnGene(Gene gene) {
-        return executorService.submit(() -> gene);
-    }
-
-    public ListenableFuture<Gene> computeStatistics(Organism organism, final Gene gene, XSSFWorkbook workbook) {
-        List<ListenableFuture<Gene>> computeFutures = new ArrayList<>();
-        computeFutures.add(computeTrinucleotidesProbabilities(gene));
-        computeFutures.add(computeDinucleotideProbabilities(gene));
-        ListenableFuture<XSSFWorkbook> saveToFileFuture = Futures.transformAsync(Futures.allAsList(computeFutures), genes -> fileService.fillWorkbook(organism, gene, workbook), executorService);
-        return Futures.transformAsync(saveToFileFuture, modifiedWorkbook -> returnGene(gene), executorService);
+    public ListenableFuture<XSSFSheet> computeStatistics(Organism organism, Gene gene, XSSFWorkbook workbook) {
+        ListenableFuture<Gene> dinuFuture = computeDinucleotideProbabilities(gene);
+        ListenableFuture<Gene> trinuFuture = Futures.transformAsync(dinuFuture, this::computeTrinucleotidesProbabilities, executorService);
+        return Futures.transform(trinuFuture, new Function<Gene, XSSFSheet>() {
+            @Nullable
+            @Override
+            public XSSFSheet apply(@Nullable Gene computedGene) {
+                return fileService.fillWorkbook(organism, computedGene, workbook);
+            }
+        }, executorService);
     }
 
 //

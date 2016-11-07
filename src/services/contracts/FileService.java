@@ -3,18 +3,20 @@ package services.contracts;
 import com.google.common.util.concurrent.ListenableFuture;
 import models.Gene;
 import models.Organism;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import javax.swing.tree.TreeModel;
+import java.io.IOException;
 import java.util.List;
 
 public interface FileService {
     ListenableFuture<TreeModel> buildTree(String path);
 
-    ListenableFuture<XSSFWorkbook> createWorkbook();
+    XSSFWorkbook createWorkbook();
 
-    ListenableFuture<XSSFWorkbook> fillWorkbook(Organism organism, Gene gene, XSSFWorkbook workbook);
+    XSSFSheet fillWorkbook(Organism organism, Gene gene, XSSFWorkbook workbook);
 
-    ListenableFuture<Void> writeWorkbook(XSSFWorkbook workbook, String path, String fileName);
+    void writeWorkbook(XSSFWorkbook workbook, String path, String fileName) throws IOException;
 
-    ListenableFuture<List<Boolean>> createDirectories(List<String> paths) throws InterruptedException;
+    List<Boolean> createDirectories(List<String> paths);
 }

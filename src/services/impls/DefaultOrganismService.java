@@ -1,5 +1,6 @@
 package services.impls;
 
+import com.google.common.base.Function;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -9,6 +10,9 @@ import models.Kingdom;
 import models.Organism;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import services.contracts.*;
+
+import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.*;
 
 public class DefaultOrganismService implements OrganismService {
@@ -41,11 +45,7 @@ public class DefaultOrganismService implements OrganismService {
 
         List<ListenableFuture<Organism>> processGenesFutures = new ArrayList<>();
         for (Organism organism: organisms) {
-            processGenesFutures.add(Futures.transformAsync(processGenes(organism), processedOrganism -> {
-                progress.getProgress().incrementAndGet();
-                progressService.invalidateProgress();
-                return returnOrganism(processedOrganism);
-            }, executorService));
+            processGenesFutures.add(processGenes(organism));
         }
         ListenableFuture<List<Organism>> organismFutures = Futures.allAsList(processGenesFutures);
         return Futures.transformAsync(organismFutures, processedOrganisms -> {
@@ -58,20 +58,25 @@ public class DefaultOrganismService implements OrganismService {
         return executorService.submit(() -> kingdom);
     }
 
-    private ListenableFuture<Organism> returnOrganism(Organism organism) {
-        return executorService.submit(() -> organism);
-    }
-
-    private ListenableFuture<List<Gene>> returnGenes(List<Gene> genes) {
-        return executorService.submit(() -> genes);
-    }
-
     private ListenableFuture<Organism> processGenes(Organism organism) {
         String[] geneIds = organism.getGeneIds();
         // We do not return the genes in order not to consume too much memory.
-        ListenableFuture<XSSFWorkbook> createWorkbookFuture = fileService.createWorkbook();
-        ListenableFuture<Void> genesFuture = Futures.transformAsync(createWorkbookFuture, workbook -> geneService.processGenes(organism, workbook, geneIds, organism.getPath(), executorService);
-        return Futures.transformAsync(genesFuture, aVoid -> returnOrganism(organism), executorService);
+        XSSFWorkbook workbook = fileService.createWorkbook();
+        ListenableFuture<XSSFWorkbook> genesFuture = geneService.processGenes(organism, workbook, geneIds, organism.getPath());
+        return Futures.transform(genesFuture, new Function<XSSFWorkbook, Organism>() {
+            @Nullable
+            @Override
+            public Organism apply(@Nullable XSSFWorkbook computedWorkbook) {
+                try {
+                    progressService.getCurrentProgress().getProgress().incrementAndGet();
+                    progressService.invalidateProgress();
+                    fileService.writeWorkbook(computedWorkbook, organism.getPath(), organism.getName());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                return organism;
+            }
+        });
     }
 
 //                })

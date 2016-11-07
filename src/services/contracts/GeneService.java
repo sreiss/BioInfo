@@ -10,5 +10,5 @@ public interface GeneService {
 //    Promise<Gene, Throwable, Void> extractStatisticsSequenceForTrinucleotides(String sequence, Gene gene);
 //    Promise<Gene, Throwable, Void> extractStatisticsSequenceForDinucleotides(String sequence, Gene gene);
 //    Promise<List<Gene>, Throwable, Object> processGenes(List<String> geneIds);
-    ListenableFuture<Void> processGenes(Organism organism, XSSFWorkbook workbook, String[] geneIds, String path);
+    ListenableFuture<XSSFWorkbook> processGenes(Organism organism, XSSFWorkbook workbook, String[] geneIds, String path);
 }

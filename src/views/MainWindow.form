@@ -11,7 +11,7 @@
     <border type="none"/>
     <children>
       <grid id="97005" binding="topPannel" layout-manager="BorderLayout" hgap="0" vgap="0">
-        <constraints border-constraint="North"/>
+        <constraints border-constraint="Center"/>
         <properties/>
         <border type="none"/>
         <children>
@@ -82,27 +82,6 @@
                 <clientProperties>
                   <JTree.lineStyle class="java.lang.String" value=""/>
                 </clientProperties>
-              </component>
-            </children>
-          </scrollpane>
-        </children>
-      </grid>
-      <grid id="70ada" binding="middlePannel" layout-manager="BorderLayout" hgap="0" vgap="0">
-        <constraints border-constraint="Center"/>
-        <properties/>
-        <border type="none"/>
-        <children>
-          <scrollpane id="5b24d">
-            <constraints border-constraint="Center"/>
-            <properties/>
-            <border type="none"/>
-            <children>
-              <component id="67b35" class="javax.swing.JTextArea" binding="logTextArea">
-                <constraints/>
-                <properties>
-                  <columns value="0"/>
-                  <rows value="0"/>
-                </properties>
               </component>
             </children>
           </scrollpane>

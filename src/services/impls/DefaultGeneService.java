@@ -1,13 +1,18 @@
 package services.impls;
 
 import com.google.api.client.http.HttpResponse;
+import com.google.common.base.Function;
 import com.google.common.util.concurrent.*;
 import com.google.inject.Inject;
 import models.CodingSequence;
 import models.Gene;
 import models.Organism;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import services.contracts.*;
+
+import javax.annotation.Nullable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -36,34 +41,29 @@ public class DefaultGeneService implements GeneService {
         return httpService.get(url);
     }
 
-    private ListenableFuture<InputStream> getInputStream(HttpResponse response) {
-        return executorService.submit(response::getContent);
-    }
-
     private ListenableFuture<List<String>> extractSequences(InputStream inputStream, Gene gene) {
         return parseService.extractSequences(inputStream, gene);
     }
 
-    private ListenableFuture<Gene> createGene(final String name, final String path, final int totalDinucleotides, final int totalTrinucleotides) {
-        return executorService.submit(() -> {
-            Gene gene = new Gene(name, path, totalDinucleotides, totalTrinucleotides);
+    private Gene createGene(final String name, final String path, final int totalDinucleotides, final int totalTrinucleotides) {
 
-            gene.setTrinuStatPhase0(initLinkedHashMap());
-            gene.setTrinuStatPhase1(initLinkedHashMap());
-            gene.setTrinuStatPhase2(initLinkedHashMap());
+        Gene gene = new Gene(name, path, totalDinucleotides, totalTrinucleotides);
 
-            gene.setTrinuProbaPhase0(initLinkedHashMapProba());
-            gene.setTrinuProbaPhase1(initLinkedHashMapProba());
-            gene.setTrinuProbaPhase2(initLinkedHashMapProba());
+        gene.setTrinuStatPhase0(initLinkedHashMap());
+        gene.setTrinuStatPhase1(initLinkedHashMap());
+        gene.setTrinuStatPhase2(initLinkedHashMap());
 
-            gene.setDinuStatPhase0(initLinkedHashMapDinucleo());
-            gene.setDinuStatPhase1(initLinkedHashMapDinucleo());
+        gene.setTrinuProbaPhase0(initLinkedHashMapProba());
+        gene.setTrinuProbaPhase1(initLinkedHashMapProba());
+        gene.setTrinuProbaPhase2(initLinkedHashMapProba());
 
-            gene.setDinuProbaPhase0(initLinkedHashMapDinucleoProba());
-            gene.setDinuProbaPhase1(initLinkedHashMapDinucleoProba());
+        gene.setDinuStatPhase0(initLinkedHashMapDinucleo());
+        gene.setDinuStatPhase1(initLinkedHashMapDinucleo());
 
-            return gene;
-        });
+        gene.setDinuProbaPhase0(initLinkedHashMapDinucleoProba());
+        gene.setDinuProbaPhase1(initLinkedHashMapDinucleoProba());
+
+        return gene;
     }
 
     private ListenableFuture<Gene> extractStatisticsSequenceForTrinucleotides(final String sequence, final Gene gene) {
@@ -131,47 +131,46 @@ public class DefaultGeneService implements GeneService {
         return executorService.submit(() -> gene);
     }
 
-    private ListenableFuture<Void> returnVoid() {
-        return executorService.submit(() -> null);
+    private ListenableFuture<XSSFSheet> compute(Organism organism, Gene gene, XSSFWorkbook workbook, List<String> sequences) {
+        ListenableFuture<Gene> dinuFuture = extractStatisticsSequenceForDinucleotides(sequences, gene);
+        ListenableFuture<Gene> trinuFuture = Futures.transformAsync(dinuFuture, computedGene -> extractStatisticsSequenceForTrinucleotides(sequences, computedGene), executorService);
+        return Futures.transformAsync(trinuFuture, computedGene -> statisticsService.computeStatistics(organism, computedGene, workbook), executorService);
     }
 
-    private ListenableFuture<Gene> compute(Organism organism, Gene gene, XSSFWorkbook workbook, List<String> sequences) {
-        List<ListenableFuture<Gene>> computeFutures = new ArrayList<>();
-        computeFutures.add(extractStatisticsSequenceForTrinucleotides(sequences, gene));
-        computeFutures.add(extractStatisticsSequenceForDinucleotides(sequences, gene));
-
-        ListenableFuture<List<Gene>> extractFuture = Futures.allAsList(computeFutures);
-        ListenableFuture<List<Gene>> computeFuture = Futures.transformAsync(extractFuture, genes -> {
-            List<ListenableFuture<Gene>> computedFuture = new ArrayList<>();
-            if (genes != null) {
-                for (Gene gene1 : genes) {
-                    computedFuture.add(statisticsService.computeStatistics(organism, gene1, workbook));
+    private ListenableFuture<XSSFSheet> processGene(Organism organism, XSSFWorkbook workbook, String geneId, String path) {
+        Gene gene = createGene(geneId, path, 0, 0);
+        ListenableFuture<HttpResponse> responseFuture = retrieveGene(geneId);
+        ListenableFuture<InputStream> inputStreamFuture = Futures.transform(responseFuture, new Function<HttpResponse, InputStream>() {
+            @Nullable
+            @Override
+            public InputStream apply(@Nullable HttpResponse httpResponse) {
+                try {
+                    return httpResponse.getContent();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return null;
                 }
             }
-            return Futures.allAsList(computedFuture);
-        }, executorService);
-        return Futures.transformAsync(computeFuture, genes -> returnGene(genes.get(1)), executorService);
-    }
-
-    private ListenableFuture<Void> processGene(Organism organism, XSSFWorkbook workbook, String geneId, String path) {
-        final Gene[] gene = new Gene[1];
-        ListenableFuture<Gene> createGeneFuture = createGene(geneId, path, 0, 0);
-        ListenableFuture<HttpResponse> responseFuture = Futures.transformAsync(createGeneFuture, createdGene -> { gene[0] = createdGene; return retrieveGene(geneId); }, executorService);
-        ListenableFuture<InputStream> inputStreamFuture = Futures.transformAsync(responseFuture, this::getInputStream, executorService);
-        ListenableFuture<List<String>> extractSequencesFuture = Futures.transformAsync(inputStreamFuture, inputStream -> extractSequences(inputStream, gene[0]), executorService);
-        ListenableFuture<Gene> computeFuture = Futures.transformAsync(extractSequencesFuture, sequences -> compute(organism, gene[0], workbook, sequences), executorService);
-        return Futures.transformAsync(computeFuture, computedGene -> null, executorService);
+        });
+        ListenableFuture<List<String>> extractSequencesFuture = Futures.transformAsync(inputStreamFuture, inputStream -> extractSequences(inputStream, gene), executorService);
+        return Futures.transformAsync(extractSequencesFuture, sequences -> compute(organism, gene, workbook, sequences), executorService);
     }
 
     @Override
-    public ListenableFuture<Void> processGenes(Organism organism, XSSFWorkbook workbook, String[] geneIds, String path) {
-        List<ListenableFuture<Void>> geneFutures = new ArrayList<>();
+    public ListenableFuture<XSSFWorkbook> processGenes(Organism organism, XSSFWorkbook workbook, String[] geneIds, String path) {
+        List<ListenableFuture<XSSFSheet>> geneFutures = new ArrayList<>();
         if (geneIds != null && geneIds.length > 0) {
             for (String geneId : geneIds) {
                 geneFutures.add(processGene(organism, workbook, geneId, path));
             }
         }
-        return Futures.transformAsync(Futures.allAsList(geneFutures), aVoid -> returnVoid(), executorService);
+        return Futures.transform(Futures.allAsList(geneFutures), new Function<List<XSSFSheet>, XSSFWorkbook>() {
+            @Nullable
+            @Override
+            public XSSFWorkbook apply(@Nullable List<XSSFSheet> unused) {
+                return workbook;
+            }
+        }, executorService);
     }
 
 

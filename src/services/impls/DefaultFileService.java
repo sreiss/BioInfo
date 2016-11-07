@@ -1,13 +1,10 @@
 package services.impls;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
 import models.Gene;
 import models.Organism;
-import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.xssf.usermodel.XSSFCell;
@@ -16,16 +13,15 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import services.contracts.FileService;
 
-import javax.annotation.Nullable;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
 
 public class DefaultFileService implements FileService {
     private final ListeningExecutorService executorService;
@@ -64,32 +60,25 @@ public class DefaultFileService implements FileService {
     }
 
     @Override
-    public ListenableFuture<XSSFWorkbook> createWorkbook() {
-        return executorService.submit((Callable<XSSFWorkbook>) XSSFWorkbook::new);
-    }
-
-    private ListenableFuture<XSSFWorkbook> returnWorkbook(XSSFWorkbook workbook) {
-        return executorService.submit(() -> workbook);
+    public XSSFWorkbook createWorkbook() {
+        return new XSSFWorkbook();
     }
 
     @Override
-    public ListenableFuture<XSSFWorkbook> fillWorkbook(Organism organism, Gene gene, final XSSFWorkbook workbook) {
-        ListenableFuture<XSSFSheet> createSheetFuture = executorService.submit((Callable<XSSFSheet>) workbook::createSheet);
-        ListenableFuture<XSSFSheet> fillFileInfoFuture = Futures.transformAsync(createSheetFuture, sheet -> fillFileInfo(organism, gene, sheet));
-        ListenableFuture<XSSFSheet> fillDinuFuture = Futures.transformAsync(fillFileInfoFuture, sheet -> fillFileDinu(gene, workbook, sheet), executorService);
-        ListenableFuture<XSSFSheet> fillTrinuFuture = Futures.transformAsync(fillDinuFuture, sheet -> fillFileTrinu(gene, workbook, sheet), executorService);
-        return Futures.transformAsync(fillTrinuFuture, sheet -> returnWorkbook(workbook), executorService);
+    public XSSFSheet fillWorkbook(Organism organism, Gene gene, final XSSFWorkbook workbook) {
+        XSSFSheet sheet = workbook.createSheet();
+        sheet = fillFileInfo(organism, gene, sheet);
+        sheet = fillFileDinu(gene, workbook, sheet);
+        sheet = fillFileTrinu(gene, workbook, sheet);
+        return sheet;
     }
 
     @Override
-    public ListenableFuture<Void> writeWorkbook(XSSFWorkbook workbook, final String path, final String fileName) {
-        return executorService.submit(() -> {
-            FileOutputStream stream = new FileOutputStream(path + "/" + fileName + ".xlsx");
-            workbook.write(stream);
-            stream.close();
-            workbook.close();
-            return null;
-        });
+    public void writeWorkbook(XSSFWorkbook workbook, final String path, final String fileName) throws IOException {
+        FileOutputStream stream = new FileOutputStream(path + "/" + fileName + ".xlsx");
+        workbook.write(stream);
+        stream.close();
+        workbook.close();
     }
 
 
@@ -116,16 +105,16 @@ public class DefaultFileService implements FileService {
 //    }
 
     @Override
-    public ListenableFuture<List<Boolean>> createDirectories(final List<String> paths) throws InterruptedException {
-        List<ListenableFuture<Boolean>> createDirectoryFutures = new ArrayList<>();
+    public List<Boolean> createDirectories(final List<String> paths) {
+        List<Boolean> results = new ArrayList<>();
         for (String path: paths) {
-            createDirectoryFutures.add(createDirectory(path));
+            results.add(createDirectory(path));
         }
-        return Futures.allAsList(createDirectoryFutures);
+        return results;
     }
 
-    private ListenableFuture<Boolean> createDirectory(final String path) {
-        return executorService.submit(() -> new File(path).mkdirs());
+    private Boolean createDirectory(final String path) {
+        return new File(path).mkdirs();
     }
 
     private CellStyle buildCellStyleForProba(XSSFWorkbook workbook) {
@@ -140,254 +129,249 @@ public class DefaultFileService implements FileService {
         return numberStyle;
     }
 
-    private ListenableFuture<XSSFSheet> fillFileInfo(Organism organism, Gene gene, XSSFSheet sheet) {
-        return executorService.submit(() -> {
-            XSSFRow row;
+    private XSSFSheet fillFileInfo(Organism organism, Gene gene, XSSFSheet sheet) {
 
-            if ((row = sheet.getRow(0)) == null)
-                row = sheet.createRow(0);
+        XSSFRow row;
 
-            row.createCell(0).setCellValue("Nom");
-            row.createCell(1).setCellValue(gene.getName());
+        if ((row = sheet.getRow(0)) == null)
+            row = sheet.createRow(0);
 
-            if ((row = sheet.getRow(1)) == null)
-                row = sheet.createRow(1);
+        row.createCell(0).setCellValue("Nom");
+        row.createCell(1).setCellValue(gene.getName());
 
-            row.createCell(0).setCellValue("Chemin");
-            row.createCell(1).setCellValue(organism.getGroup());
-            row.createCell(2).setCellValue(organism.getSubGroup());
-            row.createCell(3).setCellValue(organism.getName());
+        if ((row = sheet.getRow(1)) == null)
+            row = sheet.createRow(1);
 
-            if ((row = sheet.getRow(2)) == null)
-                row = sheet.createRow(2);
+        row.createCell(0).setCellValue("Chemin");
+        row.createCell(1).setCellValue(organism.getGroup());
+        row.createCell(2).setCellValue(organism.getSubGroup());
+        row.createCell(3).setCellValue(organism.getName());
 
-            row.createCell(0).setCellValue("Nb CDS");
-            row.createCell(1).setCellValue(gene.getTotalCds());
+        if ((row = sheet.getRow(2)) == null)
+            row = sheet.createRow(2);
 
-            if ((row = sheet.getRow(3)) == null)
-                row = sheet.createRow(3);
+        row.createCell(0).setCellValue("Nb CDS");
+        row.createCell(1).setCellValue(gene.getTotalCds());
 
-            row.createCell(0).setCellValue("Nb CDS non traités");
-            row.createCell(1).setCellValue(gene.getTotalUnprocessedCds());
+        if ((row = sheet.getRow(3)) == null)
+            row = sheet.createRow(3);
 
-            if ((row = sheet.getRow(4)) == null)
-                row = sheet.createRow(4);
+        row.createCell(0).setCellValue("Nb CDS non traités");
+        row.createCell(1).setCellValue(gene.getTotalUnprocessedCds());
 
-            row.createCell(0).setCellValue("Nb trinucléotides");
-            row.createCell(1).setCellValue(gene.getTotalUnprocessedCds());
+        if ((row = sheet.getRow(4)) == null)
+            row = sheet.createRow(4);
 
-            if ((row = sheet.getRow(5)) == null)
-                row = sheet.createRow(5);
+        row.createCell(0).setCellValue("Nb trinucléotides");
+        row.createCell(1).setCellValue(gene.getTotalUnprocessedCds());
 
-            row.createCell(0).setCellValue("Nb dinucléotides");
-            row.createCell(1).setCellValue(gene.getTotalDinucleotide());
+        if ((row = sheet.getRow(5)) == null)
+            row = sheet.createRow(5);
 
-            return sheet;
-        });
+        row.createCell(0).setCellValue("Nb dinucléotides");
+        row.createCell(1).setCellValue(gene.getTotalDinucleotide());
+
+        return sheet;
     }
 
-    private ListenableFuture<XSSFSheet> fillFileTrinu(Gene g, XSSFWorkbook workbook, XSSFSheet sheet) {
-        return executorService.submit(() -> {
-            CellStyle numberStyle = buildCellStyleForNumber(workbook);
-            CellStyle probaStyle = buildCellStyleForProba(workbook);
-            XSSFCell tmpCell;
-            XSSFRow row;
+    private XSSFSheet fillFileTrinu(Gene g, XSSFWorkbook workbook, XSSFSheet sheet) {
+        CellStyle numberStyle = buildCellStyleForNumber(workbook);
+        CellStyle probaStyle = buildCellStyleForProba(workbook);
+        XSSFCell tmpCell;
+        XSSFRow row;
 
-            if ((row = sheet.getRow(7)) == null)
-                row = sheet.createRow(7);
+        if ((row = sheet.getRow(7)) == null)
+            row = sheet.createRow(7);
 
-            row.createCell(0).setCellValue("Trinucleotide");
-            row.createCell(1).setCellValue("Nombre Phase 0");
-            row.createCell(2).setCellValue("Proba Phase 0");
-            row.createCell(3).setCellValue("Nombre Phase 1");
-            row.createCell(4).setCellValue("Proba Phase 1");
-            row.createCell(5).setCellValue("Nombre Phase 2");
-            row.createCell(6).setCellValue("Proba Phase 2");
+        row.createCell(0).setCellValue("Trinucleotide");
+        row.createCell(1).setCellValue("Nombre Phase 0");
+        row.createCell(2).setCellValue("Proba Phase 0");
+        row.createCell(3).setCellValue("Nombre Phase 1");
+        row.createCell(4).setCellValue("Proba Phase 1");
+        row.createCell(5).setCellValue("Nombre Phase 2");
+        row.createCell(6).setCellValue("Proba Phase 2");
 
-            int i = 8;
-            Set<String> keys = g.getTrinuStatPhase0().keySet();
+        int i = 8;
+        Set<String> keys = g.getTrinuStatPhase0().keySet();
 
-            for (String key : keys) {
-                if ((row = sheet.getRow(i)) == null)
-                    row = sheet.createRow(i);
-
-                // Set Trinicludotide
-                row.createCell(0).setCellValue(key);
-
-                // NB phase 0
-                tmpCell = row.createCell(1);
-                tmpCell.setCellValue(g.getTrinuStatPhase0().get(key));
-                tmpCell.setCellType(CellType.NUMERIC);
-                tmpCell.setCellStyle(numberStyle);
-                //tmp0 += g.trinuStatPhase0.get(key);
-
-                // Proba phase 0
-                tmpCell = row.createCell(2);
-                tmpCell.setCellValue(g.getTrinuProbaPhase0().get(key));
-                tmpCell.setCellType(CellType.NUMERIC);
-                tmpCell.setCellStyle(probaStyle);
-
-                // NB phase 1
-                tmpCell = row.createCell(3);
-                tmpCell.setCellValue(g.getDinuStatPhase1().get(key));
-                tmpCell.setCellType(CellType.NUMERIC);
-                tmpCell.setCellStyle(numberStyle);
-                //tmp1 += g.trinuStatPhase1.get(key);
-
-                // Proba phase 1
-                tmpCell = row.createCell(4);
-                tmpCell.setCellValue(g.getTrinuProbaPhase0().get(key));
-                tmpCell.setCellType(CellType.NUMERIC);
-                tmpCell.setCellStyle(probaStyle);
-                //tmpCell.setCellType(XSSFCell.CELL_TYPE_NUMERIC);
-
-                // NB phase 2
-                tmpCell = row.createCell(5);
-                tmpCell.setCellValue(g.getTrinuStatPhase2().get(key));
-                tmpCell.setCellType(CellType.NUMERIC);
-                tmpCell.setCellStyle(numberStyle);
-                //tmp2 += g.trinuStatPhase2.get(key);
-
-                // Proba phase 2
-                tmpCell = row.createCell(6);
-                tmpCell.setCellValue(g.getTrinuProbaPhase2().get(key));
-                tmpCell.setCellType(CellType.NUMERIC);
-                tmpCell.setCellStyle(probaStyle);
-
-                i++;
-            }
-
-            row = sheet.createRow(i);
-            row.createCell(0).setCellValue("Total");
-
-            tmpCell = row.createCell(1);
-            tmpCell.setCellValue(g.getTotalTrinucleotide());
-            tmpCell.setCellType(CellType.NUMERIC);
-            tmpCell.setCellStyle(numberStyle);
-
-            tmpCell = row.createCell(2);
-            tmpCell.setCellValue(g.getTotalProbaTrinu0());
-            tmpCell.setCellType(CellType.NUMERIC);
-            tmpCell.setCellStyle(probaStyle);
-
-            tmpCell = row.createCell(3);
-            tmpCell.setCellValue(g.getTotalTrinucleotide());
-            tmpCell.setCellType(CellType.NUMERIC);
-            tmpCell.setCellStyle(numberStyle);
-
-            tmpCell = row.createCell(4);
-            tmpCell.setCellValue(g.getTotalProbaTrinu1());
-            tmpCell.setCellType(CellType.NUMERIC);
-            tmpCell.setCellStyle(probaStyle);
-
-            tmpCell = row.createCell(5);
-            tmpCell.setCellValue(g.getTotalTrinucleotide());
-            tmpCell.setCellType(CellType.NUMERIC);
-            tmpCell.setCellStyle(numberStyle);
-
-            tmpCell = row.createCell(6);
-            tmpCell.setCellValue(g.getTotalProbaTrinu2());
-            tmpCell.setCellType(CellType.NUMERIC);
-            tmpCell.setCellStyle(probaStyle);
-
-            sheet.autoSizeColumn(0);
-            sheet.autoSizeColumn(1);
-            sheet.autoSizeColumn(2);
-            sheet.autoSizeColumn(3);
-            sheet.autoSizeColumn(4);
-            sheet.autoSizeColumn(5);
-            sheet.autoSizeColumn(6);
-
-            return sheet;
-        });
-    }
-
-    private ListenableFuture<XSSFSheet> fillFileDinu(Gene g, XSSFWorkbook workbook, XSSFSheet sheet) {
-        return executorService.submit(() -> {
-            CellStyle numberStyle = buildCellStyleForNumber(workbook);
-            CellStyle probaStyle = buildCellStyleForProba(workbook);
-            XSSFCell tmpCell;
-            XSSFRow row;
-
-            if ((row = sheet.getRow(7)) == null)
-                row = sheet.createRow(7);
-
-            row.createCell(8).setCellValue("Dinucleotide");
-            row.createCell(9).setCellValue("Nombre Phase 0");
-            row.createCell(10).setCellValue("Proba Phase 0");
-            row.createCell(11).setCellValue("Nombre Phase 1");
-            row.createCell(12).setCellValue("Proba Phase 1");
-
-            int i = 8;
-            Set<String> keys = g.getDinuStatPhase0().keySet();
-
-            for (String key : keys) {
-                if ((row = sheet.getRow(i)) == null)
-                    row = sheet.createRow(i);
-
-                // Set Dinicludotide
-                row.createCell(8).setCellValue(key);
-
-                // NB phase 0
-                tmpCell = row.createCell(9);
-                tmpCell.setCellValue(g.getDinuStatPhase0().get(key));
-                tmpCell.setCellType(CellType.NUMERIC);
-                tmpCell.setCellStyle(numberStyle);
-
-                // Proba phase 0
-                tmpCell = row.createCell(10);
-                tmpCell.setCellValue(g.getDinuProbaPhase0().get(key));
-                tmpCell.setCellType(CellType.NUMERIC);
-                tmpCell.setCellStyle(probaStyle);
-
-                // NB phase 1
-                tmpCell = row.createCell(11);
-                tmpCell.setCellValue(g.getDinuStatPhase1().get(key));
-                tmpCell.setCellType(CellType.NUMERIC);
-                tmpCell.setCellStyle(numberStyle);
-
-                // Proba phase 1
-                tmpCell = row.createCell(12);
-                tmpCell.setCellValue(g.getDinuProbaPhase1().get(key));
-                tmpCell.setCellType(CellType.NUMERIC);
-                tmpCell.setCellStyle(probaStyle);
-
-                i++;
-            }
-
+        for (String key : keys) {
             if ((row = sheet.getRow(i)) == null)
                 row = sheet.createRow(i);
 
-            row.createCell(8).setCellValue("Total");
+            // Set Trinicludotide
+            row.createCell(0).setCellValue(key);
 
+            // NB phase 0
+            tmpCell = row.createCell(1);
+            tmpCell.setCellValue(g.getTrinuStatPhase0().get(key));
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(numberStyle);
+            //tmp0 += g.trinuStatPhase0.get(key);
+
+            // Proba phase 0
+            tmpCell = row.createCell(2);
+            tmpCell.setCellValue(g.getTrinuProbaPhase0().get(key));
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(probaStyle);
+
+            // NB phase 1
+            tmpCell = row.createCell(3);
+            tmpCell.setCellValue(g.getDinuStatPhase1().get(key));
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(numberStyle);
+            //tmp1 += g.trinuStatPhase1.get(key);
+
+            // Proba phase 1
+            tmpCell = row.createCell(4);
+            tmpCell.setCellValue(g.getTrinuProbaPhase0().get(key));
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(probaStyle);
+            //tmpCell.setCellType(XSSFCell.CELL_TYPE_NUMERIC);
+
+            // NB phase 2
+            tmpCell = row.createCell(5);
+            tmpCell.setCellValue(g.getTrinuStatPhase2().get(key));
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(numberStyle);
+            //tmp2 += g.trinuStatPhase2.get(key);
+
+            // Proba phase 2
+            tmpCell = row.createCell(6);
+            tmpCell.setCellValue(g.getTrinuProbaPhase2().get(key));
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(probaStyle);
+
+            i++;
+        }
+
+        row = sheet.createRow(i);
+        row.createCell(0).setCellValue("Total");
+
+        tmpCell = row.createCell(1);
+        tmpCell.setCellValue(g.getTotalTrinucleotide());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(numberStyle);
+
+        tmpCell = row.createCell(2);
+        tmpCell.setCellValue(g.getTotalProbaTrinu0());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(probaStyle);
+
+        tmpCell = row.createCell(3);
+        tmpCell.setCellValue(g.getTotalTrinucleotide());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(numberStyle);
+
+        tmpCell = row.createCell(4);
+        tmpCell.setCellValue(g.getTotalProbaTrinu1());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(probaStyle);
+
+        tmpCell = row.createCell(5);
+        tmpCell.setCellValue(g.getTotalTrinucleotide());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(numberStyle);
+
+        tmpCell = row.createCell(6);
+        tmpCell.setCellValue(g.getTotalProbaTrinu2());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(probaStyle);
+
+        sheet.autoSizeColumn(0);
+        sheet.autoSizeColumn(1);
+        sheet.autoSizeColumn(2);
+        sheet.autoSizeColumn(3);
+        sheet.autoSizeColumn(4);
+        sheet.autoSizeColumn(5);
+        sheet.autoSizeColumn(6);
+
+        return sheet;
+    }
+
+    private XSSFSheet fillFileDinu(Gene g, XSSFWorkbook workbook, XSSFSheet sheet) {
+        CellStyle numberStyle = buildCellStyleForNumber(workbook);
+        CellStyle probaStyle = buildCellStyleForProba(workbook);
+        XSSFCell tmpCell;
+        XSSFRow row;
+
+        if ((row = sheet.getRow(7)) == null)
+            row = sheet.createRow(7);
+
+        row.createCell(8).setCellValue("Dinucleotide");
+        row.createCell(9).setCellValue("Nombre Phase 0");
+        row.createCell(10).setCellValue("Proba Phase 0");
+        row.createCell(11).setCellValue("Nombre Phase 1");
+        row.createCell(12).setCellValue("Proba Phase 1");
+
+        int i = 8;
+        Set<String> keys = g.getDinuStatPhase0().keySet();
+
+        for (String key : keys) {
+            if ((row = sheet.getRow(i)) == null)
+                row = sheet.createRow(i);
+
+            // Set Dinicludotide
+            row.createCell(8).setCellValue(key);
+
+            // NB phase 0
             tmpCell = row.createCell(9);
-            tmpCell.setCellValue(g.getTotalDinucleotide());
+            tmpCell.setCellValue(g.getDinuStatPhase0().get(key));
             tmpCell.setCellType(CellType.NUMERIC);
             tmpCell.setCellStyle(numberStyle);
 
+            // Proba phase 0
             tmpCell = row.createCell(10);
-            tmpCell.setCellValue(g.getTotalProbaDinu0());
+            tmpCell.setCellValue(g.getDinuProbaPhase0().get(key));
             tmpCell.setCellType(CellType.NUMERIC);
             tmpCell.setCellStyle(probaStyle);
 
+            // NB phase 1
             tmpCell = row.createCell(11);
-            tmpCell.setCellValue(g.getTotalDinucleotide());
+            tmpCell.setCellValue(g.getDinuStatPhase1().get(key));
             tmpCell.setCellType(CellType.NUMERIC);
             tmpCell.setCellStyle(numberStyle);
 
+            // Proba phase 1
             tmpCell = row.createCell(12);
-            tmpCell.setCellValue(g.getTotalProbaDinu1());
+            tmpCell.setCellValue(g.getDinuProbaPhase1().get(key));
             tmpCell.setCellType(CellType.NUMERIC);
             tmpCell.setCellStyle(probaStyle);
 
-            sheet.autoSizeColumn(8);
-            sheet.autoSizeColumn(9);
-            sheet.autoSizeColumn(10);
-            sheet.autoSizeColumn(11);
-            sheet.autoSizeColumn(12);
+            i++;
+        }
 
-            return sheet;
-        });
+        if ((row = sheet.getRow(i)) == null)
+            row = sheet.createRow(i);
+
+        row.createCell(8).setCellValue("Total");
+
+        tmpCell = row.createCell(9);
+        tmpCell.setCellValue(g.getTotalDinucleotide());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(numberStyle);
+
+        tmpCell = row.createCell(10);
+        tmpCell.setCellValue(g.getTotalProbaDinu0());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(probaStyle);
+
+        tmpCell = row.createCell(11);
+        tmpCell.setCellValue(g.getTotalDinucleotide());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(numberStyle);
+
+        tmpCell = row.createCell(12);
+        tmpCell.setCellValue(g.getTotalProbaDinu1());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(probaStyle);
+
+        sheet.autoSizeColumn(8);
+        sheet.autoSizeColumn(9);
+        sheet.autoSizeColumn(10);
+        sheet.autoSizeColumn(11);
+        sheet.autoSizeColumn(12);
+
+        return sheet;
     }
 
 }

@@ -1,6 +1,8 @@
 package services.impls;
 
 import com.google.api.client.http.HttpResponse;
+import com.google.common.base.Function;
+import com.google.common.primitives.Booleans;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -8,6 +10,9 @@ import com.google.inject.Inject;
 import models.Kingdom;
 import models.Organism;
 import services.contracts.*;
+
+import javax.annotation.Nullable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,43 +47,53 @@ public class DefaultKingdomService implements KingdomService {
         return httpService.get(url);
     }
 
-    private ListenableFuture<InputStream> getInputStream(HttpResponse response) {
-        return executorService.submit(response::getContent);
-    }
-
     private ListenableFuture<List<Boolean>> createDirectories(final Kingdom kingdom, final InputStream inputStream) {
         String dataDir = configService.getProperty("dataDir");
-        return Futures.transformAsync(parseService.extractOrganismList(inputStream, kingdom.getId()), organisms -> {
-            List<String> paths = new ArrayList<>();
-            for (Organism organism : organisms) {
-                String path = dataDir
-                        + kingdom.getLabel()
-                        + "/" + organism.getGroup()
-                        + "/" + organism.getSubGroup()
-                        + "/" + organism.getName();
-                organism.setPath(path);
-                paths.add(path);
+        return Futures.transform(parseService.extractOrganismList(inputStream, kingdom.getId()), new Function<List<Organism>, List<Boolean>>() {
+            @Nullable
+            @Override
+            public List<Boolean> apply(@Nullable List<Organism> organisms) {
+                List < String > paths = new ArrayList<>();
+                for (Organism organism : organisms) {
+                    String path = dataDir
+                            + kingdom.getLabel()
+                            + "/" + organism.getGroup()
+                            + "/" + organism.getSubGroup()
+                            + "/" + organism.getName();
+                    organism.setPath(path);
+                    paths.add(path);
+                }
+                kingdom.setOrganisms(organisms);
+                return fileService.createDirectories(paths);
             }
-            kingdom.setOrganisms(organisms);
-            return fileService.createDirectories(paths);
         }, executorService);
-
-    }
-
-    private ListenableFuture<Kingdom> returnKingdom(Kingdom kingdom) {
-        return executorService.submit(() -> kingdom);
     }
 
     private ListenableFuture<Kingdom> createKingdomTree(final Kingdom kingdom) {
         ListenableFuture<HttpResponse> responseFuture = retrieveKingdom(kingdom);
-        ListenableFuture<InputStream> getInputStreamFuture = Futures.transformAsync(responseFuture, this::getInputStream, executorService);
-        ListenableFuture<List<Boolean>> createDirectoriesFuture = Futures.transformAsync(getInputStreamFuture, inputStream -> createDirectories(kingdom, inputStream), executorService);
-        ListenableFuture<Kingdom> processOrganismsFuture = Futures.transformAsync(createDirectoriesFuture, createdDirectories -> {
-            progressService.getCurrentProgress().setStep(TaskProgress.Step.DirectoriesCreationFinished);
-            progressService.invalidateProgress();
-            return organismService.processOrganisms(kingdom);
+        ListenableFuture<InputStream> inputStreamFuture = Futures.transform(responseFuture, new Function<HttpResponse, InputStream>() {
+            @Nullable
+            @Override
+            public InputStream apply(@Nullable HttpResponse httpResponse) {
+                try {
+                    return httpResponse.getContent();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+        });
+        ListenableFuture<List<Boolean>> createDirectoriesFuture = Futures.transformAsync(inputStreamFuture, inputStream -> createDirectories(kingdom, inputStream), executorService);
+        ListenableFuture<Kingdom> progressFuture = Futures.transform(createDirectoriesFuture, new Function<List<Boolean>, Kingdom>() {
+            @Nullable
+            @Override
+            public Kingdom apply(@Nullable List<Boolean> booleen) {
+                progressService.getCurrentProgress().setStep(TaskProgress.Step.DirectoriesCreationFinished);
+                progressService.invalidateProgress();
+                return kingdom;
+            }
         }, executorService);
-        return Futures.transformAsync(processOrganismsFuture, this::returnKingdom, executorService);
+        return Futures.transformAsync(progressFuture, kingdom1 -> organismService.processOrganisms(kingdom), executorService);
     }
 
     public ListenableFuture<List<Kingdom>> createKingdomTrees(final List<Kingdom> kingdoms) {
@@ -86,6 +101,6 @@ public class DefaultKingdomService implements KingdomService {
         for (Kingdom kingdom: kingdoms) {
             acquireFutures.add(createKingdomTree(kingdom));
         }
-        return Futures.allAsList(acquireFutures);
+        return Futures.successfulAsList(acquireFutures);
     }
 }
