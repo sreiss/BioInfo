@@ -40,7 +40,7 @@ public class App extends AbstractModule {
     @Provides
     @Singleton
     ListeningExecutorService providelisteningExecutorService() {
-        return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(16));
+        return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(60));
     }
 
     public static void main(String[] args) {
