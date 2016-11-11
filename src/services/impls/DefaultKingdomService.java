@@ -90,6 +90,12 @@ public class DefaultKingdomService implements KingdomService {
             public Kingdom apply(@Nullable List<Boolean> booleen) {
                 progressService.getCurrentProgress().setStep(TaskProgress.Step.DirectoriesCreationFinished);
                 progressService.invalidateProgress();
+
+                TaskProgress progress = progressService.getCurrentProgress();
+                progress.setStep(TaskProgress.Step.OrganismProcessing);
+                progress.getTotal().addAndGet(kingdom.getOrganisms().size());
+                progressService.invalidateProgress();
+
                 return kingdom;
             }
         }, executorService);

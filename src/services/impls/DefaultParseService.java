@@ -55,68 +55,70 @@ public class DefaultParseService implements ParseService {
     @Override
     public ListenableFuture<List<String>> extractSequences(final InputStream inputStream, Gene gene) {
         return executorService.submit(() -> {
-            synchronized (this) {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-                List<String> sequences = new ArrayList<String>();
-                String line;
-                boolean running;
+            if (inputStream == null) {
+                throw new NullPointerException("Response was null.");
+            }
 
-                while ((line = reader.readLine()) != null) {
-                    if (line.startsWith(CodingSequence.START_CDS_INFO)) {
-                        Pattern pattern = Pattern.compile(CodingSequence.REGEX_COMPLETE);
-                        Matcher matcher = pattern.matcher(line);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            List<String> sequences = new ArrayList<String>();
+            String line;
+            boolean running;
 
-                        if (matcher.find()) {
-                            String s = matcher.group();
-                            pattern = Pattern.compile(CodingSequence.REGEX_LOCATOR);
-                            matcher = pattern.matcher(s);
-                            boolean locatorsOk = true;
-                            while (matcher.find() && locatorsOk) {
-                                locatorsOk = checkLocator(matcher.group());
-                            }
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith(CodingSequence.START_CDS_INFO)) {
+                    Pattern pattern = Pattern.compile(CodingSequence.REGEX_COMPLETE);
+                    Matcher matcher = pattern.matcher(line);
 
-                            if (locatorsOk) {
-                                String sequence = "", line2;
+                    if (matcher.find()) {
+                        String s = matcher.group();
+                        pattern = Pattern.compile(CodingSequence.REGEX_LOCATOR);
+                        matcher = pattern.matcher(s);
+                        boolean locatorsOk = true;
+                        while (matcher.find() && locatorsOk) {
+                            locatorsOk = checkLocator(matcher.group());
+                        }
 
-                                running = true;
-                                while (running) {
-                                    reader.mark(1);
-                                    int character = reader.read();
-                                    if (character == -1) {
+                        if (locatorsOk) {
+                            String sequence = "", line2;
+
+                            running = true;
+                            while (running) {
+                                reader.mark(1);
+                                int character = reader.read();
+                                if (character == -1) {
+                                    running = false;
+                                } else {
+                                    reader.reset();
+                                    if (character == CodingSequence.START_CDS_INFO.charAt(0)) {
                                         running = false;
                                     } else {
-                                        reader.reset();
-                                        if (character == CodingSequence.START_CDS_INFO.charAt(0)) {
+                                        line2 = reader.readLine();
+                                        if (line2 == null) {
                                             running = false;
                                         } else {
-                                            line2 = reader.readLine();
-                                            if (line2 == null) {
-                                                running = false;
-                                            } else {
-                                                sequence += line2;
-                                            }
+                                            sequence += line2;
                                         }
                                     }
                                 }
-
-                                if (checkSequence(sequence)) {
-                                    gene.setTotalCds(gene.getTotalCds() + 1);
-                                    sequences.add(sequence);
-                                } else {
-                                    gene.setTotalCds(gene.getTotalCds() + 1);
-                                    gene.setTotalUnprocessedCds(gene.getTotalUnprocessedCds() + 1);
-                                }
                             }
 
+                            if (checkSequence(sequence)) {
+                                gene.setTotalCds(gene.getTotalCds() + 1);
+                                sequences.add(sequence);
+                            } else {
+                                gene.setTotalCds(gene.getTotalCds() + 1);
+                                gene.setTotalUnprocessedCds(gene.getTotalUnprocessedCds() + 1);
+                            }
                         }
+
                     }
                 }
-
-                reader.close();
-                inputStream.close();
-
-                return sequences;
             }
+
+            reader.close();
+            inputStream.close();
+
+            return sequences;
         });
     }
 

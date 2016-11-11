@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
+import com.sun.javaws.progress.Progress;
 import models.Kingdom;
 import services.contracts.*;
 import views.MainWindow;
@@ -48,6 +49,7 @@ public class MainController implements Observer {
             if (currentFuture != null) {
                 currentFuture.cancel(true);
             }
+            resetProgressService();
             ((JButton) e.getSource()).setEnabled(false);
         });
 
@@ -55,6 +57,14 @@ public class MainController implements Observer {
         view.getKingdomTree().setRootVisible(false);
 
         refreshTree();
+    }
+
+    private void resetProgressService() {
+        TaskProgress taskProgress = progressService.getCurrentProgress();
+        taskProgress.getProgress().set(0);
+        taskProgress.setMessage(null);
+        taskProgress.setStep(null);
+        taskProgress.getTotal().set(0);
     }
 
     private void refreshTree() {
@@ -111,6 +121,7 @@ public class MainController implements Observer {
                     view.getExecuteButton().setEnabled(true);
                     view.getInterruptButton().setEnabled(false);
                 }
+                resetProgressService();
             }
         });
     }

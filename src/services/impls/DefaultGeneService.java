@@ -143,7 +143,7 @@ public class DefaultGeneService implements GeneService {
         ListenableFuture<InputStream> inputStreamFuture = Futures.transform(responseFuture, new Function<HttpResponse, InputStream>() {
             @Nullable
             @Override
-            public InputStream apply(@Nullable HttpResponse httpResponse) {
+            public InputStream apply(HttpResponse httpResponse) {
                 try {
                     return httpResponse.getContent();
                 } catch (IOException e) {

@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
+import com.google.inject.name.Named;
 import controllers.MainController;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
@@ -37,10 +38,14 @@ public class App extends AbstractModule {
         return HttpAsyncClients.createDefault();
     }
 
+    @Provides @Named("HttpExecutor")
+    ListeningExecutorService provideHttpListeningExecutorService() {
+        return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(12));
+    }
+
     @Provides
-    @Singleton
-    ListeningExecutorService providelisteningExecutorService() {
-        return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(60));
+    ListeningExecutorService provideListeningExecutorService() {
+        return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(12));
     }
 
     public static void main(String[] args) {
