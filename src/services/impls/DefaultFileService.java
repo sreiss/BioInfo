@@ -216,7 +216,7 @@ public class DefaultFileService implements FileService {
 
             // NB phase 1
             tmpCell = row.createCell(3);
-            tmpCell.setCellValue(g.getDinuStatPhase1().get(key));
+            tmpCell.setCellValue(g.getTrinuStatPhase1().get(key));
             tmpCell.setCellType(CellType.NUMERIC);
             tmpCell.setCellStyle(numberStyle);
             //tmp1 += g.trinuStatPhase1.get(key);
