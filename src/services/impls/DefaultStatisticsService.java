@@ -33,17 +33,17 @@ public class DefaultStatisticsService implements StatisticsService {
             for(String key: keys){
                 tmp1 = (double) gene.getTrinuStatPhase0().get(key);
                 result = (tmp1 / tmp2) * 100.0;
-                gene.setTotalProbaTrinu0(result);
+                gene.setTotalProbaTrinu0(gene.getTotalProbaTrinu0() + result);
                 gene.getTrinuProbaPhase0().put(key, result);
 
                 tmp1 = (double) gene.getTrinuStatPhase1().get(key);
                 result = (tmp1 / tmp2) * 100.0;
-                gene.setTotalProbaTrinu1(result);
+                gene.setTotalProbaTrinu1(gene.getTotalProbaTrinu1() + result);
                 gene.getTrinuProbaPhase1().put(key, result);
 
                 tmp1 = (double) gene.getTrinuStatPhase2().get(key);
                 result = (tmp1 / tmp2) * 100.0;
-                gene.setTotalProbaTrinu2(result);
+                gene.setTotalProbaTrinu2(gene.getTotalProbaTrinu2() + result);
                 gene.getTrinuProbaPhase2().put(key, result);
             }
             return gene;
@@ -58,12 +58,12 @@ public class DefaultStatisticsService implements StatisticsService {
             for(String key: keys){
                 tmp1 = (double) gene.getDinuStatPhase0().get(key);
                 result = (tmp1 / tmp2) * 100.0;
-                gene.setTotalProbaDinu0(result);
+                gene.setTotalProbaDinu0(gene.getTotalProbaDinu0() + result);
                 gene.getDinuProbaPhase0().put(key, result);
 
                 tmp1 = (double) gene.getDinuStatPhase1().get(key);
                 result = (tmp1 / tmp2) * 100.0;
-                gene.setTotalProbaDinu1(result);
+                gene.setTotalProbaDinu1(gene.getTotalProbaDinu1() + result);
                 gene.getDinuProbaPhase1().put(key, result);
             }
             return gene;

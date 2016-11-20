@@ -37,7 +37,7 @@ public class DefaultProgramStatsService extends Observable implements ProgramSta
     @Override
     public void addDate(ZonedDateTime date) {
         requestDates.add(date);
-        if (requestDates.size() > 30) {
+        if (requestDates.size() > 100) {
             requestDates.remove(0);
         }
     }
@@ -65,6 +65,7 @@ public class DefaultProgramStatsService extends Observable implements ProgramSta
             programStat.setTimeRemaining(totalRemaining);
             setChanged();
             notifyObservers(programStat);
+            requestDates.clear();
         }, 1, 1, TimeUnit.MINUTES);
     }
 
