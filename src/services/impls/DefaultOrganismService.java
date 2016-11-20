@@ -24,18 +24,22 @@ public class DefaultOrganismService implements OrganismService {
     private final ListeningExecutorService executorService;
     private final ProgressService progressService;
     private final FileService fileService;
+    private final ProgramStatsService programStatsService;
+    private final StatisticsService statisticsService;
     private HashMap<Kingdom, AtomicInteger> kingdomOffsets = new HashMap<Kingdom, AtomicInteger>();
 
     @Inject
-    public DefaultOrganismService(GeneService geneService, ListeningExecutorService listeningExecutorService, ProgressService progressService, FileService fileService) {
+    public DefaultOrganismService(GeneService geneService, ListeningExecutorService listeningExecutorService, ProgressService progressService, FileService fileService, ProgramStatsService programStatsService, StatisticsService statisticsService) {
         this.geneService = geneService;
         this.executorService = listeningExecutorService;
         this.progressService = progressService;
         this.fileService = fileService;
+        this.programStatsService = programStatsService;
+        this.statisticsService = statisticsService;
     }
 
     @Override
-    public Organism createOrganism(final String name, final String group, final String subGroup, final Date updateDate, final String[] geneIds, final String kingdomId) {
+    public Organism createOrganism(final String name, final String group, final String subGroup, final Date updateDate, final List<Tuple<String, String>> geneIds, final String kingdomId) {
         return new Organism(name, group, subGroup, updateDate, geneIds, kingdomId);
     }
 
@@ -58,8 +62,12 @@ public class DefaultOrganismService implements OrganismService {
             endIndex = (organisms.size() - 1);
             isLastLoop = true;
         }
+
+
         for (Organism organism: organisms.subList(startIndex, endIndex)) {
-            processGenesFutures.add(processGenes(organism));
+            ListenableFuture<XSSFWorkbook> processGenesFuture = processGenes(organism);
+            ListenableFuture<XSSFWorkbook> processOrganismFuture = Futures.transformAsync(processGenesFuture, workbook -> processOrganism(organism, workbook), executorService);
+            processGenesFutures.add(processOrganismFuture);
         }
         ListenableFuture<List<XSSFWorkbook>> organismFutures = Futures.allAsList(processGenesFutures);
         ListenableFuture<Kingdom> writeFuture = Futures.transform(organismFutures, new Function<List<XSSFWorkbook>, Kingdom>() {
@@ -88,13 +96,18 @@ public class DefaultOrganismService implements OrganismService {
         }
     }
 
+    private ListenableFuture<XSSFWorkbook> processOrganism(Organism organism, XSSFWorkbook workbook) {
+        return statisticsService.computeSum(organism, workbook);
+    }
+
     private ListenableFuture<XSSFWorkbook> processGenes(Organism organism) {
-        String[] geneIds = organism.getGeneIds();
+        List<Tuple<String, String>> geneIds = organism.getGeneIds();
         XSSFWorkbook workbook = fileService.createWorkbook();
         return Futures.transform(geneService.processGenes(organism, workbook, geneIds, organism.getPath()), new Function<XSSFWorkbook, XSSFWorkbook>() {
             @Nullable
             @Override
             public XSSFWorkbook apply(@Nullable XSSFWorkbook workbook) {
+                programStatsService.setRemainingRequests(programStatsService.getRemainingRequests());
                 progressService.getCurrentProgress().getProgress().incrementAndGet();
                 progressService.invalidateProgress();
                 return workbook;

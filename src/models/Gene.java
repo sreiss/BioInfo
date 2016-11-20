@@ -11,6 +11,7 @@ public class Gene {
     private double totalProbaDinu1;
     private double totalProbaTrinu0;
     private String name;
+    private String type;
     private String path;
     private int totalTrinucleotide;
     private int totalDinucleotide;
@@ -34,9 +35,10 @@ public class Gene {
     private LinkedHashMap<String, Integer> dinuStatPhase1;
     private LinkedHashMap<String, Double> dinuProbaPhase1;
 
-    public Gene(String name, String path, int totalDinucleotide, int totalTrinucleotide)
+    public Gene(String name, String type, String path, int totalDinucleotide, int totalTrinucleotide)
     {
         this.name = name;
+        this.type = type;
         this.path = path;
         this.totalTrinucleotide = totalDinucleotide;
         this.totalDinucleotide = totalTrinucleotide;
@@ -211,5 +213,9 @@ public class Gene {
 
     public void setTotalProbaTrinu0(double totalProbaTrinu0) {
         this.totalProbaTrinu0 = totalProbaTrinu0;
+    }
+
+    public String getType() {
+        return type;
     }
 }

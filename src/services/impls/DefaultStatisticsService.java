@@ -82,6 +82,10 @@ public class DefaultStatisticsService implements StatisticsService {
         }, executorService);
     }
 
+    public ListenableFuture<XSSFWorkbook> computeSum(Organism organism, XSSFWorkbook workbook) {
+        return executorService.submit(() -> fileService.fillWorkbookSum(organism, workbook));
+    }
+
 //
 //    /*
 //    public void file() {

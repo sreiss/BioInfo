@@ -11,6 +11,7 @@ import org.apache.http.impl.nio.client.HttpAsyncClients;
 import services.contracts.*;
 import services.impls.*;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class App extends AbstractModule {
 
@@ -26,6 +27,7 @@ public class App extends AbstractModule {
         bind(OrganismService.class).to(DefaultOrganismService.class).asEagerSingleton();
         bind(KingdomService.class).to(DefaultKingdomService.class).asEagerSingleton();
         bind(ProgressService.class).to(DefaultProgressService.class).asEagerSingleton();
+        bind(ProgramStatsService.class).to(DefaultProgramStatsService.class).asEagerSingleton();
     }
 
     @Provides
@@ -46,6 +48,11 @@ public class App extends AbstractModule {
     @Provides
     ListeningExecutorService provideListeningExecutorService() {
         return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(12));
+    }
+
+    @Provides
+    ScheduledExecutorService scheduledExecutorService() {
+        return  Executors.newScheduledThreadPool(1);
     }
 
     public static void main(String[] args) {

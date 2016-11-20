@@ -23,16 +23,19 @@ public class MainController implements Observer {
     private final FileService fileService;
     private final ConfigService configService;
     private final ProgressService progressService;
+    private final ProgramStatsService programStatsService;
     ListenableFuture<List<Kingdom>> currentFuture;
 
     @Inject
-    public MainController(final KingdomService kingdomService, final FileService fileService, final ConfigService configService, final ProgressService progressService) throws InterruptedException {
+    public MainController(final KingdomService kingdomService, final FileService fileService, final ConfigService configService, final ProgressService progressService, final ProgramStatsService programStatsService) throws InterruptedException {
         this.kingdomService = kingdomService;
         this.fileService = fileService;
         this.configService = configService;
         this.progressService = progressService;
+        this.programStatsService = programStatsService;
 
         progressService.addObserver(this);
+        programStatsService.addObserver(this);
 
         view = new MainWindow();
         view.setTitle("Test");
@@ -105,6 +108,7 @@ public class MainController implements Observer {
                 view.updateGlobalProgressionText("Update finished.");
                 view.setGlobalProgressionBar(0);
                 view.getExecuteButton().setEnabled(true);
+                view.getTimeRemainingLabel().setText("");
             }
 
             @Override
@@ -114,12 +118,14 @@ public class MainController implements Observer {
                     view.setGlobalProgressionBar(0);
                     view.getExecuteButton().setEnabled(true);
                     view.getInterruptButton().setEnabled(false);
+                    view.getTimeRemainingLabel().setText("");
                 } else {
                     System.err.println(throwable.toString());
                     view.updateGlobalProgressionText("An error occured.");
                     view.setGlobalProgressionBar(0);
                     view.getExecuteButton().setEnabled(true);
                     view.getInterruptButton().setEnabled(false);
+                    view.getTimeRemainingLabel().setText("");
                 }
                 resetProgressService();
             }
@@ -151,6 +157,14 @@ public class MainController implements Observer {
             }
             view.updateGlobalProgressionBar(progress.getProgress().get());
             view.updateGlobalProgressionText(String.format("Progression: %d/%d", progress.getProgress().get(), progress.getTotal().get()));
+        } else if (o instanceof ProgramStatsService) {
+            ProgramStat programStat = (ProgramStat) arg;
+
+            int seconds = (int) (programStat.getTimeRemaining() / 1000) % 60 ;
+            int minutes = (int) ((programStat.getTimeRemaining() / (1000*60)) % 60);
+            int hours   = (int) ((programStat.getTimeRemaining() / (1000*60*60)) % 24);
+
+            view.getTimeRemainingLabel().setText("ETA: " + hours + "h " + minutes + "min " + seconds + "s");
         }
     }
 }

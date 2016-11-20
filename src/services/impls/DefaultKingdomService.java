@@ -15,6 +15,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class DefaultKingdomService implements KingdomService {
@@ -25,9 +26,17 @@ public class DefaultKingdomService implements KingdomService {
     private final HttpService httpService;
     private final ListeningExecutorService executorService;
     private final ProgressService progressService;
+    private final ProgramStatsService programStatsService;
 
     @Inject
-    public DefaultKingdomService(FileService fileService, ParseService parseService, ConfigService configService, OrganismService organismService, HttpService httpService, ListeningExecutorService listeningExecutorService, ProgressService progressService) {
+    public DefaultKingdomService(FileService fileService,
+                                 ParseService parseService,
+                                 ConfigService configService,
+                                 OrganismService organismService,
+                                 HttpService httpService,
+                                 ListeningExecutorService listeningExecutorService,
+                                 ProgressService progressService,
+                                 ProgramStatsService programStatsService) {
         this.fileService = fileService;
         this.parseService = parseService;
         this.configService = configService;
@@ -35,6 +44,7 @@ public class DefaultKingdomService implements KingdomService {
         this.httpService = httpService;
         this.executorService = listeningExecutorService;
         this.progressService = progressService;
+        this.programStatsService = programStatsService;
     }
 
     @Override
@@ -58,8 +68,7 @@ public class DefaultKingdomService implements KingdomService {
                     String path = dataDir
                             + kingdom.getLabel()
                             + "/" + organism.getGroup()
-                            + "/" + organism.getSubGroup()
-                            + "/" + organism.getName();
+                            + "/" + organism.getSubGroup();
                     organism.setPath(path);
                     paths.add(path);
                 }
@@ -96,6 +105,8 @@ public class DefaultKingdomService implements KingdomService {
                 progress.getTotal().addAndGet(kingdom.getOrganisms().size());
                 progressService.invalidateProgress();
 
+                programStatsService.setRemainingRequests(programStatsService.getRemainingRequests() + kingdom.getOrganisms().size());
+
                 return kingdom;
             }
         }, executorService);
@@ -103,10 +114,19 @@ public class DefaultKingdomService implements KingdomService {
     }
 
     public ListenableFuture<List<Kingdom>> createKingdomTrees(final List<Kingdom> kingdoms) {
+        programStatsService.resetAcquisitionTime();
+        programStatsService.beginAcquisitionTimeEstimation();
         List<ListenableFuture<Kingdom>> acquireFutures = new ArrayList<>();
         for (Kingdom kingdom: kingdoms) {
             acquireFutures.add(createKingdomTree(kingdom));
         }
-        return Futures.successfulAsList(acquireFutures);
+        return Futures.transform(Futures.successfulAsList(acquireFutures), new Function<List<Kingdom>, List<Kingdom>>() {
+            @Nullable
+            @Override
+            public List<Kingdom> apply(@Nullable List<Kingdom> kingdoms) {
+                programStatsService.endAcquisitionTimeEstimation();
+                return kingdoms;
+            }
+        });
     }
 }

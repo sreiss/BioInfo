@@ -14,7 +14,9 @@ import services.contracts.*;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -23,13 +25,15 @@ public class DefaultGeneService implements GeneService {
     private final HttpService httpService;
     private final ParseService parseService;
     private final ListeningExecutorService executorService;
+    private final ProgramStatsService programStatsService;
 
     @Inject
-    public DefaultGeneService(StatisticsService statisticsService, HttpService httpService, ParseService parseService, ListeningExecutorService listeningExecutorService) {
+    public DefaultGeneService(StatisticsService statisticsService, HttpService httpService, ParseService parseService, ListeningExecutorService listeningExecutorService, ProgramStatsService programStatsService) {
         this.statisticsService = statisticsService;
         this.httpService = httpService;
         this.parseService = parseService;
         this.executorService = listeningExecutorService;
+        this.programStatsService = programStatsService;
     }
 
     public String generateUrlForGene(String id) {
@@ -45,9 +49,9 @@ public class DefaultGeneService implements GeneService {
         return parseService.extractSequences(inputStream, gene);
     }
 
-    private Gene createGene(final String name, final String path, final int totalDinucleotides, final int totalTrinucleotides) {
+    private Gene createGene(final String name, final String type, final String path, final int totalDinucleotides, final int totalTrinucleotides) {
 
-        Gene gene = new Gene(name, path, totalDinucleotides, totalTrinucleotides);
+        Gene gene = new Gene(name, type, path, totalDinucleotides, totalTrinucleotides);
 
         gene.setTrinuStatPhase0(initLinkedHashMap());
         gene.setTrinuStatPhase1(initLinkedHashMap());
@@ -137,8 +141,8 @@ public class DefaultGeneService implements GeneService {
         return Futures.transformAsync(trinuFuture, computedGene -> statisticsService.computeStatistics(organism, computedGene, workbook), executorService);
     }
 
-    private ListenableFuture<XSSFSheet> processGene(Organism organism, XSSFWorkbook workbook, String geneId, String path) {
-        Gene gene = createGene(geneId, path, 0, 0);
+    private ListenableFuture<XSSFSheet> processGene(Organism organism, XSSFWorkbook workbook, String geneId, String type, String path) {
+        Gene gene = createGene(geneId, type, path, 0, 0);
         ListenableFuture<HttpResponse> responseFuture = retrieveGene(geneId);
         ListenableFuture<InputStream> inputStreamFuture = Futures.transform(responseFuture, new Function<HttpResponse, InputStream>() {
             @Nullable
@@ -153,15 +157,28 @@ public class DefaultGeneService implements GeneService {
             }
         });
         ListenableFuture<List<String>> extractSequencesFuture = Futures.transformAsync(inputStreamFuture, inputStream -> extractSequences(inputStream, gene), executorService);
-        return Futures.transformAsync(extractSequencesFuture, sequences -> compute(organism, gene, workbook, sequences), executorService);
+        ListenableFuture<XSSFSheet> computeFuture = Futures.transformAsync(extractSequencesFuture, sequences -> compute(organism, gene, workbook, sequences), executorService);
+        return Futures.transform(computeFuture, new Function<XSSFSheet, XSSFSheet>() {
+            @Nullable
+            @Override
+            public XSSFSheet apply(@Nullable XSSFSheet sheet) {
+                programStatsService.addDate(ZonedDateTime.now());
+                return sheet;
+            }
+        }, executorService);
     }
 
     @Override
-    public ListenableFuture<XSSFWorkbook> processGenes(Organism organism, XSSFWorkbook workbook, String[] geneIds, String path) {
+    public ListenableFuture<XSSFWorkbook> processGenes(Organism organism, XSSFWorkbook workbook, List<Tuple<String, String>> geneIds, String path) {
         List<ListenableFuture<XSSFSheet>> geneFutures = new ArrayList<>();
-        if (geneIds != null && geneIds.length > 0) {
-            for (String geneId : geneIds) {
-                geneFutures.add(processGene(organism, workbook, geneId, path));
+        Iterator<Tuple<String, String>> iterator;
+        if (geneIds != null && geneIds.size() > 0) {
+            iterator = geneIds.iterator();
+            Tuple<String, String> current;
+            while (iterator.hasNext()) {
+                // X is the gene name, Y the type (chromosome, mitochondrion...)
+                current = iterator.next();
+                geneFutures.add(processGene(organism, workbook, current.getX(), current.getY(), path));
             }
         }
         return Futures.transform(Futures.successfulAsList(geneFutures), new Function<List<XSSFSheet>, XSSFWorkbook>() {

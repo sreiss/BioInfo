@@ -9,7 +9,7 @@ import models.Kingdom;
 import models.Organism;
 import services.contracts.OrganismService;
 import services.contracts.ParseService;
-import services.contracts.TaskProgress;
+import services.contracts.Tuple;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -18,9 +18,6 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.IntBinaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -141,7 +138,7 @@ public class DefaultParseService implements ParseService {
                     String group;
                     String subGroup;
                     Date updateDate = null;
-                    String[] geneIds;
+                    List<Tuple<String, String>> geneIds;
 
                     if (Kingdom.Eukaryota.equals(kingdomId)) {
                         name = data[0];
@@ -197,20 +194,24 @@ public class DefaultParseService implements ParseService {
 
     }
 
-    private String[] extractGeneIds(String segmentsColumn){
-        String[] segments;
+    private List<Tuple<String, String>> extractGeneIds(String segmentsColumn){
+        String[] tmpSegments;
+        List<Tuple<String, String>> segments;
         if (segmentsColumn.compareTo("-") == 0) {
             return null;
         } else {
-            segments = segmentsColumn.split(";");
-            if (segments.length > 0) {
-                for (int i = 0; i < segments.length; i++) {
-                    String segment = segments[i];
+            tmpSegments = segmentsColumn.split(";");
+            segments = new ArrayList<>(tmpSegments.length);
+            if (tmpSegments.length > 0) {
+                Tuple<String, String> tuple;
+                for (String segment : tmpSegments) {
                     String[] segmentParts = segment.split(":");
                     if (segmentParts.length == 2) {
-                        segment = segmentParts[1];
+                        tuple = new Tuple<>(segmentParts[1].trim().split("/")[0], segmentParts[0].trim().split(" ")[0]);
+                    } else {
+                        tuple = new Tuple<>(segmentParts[0].trim().split("/")[0], null);
                     }
-                    segments[i] = segment.split("/")[0];
+                    segments.add(tuple);
                 }
             }
             return segments;

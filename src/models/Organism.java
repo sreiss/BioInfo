@@ -1,11 +1,10 @@
 package models;
 
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import services.contracts.Tuple;
+
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Locale;
+import java.util.List;
 
 /**
  * Contains information about an organism
@@ -27,12 +26,12 @@ public class Organism {
     private String path;
 
     public String[] id;
-    private String[] geneIds;
+    private List<Tuple<String, String>> geneIds;
     private int idIndex=9;
     
     private ArrayList<Gene> genes;
 
-    public Organism(String name, String group, String subGroup, Date updateDate, String[] geneIds, String kingdomId) {
+    public Organism(String name, String group, String subGroup, Date updateDate, List<Tuple<String, String>> geneIds, String kingdomId) {
         this.name = name;
         this.group = group;
         this.subGroup = subGroup;
@@ -169,11 +168,11 @@ public class Organism {
         this.path = path;
     }
 
-    public String[] getGeneIds() {
+    public List<Tuple<String, String>> getGeneIds() {
         return geneIds;
     }
 
-    public void setGeneIds(String[] geneIds) {
+    public void setGeneIds(List<Tuple<String, String>> geneIds) {
         this.geneIds = geneIds;
     }
 

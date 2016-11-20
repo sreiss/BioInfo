@@ -108,6 +108,12 @@
                       <text value="Progression"/>
                     </properties>
                   </component>
+                  <component id="560c0" class="javax.swing.JLabel" binding="timeRemainingLabel">
+                    <constraints/>
+                    <properties>
+                      <text value=""/>
+                    </properties>
+                  </component>
                 </children>
               </grid>
               <grid id="2f759" binding="progressionBarPannel" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="1">

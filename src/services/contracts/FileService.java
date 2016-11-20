@@ -19,4 +19,6 @@ public interface FileService {
     void writeWorkbook(XSSFWorkbook workbook, String path, String fileName) throws IOException;
 
     List<Boolean> createDirectories(List<String> paths);
+
+    XSSFWorkbook fillWorkbookSum(Organism organism, XSSFWorkbook workbook);
 }

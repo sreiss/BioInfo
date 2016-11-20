@@ -66,11 +66,25 @@ public class DefaultFileService implements FileService {
 
     @Override
     public XSSFSheet fillWorkbook(Organism organism, Gene gene, final XSSFWorkbook workbook) {
-        XSSFSheet sheet = workbook.createSheet();
-        sheet = fillFileInfo(organism, gene, sheet);
+        String sheetName;
+        if (gene.getType() != null) {
+            sheetName = gene.getType().substring(0, 1).toUpperCase() + gene.getType().substring(1).toLowerCase() + "_" + gene.getName();
+        } else {
+            sheetName = gene.getName();
+        }
+        XSSFSheet sheet = workbook.createSheet(sheetName);
         sheet = fillFileDinu(gene, workbook, sheet);
         sheet = fillFileTrinu(gene, workbook, sheet);
+        sheet = fillFileInfo(organism, gene, sheet);
         return sheet;
+    }
+
+    public XSSFWorkbook fillWorkbookSum(Organism organism, final XSSFWorkbook workbook) {
+        String sheetName = "Sum";
+
+        XSSFSheet sheet = workbook.createSheet(sheetName);
+        fillOrganismInfo(organism, sheet);
+        return workbook;
     }
 
     @Override
@@ -129,47 +143,60 @@ public class DefaultFileService implements FileService {
         return numberStyle;
     }
 
-    private XSSFSheet fillFileInfo(Organism organism, Gene gene, XSSFSheet sheet) {
-
+    private XSSFSheet fillOrganismInfo(Organism organism, XSSFSheet sheet) {
         XSSFRow row;
-
-        if ((row = sheet.getRow(0)) == null)
-            row = sheet.createRow(0);
-
-        row.createCell(0).setCellValue("Nom");
-        row.createCell(1).setCellValue(gene.getName());
 
         if ((row = sheet.getRow(1)) == null)
             row = sheet.createRow(1);
 
-        row.createCell(0).setCellValue("Chemin");
-        row.createCell(1).setCellValue(organism.getGroup());
-        row.createCell(2).setCellValue(organism.getSubGroup());
-        row.createCell(3).setCellValue(organism.getName());
+        row.createCell(12).setCellValue("Organism Name");
+        row.createCell(13).setCellValue(organism.getName());
 
-        if ((row = sheet.getRow(2)) == null)
-            row = sheet.createRow(2);
+        sheet.autoSizeColumn(12);
+        sheet.autoSizeColumn(13);
 
-        row.createCell(0).setCellValue("Nb CDS");
-        row.createCell(1).setCellValue(gene.getTotalCds());
+        return sheet;
+    }
 
-        if ((row = sheet.getRow(3)) == null)
-            row = sheet.createRow(3);
+    private XSSFSheet fillFileInfo(Organism organism, Gene gene, XSSFSheet sheet) {
 
-        row.createCell(0).setCellValue("Nb CDS non traités");
-        row.createCell(1).setCellValue(gene.getTotalUnprocessedCds());
-
-        if ((row = sheet.getRow(4)) == null)
-            row = sheet.createRow(4);
-
-        row.createCell(0).setCellValue("Nb trinucléotides");
-        row.createCell(1).setCellValue(gene.getTotalUnprocessedCds());
-
-        if ((row = sheet.getRow(5)) == null)
-            row = sheet.createRow(5);
-
-        row.createCell(0).setCellValue("Nb dinucléotides");
-        row.createCell(1).setCellValue(gene.getTotalDinucleotide());
+//        XSSFRow row;
+//
+//        if ((row = sheet.getRow(1)) == null)
+//            row = sheet.createRow(1);
+//
+//        row.createCell(12).setCellValue("Organism Name");
+//        row.createCell(13).setCellValue(organism.getName());
+//
+//        if ((row = sheet.getRow(3)) == null)
+//            row = sheet.createRow(3);
+//
+//        row.createCell(12).setCellValue("Number of nucleotides");
+//        row.createCell(13).setCellValue(organism.get);
+//
+//        if ((row = sheet.getRow(2)) == null)
+//            row = sheet.createRow(2);
+//
+//        row.createCell(0).setCellValue("Nb CDS");
+//        row.createCell(1).setCellValue(gene.getTotalCds());
+//
+//        if ((row = sheet.getRow(3)) == null)
+//            row = sheet.createRow(3);
+//
+//        row.createCell(0).setCellValue("Nb CDS non traités");
+//        row.createCell(1).setCellValue(gene.getTotalUnprocessedCds());
+//
+//        if ((row = sheet.getRow(4)) == null)
+//            row = sheet.createRow(4);
+//
+//        row.createCell(0).setCellValue("Nb trinucléotides");
+//        row.createCell(1).setCellValue(gene.getTotalUnprocessedCds());
+//
+//        if ((row = sheet.getRow(5)) == null)
+//            row = sheet.createRow(5);
+//
+//        row.createCell(0).setCellValue("Nb dinucléotides");
+//        row.createCell(1).setCellValue(gene.getTotalDinucleotide());
 
         return sheet;
     }
@@ -180,18 +207,18 @@ public class DefaultFileService implements FileService {
         XSSFCell tmpCell;
         XSSFRow row;
 
-        if ((row = sheet.getRow(7)) == null)
-            row = sheet.createRow(7);
+        if ((row = sheet.getRow(0)) == null)
+            row = sheet.createRow(0);
 
-        row.createCell(0).setCellValue("Trinucleotide");
-        row.createCell(1).setCellValue("Nombre Phase 0");
-        row.createCell(2).setCellValue("Proba Phase 0");
-        row.createCell(3).setCellValue("Nombre Phase 1");
-        row.createCell(4).setCellValue("Proba Phase 1");
-        row.createCell(5).setCellValue("Nombre Phase 2");
-        row.createCell(6).setCellValue("Proba Phase 2");
+        row.createCell(0).setCellValue("");
+        row.createCell(1).setCellValue("Phase 0");
+        row.createCell(2).setCellValue("Freq Phase 0");
+        row.createCell(3).setCellValue("Phase 1");
+        row.createCell(4).setCellValue("Freq Phase 1");
+        row.createCell(5).setCellValue("Phase 2");
+        row.createCell(6).setCellValue("Freq Phase 2");
 
-        int i = 8;
+        int i = 1;
         Set<String> keys = g.getTrinuStatPhase0().keySet();
 
         for (String key : keys) {
@@ -294,45 +321,41 @@ public class DefaultFileService implements FileService {
         XSSFCell tmpCell;
         XSSFRow row;
 
-        if ((row = sheet.getRow(7)) == null)
-            row = sheet.createRow(7);
+        int rowNumber =  g.getTrinuProbaPhase0().size() + 1;
 
-        row.createCell(8).setCellValue("Dinucleotide");
-        row.createCell(9).setCellValue("Nombre Phase 0");
-        row.createCell(10).setCellValue("Proba Phase 0");
-        row.createCell(11).setCellValue("Nombre Phase 1");
-        row.createCell(12).setCellValue("Proba Phase 1");
+        if ((row = sheet.getRow(rowNumber)) == null)
+            row = sheet.createRow(rowNumber);
 
-        int i = 8;
         Set<String> keys = g.getDinuStatPhase0().keySet();
 
+        int i = rowNumber + 1;
         for (String key : keys) {
             if ((row = sheet.getRow(i)) == null)
                 row = sheet.createRow(i);
 
             // Set Dinicludotide
-            row.createCell(8).setCellValue(key);
+            row.createCell(0).setCellValue(key);
 
             // NB phase 0
-            tmpCell = row.createCell(9);
+            tmpCell = row.createCell(1);
             tmpCell.setCellValue(g.getDinuStatPhase0().get(key));
             tmpCell.setCellType(CellType.NUMERIC);
             tmpCell.setCellStyle(numberStyle);
 
             // Proba phase 0
-            tmpCell = row.createCell(10);
+            tmpCell = row.createCell(2);
             tmpCell.setCellValue(g.getDinuProbaPhase0().get(key));
             tmpCell.setCellType(CellType.NUMERIC);
             tmpCell.setCellStyle(probaStyle);
 
             // NB phase 1
-            tmpCell = row.createCell(11);
+            tmpCell = row.createCell(3);
             tmpCell.setCellValue(g.getDinuStatPhase1().get(key));
             tmpCell.setCellType(CellType.NUMERIC);
             tmpCell.setCellStyle(numberStyle);
 
             // Proba phase 1
-            tmpCell = row.createCell(12);
+            tmpCell = row.createCell(4);
             tmpCell.setCellValue(g.getDinuProbaPhase1().get(key));
             tmpCell.setCellType(CellType.NUMERIC);
             tmpCell.setCellStyle(probaStyle);
@@ -340,36 +363,36 @@ public class DefaultFileService implements FileService {
             i++;
         }
 
-        if ((row = sheet.getRow(i)) == null)
-            row = sheet.createRow(i);
+//        if ((row = sheet.getRow(i)) == null)
+//            row = sheet.createRow(i);
+//
+//        row.createCell(8).setCellValue("Total");
+//
+//        tmpCell = row.createCell(9);
+//        tmpCell.setCellValue(g.getTotalDinucleotide());
+//        tmpCell.setCellType(CellType.NUMERIC);
+//        tmpCell.setCellStyle(numberStyle);
+//
+//        tmpCell = row.createCell(10);
+//        tmpCell.setCellValue(g.getTotalProbaDinu0());
+//        tmpCell.setCellType(CellType.NUMERIC);
+//        tmpCell.setCellStyle(probaStyle);
+//
+//        tmpCell = row.createCell(11);
+//        tmpCell.setCellValue(g.getTotalDinucleotide());
+//        tmpCell.setCellType(CellType.NUMERIC);
+//        tmpCell.setCellStyle(numberStyle);
+//
+//        tmpCell = row.createCell(12);
+//        tmpCell.setCellValue(g.getTotalProbaDinu1());
+//        tmpCell.setCellType(CellType.NUMERIC);
+//        tmpCell.setCellStyle(probaStyle);
 
-        row.createCell(8).setCellValue("Total");
-
-        tmpCell = row.createCell(9);
-        tmpCell.setCellValue(g.getTotalDinucleotide());
-        tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(numberStyle);
-
-        tmpCell = row.createCell(10);
-        tmpCell.setCellValue(g.getTotalProbaDinu0());
-        tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(probaStyle);
-
-        tmpCell = row.createCell(11);
-        tmpCell.setCellValue(g.getTotalDinucleotide());
-        tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(numberStyle);
-
-        tmpCell = row.createCell(12);
-        tmpCell.setCellValue(g.getTotalProbaDinu1());
-        tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(probaStyle);
-
-        sheet.autoSizeColumn(8);
-        sheet.autoSizeColumn(9);
-        sheet.autoSizeColumn(10);
-        sheet.autoSizeColumn(11);
-        sheet.autoSizeColumn(12);
+        sheet.autoSizeColumn(2);
+        sheet.autoSizeColumn(3);
+        sheet.autoSizeColumn(4);
+        sheet.autoSizeColumn(5);
+        sheet.autoSizeColumn(6);
 
         return sheet;
     }
