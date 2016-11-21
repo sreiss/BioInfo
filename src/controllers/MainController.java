@@ -86,6 +86,7 @@ public class MainController implements Observer {
     }
 
     public void acquire() {
+        view.getTimeRemainingLabel().setText("Estimating ETA...");
         view.updateGlobalProgressionText("Begining the acquisition, the startup might take some time...");
 
         List<Kingdom> kingdoms = new ArrayList<Kingdom>();

@@ -250,7 +250,7 @@ public class DefaultFileService implements FileService {
 
             // Proba phase 1
             tmpCell = row.createCell(4);
-            tmpCell.setCellValue(g.getTrinuProbaPhase0().get(key));
+            tmpCell.setCellValue(g.getTrinuProbaPhase1().get(key));
             tmpCell.setCellType(CellType.NUMERIC);
             tmpCell.setCellStyle(probaStyle);
             //tmpCell.setCellType(XSSFCell.CELL_TYPE_NUMERIC);
