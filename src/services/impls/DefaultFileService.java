@@ -90,7 +90,7 @@ public class DefaultFileService implements FileService {
 
     @Override
     public void writeWorkbook(XSSFWorkbook workbook, final String path, final String fileName) throws IOException {
-        String filePath = Paths.get(path, fileName + ".xlsx").toString();
+        String filePath = Paths.get(path, fileName.replace("/", " ").replace(":", " ") + ".xlsx").toString();
         FileOutputStream stream = new FileOutputStream(filePath);
         workbook.write(stream);
         stream.close();
