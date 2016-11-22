@@ -178,7 +178,7 @@ public class DefaultGeneService implements GeneService {
             while (iterator.hasNext()) {
                 // X is the gene name, Y the type (chromosome, mitochondrion...)
                 current = iterator.next();
-                geneFutures.add(processGene(organism, workbook, current.getX(), current.getY(), path));
+                geneFutures.add(processGene(organism, workbook, current.getT1(), current.getT2(), path));
             }
         }
         return Futures.transform(Futures.successfulAsList(geneFutures), new Function<List<XSSFSheet>, XSSFWorkbook>() {

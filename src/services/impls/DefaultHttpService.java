@@ -43,6 +43,20 @@ public class DefaultHttpService implements HttpService {
             HttpRequest request = requestFactory.buildGetRequest(genericUrl);
             return request.execute();
         });
-        return responseFuture;
+        ListenableFuture<HttpResponse> failureTestFuture = Futures.transformAsync(responseFuture, new AsyncFunction<HttpResponse, HttpResponse>() {
+            @Override
+            public ListenableFuture<HttpResponse> apply(@Nullable HttpResponse httpResponse) throws Exception {
+                if (httpResponse == null || httpResponse.getContent() == null) {
+                    return get(url);
+                }
+                return returnHttpResponse(httpResponse);
+            }
+        }, executorService);
+
+        return failureTestFuture;
+    }
+
+    private ListenableFuture<HttpResponse> returnHttpResponse(HttpResponse httpResponse) {
+        return executorService.submit(() -> httpResponse);
     }
 }

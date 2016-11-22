@@ -1,19 +1,19 @@
 package services.contracts;
 
-public class Tuple<X,Y> {
-    private final X x;
-    private final Y y;
+public class Tuple<T1, T2> {
+    private final T1 t1;
+    private final T2 t2;
 
-    public Tuple(X x, Y y) {
-        this.x = x;
-        this.y = y;
+    public Tuple(T1 t1, T2 t2) {
+        this.t1 = t1;
+        this.t2 = t2;
     }
 
-    public X getX() {
-        return x;
+    public T1 getT1() {
+        return t1;
     }
 
-    public Y getY() {
-        return y;
+    public T2 getT2() {
+        return t2;
     }
 }
