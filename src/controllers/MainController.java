@@ -106,6 +106,8 @@ public class MainController implements Observer {
             @Override
             public void onSuccess(@Nullable List<Kingdom> kingdoms) {
                 view.updateGlobalProgressionText("Update finished.");
+                progressService.getCurrentProgress().getTotal().set(0);
+                progressService.getCurrentProgress().getProgress().set(0);
                 view.setGlobalProgressionBar(0);
                 view.getExecuteButton().setEnabled(true);
                 view.getTimeRemainingLabel().setText("");
@@ -115,6 +117,8 @@ public class MainController implements Observer {
             public void onFailure(Throwable throwable) {
                 if (throwable instanceof CancellationException) {
                     view.updateGlobalProgressionText("Processing interrupted.");
+                    progressService.getCurrentProgress().getTotal().set(0);
+                    progressService.getCurrentProgress().getProgress().set(0);
                     view.setGlobalProgressionBar(0);
                     view.getExecuteButton().setEnabled(true);
                     view.getInterruptButton().setEnabled(false);
@@ -122,6 +126,8 @@ public class MainController implements Observer {
                 } else {
                     System.err.println(throwable.toString());
                     view.updateGlobalProgressionText("An error occured.");
+                    progressService.getCurrentProgress().getTotal().set(0);
+                    progressService.getCurrentProgress().getProgress().set(0);
                     view.setGlobalProgressionBar(0);
                     view.getExecuteButton().setEnabled(true);
                     view.getInterruptButton().setEnabled(false);
