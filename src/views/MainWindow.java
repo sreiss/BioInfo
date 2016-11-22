@@ -56,9 +56,6 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
     public MainWindow() throws HeadlessException, InterruptedException {
         $$$setupUI$$$();
         this.setContentPane(mainPanel);
-        PrintStream printStream = new PrintStream(new TextAreaOutputStream(logTextArea));
-        System.setOut(printStream);
-        System.setErr(printStream);
     }
 
     public void addExecuteListener(ActionListener e) {

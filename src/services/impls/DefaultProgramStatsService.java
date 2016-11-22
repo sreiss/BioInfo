@@ -58,14 +58,16 @@ public class DefaultProgramStatsService extends Observable implements ProgramSta
                     totalMilliSeconds += duration.toMillis();
                 }
             }
-            long averageMilliSecondes = totalMilliSeconds / requestDates.size();
-            long totalRemaining = averageMilliSecondes * remainingRequests;
-            System.out.println(totalRemaining);
-            ProgramStat programStat = new ProgramStat();
-            programStat.setTimeRemaining(totalRemaining);
-            setChanged();
-            notifyObservers(programStat);
-            requestDates.clear();
+            if (requestDates.size() > 0) {
+                long averageMilliSecondes = totalMilliSeconds / requestDates.size();
+                long totalRemaining = averageMilliSecondes * remainingRequests;
+                System.out.println(totalRemaining);
+                ProgramStat programStat = new ProgramStat();
+                programStat.setTimeRemaining(totalRemaining);
+                setChanged();
+                notifyObservers(programStat);
+                requestDates.clear();
+            }
         }, 1, 1, TimeUnit.MINUTES);
     }
 
