@@ -19,6 +19,7 @@ import javax.swing.tree.TreeModel;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -89,7 +90,8 @@ public class DefaultFileService implements FileService {
 
     @Override
     public void writeWorkbook(XSSFWorkbook workbook, final String path, final String fileName) throws IOException {
-        FileOutputStream stream = new FileOutputStream(path + "/" + fileName + ".xlsx");
+        String filePath = Paths.get(path, fileName + ".xlsx").toString();
+        FileOutputStream stream = new FileOutputStream(filePath);
         workbook.write(stream);
         stream.close();
         workbook.close();
