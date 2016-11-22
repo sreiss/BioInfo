@@ -15,6 +15,7 @@ import services.contracts.*;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -107,6 +108,7 @@ public class DefaultOrganismService implements OrganismService {
             @Nullable
             @Override
             public XSSFWorkbook apply(@Nullable XSSFWorkbook workbook) {
+                programStatsService.addDate(ZonedDateTime.now());
                 programStatsService.setRemainingRequests(programStatsService.getRemainingRequests());
                 progressService.getCurrentProgress().getProgress().incrementAndGet();
                 progressService.invalidateProgress();

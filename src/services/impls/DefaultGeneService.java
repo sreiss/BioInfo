@@ -162,7 +162,6 @@ public class DefaultGeneService implements GeneService {
             @Nullable
             @Override
             public XSSFSheet apply(@Nullable XSSFSheet sheet) {
-                programStatsService.addDate(ZonedDateTime.now());
                 return sheet;
             }
         }, executorService);
