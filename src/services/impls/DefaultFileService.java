@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
 import models.Gene;
+import models.Kingdom;
 import models.Organism;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
@@ -11,25 +12,28 @@ import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 import services.contracts.FileService;
+import services.contracts.OrganismService;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.util.*;
 
 public class DefaultFileService implements FileService {
     private final ListeningExecutorService executorService;
+    private final OrganismService organismService;
 
     @Inject
-    public DefaultFileService(ListeningExecutorService listeningExecutorService) {
+    public DefaultFileService(ListeningExecutorService listeningExecutorService, OrganismService organismService) {
         this.executorService = listeningExecutorService;
+        this.organismService = organismService;
     }
 
     private DefaultMutableTreeNode buildTreeRoot(DefaultMutableTreeNode root, File file) {
@@ -97,8 +101,52 @@ public class DefaultFileService implements FileService {
         workbook.close();
     }
 
+    private File createUpdateFile(Kingdom kingdom) throws IOException {
+        String path = Paths.get("updates").toString();
+        boolean directoryCreated = new File(path).mkdirs();
+        File file = Paths.get(path, kingdom.getLabel() + ".json").toFile();
+        file.createNewFile();
+        return file;
+    }
 
-//    @Override
+    @Override
+    public Map<String, Date> readUpdateFile(Kingdom kingdom) throws IOException {
+        File file = createUpdateFile(kingdom);
+        FileInputStream stream = new FileInputStream(file);
+        InputStreamReader inputStreamReader = new InputStreamReader(stream);
+        Map<String, String> value = (Map<String, String>) JSONValue.parse(inputStreamReader);
+        if (value == null) {
+            return new HashMap<>();
+        } else {
+            Map<String, Date> parsedMap = new HashMap<>();
+            for (Map.Entry<String, String> entry: value.entrySet()) {
+                DateFormat format = organismService.getUpdateDateFormat();
+                try {
+                    parsedMap.putIfAbsent(entry.getKey(), format.parse(entry.getValue()));
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+            }
+            return parsedMap;
+        }
+    }
+
+    @Override
+    public void writeUpdateFile(Kingdom kingdom, Map<String, Date> updates) throws IOException {
+        File file = createUpdateFile(kingdom);
+        FileOutputStream fileOutputStream = new FileOutputStream(file);
+        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream);
+        Map<String, String> json = new HashMap<>();
+        DateFormat format = organismService.getUpdateDateFormat();
+        for (Map.Entry<String, Date> entry: updates.entrySet()) {
+            json.putIfAbsent(entry.getKey(), format.format(entry.getValue()));
+        }
+        JSONObject.writeJSONString(json, outputStreamWriter);
+        outputStreamWriter.close();
+        fileOutputStream.close();
+    }
+
+    //    @Override
 //    public Promise<List<File>, Throwable, Object> readDirectory(final String path) {
 //        return deferredManager.when(new DeferredCallable<List<File>, Object>() {
 //            @Override
@@ -323,7 +371,7 @@ public class DefaultFileService implements FileService {
         XSSFCell tmpCell;
         XSSFRow row;
 
-        int rowNumber =  g.getTrinuProbaPhase0().size() + 1;
+        int rowNumber =  g.getTrinuProbaPhase0().size() + 3;
 
         if ((row = sheet.getRow(rowNumber)) == null)
             row = sheet.createRow(rowNumber);

@@ -7,6 +7,7 @@ import com.google.inject.Inject;
 import models.CodingSequence;
 import models.Gene;
 import models.Organism;
+import models.Sum;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import services.contracts.*;
@@ -15,10 +16,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 
 public class DefaultGeneService implements GeneService {
     private final StatisticsService statisticsService;
@@ -180,6 +178,21 @@ public class DefaultGeneService implements GeneService {
                 geneFutures.add(processGene(organism, workbook, current.getT1(), current.getT2(), path));
             }
         }
+        ListenableFuture<List<XSSFSheet>> sheetsFuture = Futures.successfulAsList(geneFutures);
+        ListenableFuture<List<XSSFSheet>> sumsFuture = Futures.transform(sheetsFuture, new Function<List<XSSFSheet>, List<XSSFSheet>>() {
+            @Nullable
+            @Override
+            public List<XSSFSheet> apply(@Nullable List<XSSFSheet> sheets) {
+                HashMap < String, Sum > sums = new HashMap<String, Sum>();
+                for (Tuple<String, String> geneId: geneIds) {
+                    Sum sum = new Sum(geneId.getT2(), path, 0, 0);
+                    sums.putIfAbsent(geneId.getT2(), sum);
+                    sum = sums.get(geneId.getT2());
+                    //TODO: Sum
+                }
+                return sheets;
+            }
+        }, executorService);
         return Futures.transform(Futures.successfulAsList(geneFutures), new Function<List<XSSFSheet>, XSSFWorkbook>() {
             @Nullable
             @Override

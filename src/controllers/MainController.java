@@ -84,7 +84,7 @@ public class MainController implements Observer {
         });
     }
 
-    public void acquire() {
+    private void acquire() {
         view.getTimeRemainingLabel().setText("Estimating ETA...");
         view.updateGlobalProgressionText("Begining the acquisition, the startup might take some time...");
 
@@ -108,6 +108,7 @@ public class MainController implements Observer {
                 view.updateGlobalProgressionText("Update finished.");
                 progressService.getCurrentProgress().getTotal().set(0);
                 progressService.getCurrentProgress().getProgress().set(0);
+                programStatsService.endAcquisitionTimeEstimation();
                 view.setGlobalProgressionBar(0);
                 view.getExecuteButton().setEnabled(true);
                 view.getTimeRemainingLabel().setText("");
@@ -119,6 +120,7 @@ public class MainController implements Observer {
                     view.updateGlobalProgressionText("Processing interrupted.");
                     progressService.getCurrentProgress().getTotal().set(0);
                     progressService.getCurrentProgress().getProgress().set(0);
+                    programStatsService.endAcquisitionTimeEstimation();
                     view.setGlobalProgressionBar(0);
                     view.getExecuteButton().setEnabled(true);
                     view.getInterruptButton().setEnabled(false);
@@ -128,6 +130,7 @@ public class MainController implements Observer {
                     view.updateGlobalProgressionText("An error occured.");
                     progressService.getCurrentProgress().getTotal().set(0);
                     progressService.getCurrentProgress().getProgress().set(0);
+                    programStatsService.endAcquisitionTimeEstimation();
                     view.setGlobalProgressionBar(0);
                     view.getExecuteButton().setEnabled(true);
                     view.getInterruptButton().setEnabled(false);

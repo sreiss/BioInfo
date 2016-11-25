@@ -3,20 +3,23 @@ package services.impls;
 import com.google.api.client.http.HttpResponse;
 import com.google.common.base.Function;
 import com.google.common.primitives.Booleans;
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
 import models.Kingdom;
 import models.Organism;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import services.contracts.*;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class DefaultKingdomService implements KingdomService {
     private final ParseService parseService;
@@ -27,6 +30,7 @@ public class DefaultKingdomService implements KingdomService {
     private final ListeningExecutorService executorService;
     private final ProgressService progressService;
     private final ProgramStatsService programStatsService;
+    private HashMap<Kingdom, Map<String, Date>> updates = new HashMap<>();
 
     @Inject
     public DefaultKingdomService(FileService fileService,
@@ -78,8 +82,28 @@ public class DefaultKingdomService implements KingdomService {
         }, executorService);
     }
 
+    private ListenableFuture<Kingdom> loadUpdateFile(Kingdom kingdom) {
+        return executorService.submit(() -> {
+            try {
+                updates.putIfAbsent(kingdom, fileService.readUpdateFile(kingdom));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            updates.putIfAbsent(kingdom, new HashMap<>());
+            return kingdom;
+        });
+    }
+
+    /**
+     * This is one of the most important methods.
+     * It first loads the update file associated to the kingdom (under "./updates/{kingdomLabel}")
+     * then it retrieves it from the eutils API, then reads the response, then creates or check if the directories exist,
+     * then checks if an update is needed, then notifies the user interface through the progressService of the number of organisms to process,
+     * then processes the organisms, and if the later is a success or a failure, writes the current updates file.
+     */
     private ListenableFuture<Kingdom> createKingdomTree(final Kingdom kingdom) {
-        ListenableFuture<HttpResponse> responseFuture = retrieveKingdom(kingdom);
+        ListenableFuture<Kingdom> loadUpdateFileFuture = loadUpdateFile(kingdom);
+        ListenableFuture<HttpResponse> responseFuture = Futures.transformAsync(loadUpdateFileFuture, this::retrieveKingdom, executorService);
         ListenableFuture<InputStream> inputStreamFuture = Futures.transform(responseFuture, new Function<HttpResponse, InputStream>() {
             @Nullable
             @Override
@@ -93,10 +117,24 @@ public class DefaultKingdomService implements KingdomService {
             }
         });
         ListenableFuture<List<Boolean>> createDirectoriesFuture = Futures.transformAsync(inputStreamFuture, inputStream -> createDirectories(kingdom, inputStream), executorService);
-        ListenableFuture<Kingdom> progressFuture = Futures.transform(createDirectoriesFuture, new Function<List<Boolean>, Kingdom>() {
+        ListenableFuture<List<Organism>> checkIfNeedsUpdateFuture = Futures.transform(createDirectoriesFuture, new Function<List<Boolean>, List<Organism>>() {
             @Nullable
             @Override
-            public Kingdom apply(@Nullable List<Boolean> booleen) {
+            public List<Organism> apply(@Nullable List<Boolean> booleans) {
+                // Here we check if the organism has been updated since the last program run.
+                kingdom.setOrganisms(kingdom.getOrganisms().stream().filter(organism -> {
+                    Date remoteUpdate = organism.getUpdatedDate();
+                    Date localUpdate = updates.get(kingdom).get(organism.getName());
+                    // No local update found
+                    return remoteUpdate == null || localUpdate == null || localUpdate.before(remoteUpdate);
+                }).collect(Collectors.toList()));
+                return kingdom.getOrganisms();
+            }
+        }, executorService);
+        ListenableFuture<Kingdom> progressFuture = Futures.transform(checkIfNeedsUpdateFuture, new Function<List<Organism>, Kingdom>() {
+            @Nullable
+            @Override
+            public Kingdom apply(@Nullable List<Organism> organisms) {
                 progressService.getCurrentProgress().setStep(TaskProgress.Step.DirectoriesCreationFinished);
                 progressService.invalidateProgress();
 
@@ -110,7 +148,27 @@ public class DefaultKingdomService implements KingdomService {
                 return kingdom;
             }
         }, executorService);
-        return Futures.transformAsync(progressFuture, kingdom1 -> organismService.processOrganisms(kingdom), executorService);
+        ListenableFuture<Kingdom> kingdomProcessedFuture = Futures.transformAsync(progressFuture, kingdom1 -> organismService.processOrganisms(kingdom, updates.getOrDefault(kingdom, new HashMap<>())), executorService);
+        Futures.addCallback(kingdomProcessedFuture, new FutureCallback<Kingdom>() {
+            @Override
+            public void onSuccess(@Nullable Kingdom kingdom) {
+                writeUpdateFile(kingdom);
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                writeUpdateFile(kingdom);
+            }
+        }, executorService);
+        return kingdomProcessedFuture;
+    }
+
+    private void writeUpdateFile(Kingdom kingdom) {
+        try {
+            fileService.writeUpdateFile(kingdom, updates.get(kingdom));
+        } catch (IOException e) {
+            System.err.println("Unable to write update file for kingdom " + kingdom);
+        }
     }
 
     public ListenableFuture<List<Kingdom>> createKingdomTrees(final List<Kingdom> kingdoms) {

@@ -3,6 +3,8 @@ package models;
 import java.util.LinkedHashMap;
 
 abstract class NucleotidesHolder {
+    private String type;
+    private String path;
     private double totalProbaTrinu1;
     private double totalProbaTrinu2;
     private double totalProbaDinu0;
@@ -30,8 +32,10 @@ abstract class NucleotidesHolder {
     private LinkedHashMap<String, Integer> dinuStatPhase1;
     private LinkedHashMap<String, Double> dinuProbaPhase1;
 
-    public NucleotidesHolder()
+    public NucleotidesHolder(String type, String path, int totalDinucleotide, int totalTrinucleotide)
     {
+        this.type = type;
+        this.path = path;
         this.totalTrinucleotide = totalDinucleotide;
         this.totalDinucleotide = totalTrinucleotide;
         this.totalProbaTrinu0 = 0.0;
@@ -193,6 +197,14 @@ abstract class NucleotidesHolder {
 
     public void setTotalProbaTrinu0(double totalProbaTrinu0) {
         this.totalProbaTrinu0 = totalProbaTrinu0;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public String getType() {
+        return type;
     }
 
 }

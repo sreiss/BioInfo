@@ -1,20 +1,19 @@
 package services.impls;
 
-import com.google.api.client.xml.atom.Atom;
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
-import models.Gene;
 import models.Kingdom;
 import models.Organism;
-import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import services.contracts.*;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,7 +44,12 @@ public class DefaultOrganismService implements OrganismService {
     }
 
     @Override
-    public ListenableFuture<Kingdom> processOrganisms(Kingdom kingdom) {
+    public DateFormat getUpdateDateFormat() {
+        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    }
+
+    @Override
+    public ListenableFuture<Kingdom> processOrganisms(Kingdom kingdom, Map<String, Date> updates) {
         List<Organism> organisms = kingdom.getOrganisms();
 
         List<ListenableFuture<XSSFWorkbook>> processGenesFutures = new ArrayList<>();
@@ -68,32 +72,41 @@ public class DefaultOrganismService implements OrganismService {
         for (Organism organism: organisms.subList(startIndex, endIndex)) {
             ListenableFuture<XSSFWorkbook> processGenesFuture = processGenes(organism);
             ListenableFuture<XSSFWorkbook> processOrganismFuture = Futures.transformAsync(processGenesFuture, workbook -> processOrganism(organism, workbook), executorService);
-            processGenesFutures.add(processOrganismFuture);
+            ListenableFuture<XSSFWorkbook> writeUpdateFileFuture = Futures.transform(processOrganismFuture, new Function<XSSFWorkbook, XSSFWorkbook>() {
+                @Nullable
+                @Override
+                public XSSFWorkbook apply(@Nullable XSSFWorkbook workbook) {
+                    Date now = new Date();
+                    updates.putIfAbsent(organism.getName(), now);
+                    return workbook;
+                }
+            }, executorService);
+            processGenesFutures.add(writeUpdateFileFuture);
         }
         ListenableFuture<List<XSSFWorkbook>> organismFutures = Futures.allAsList(processGenesFutures);
         ListenableFuture<Kingdom> writeFuture = Futures.transform(organismFutures, new Function<List<XSSFWorkbook>, Kingdom>() {
-                @Nullable
-                @Override
-                public Kingdom apply(@Nullable List<XSSFWorkbook> workbooks) {
-                    if (workbooks != null) {
-                        for (int i = 0; i < workbooks.size(); i++) {
-                            Organism organism = organisms.get(i);
-                            try {
-                                fileService.writeWorkbook(workbooks.get(i), organism.getPath(), organism.getName());
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+            @Nullable
+            @Override
+            public Kingdom apply(@Nullable List<XSSFWorkbook> workbooks) {
+                if (workbooks != null) {
+                    for (int i = 0; i < workbooks.size(); i++) {
+                        Organism organism = organisms.get(i);
+                        try {
+                            fileService.writeWorkbook(workbooks.get(i), organism.getPath(), organism.getName());
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
                     }
-                    return kingdom;
                 }
-            }, executorService);
+                return kingdom;
+            }
+        }, executorService);
 
         if (isLastLoop) {
             return writeFuture;
         } else {
             currentOffset.set(currentOffset.get() + PROCESS_STACK_SIZE);
-            return Futures.transformAsync(writeFuture, kingdom1 -> processOrganisms(kingdom), executorService);
+            return Futures.transformAsync(writeFuture, kingdom1 -> processOrganisms(kingdom, updates), executorService);
         }
     }
 

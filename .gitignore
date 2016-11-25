@@ -17,6 +17,10 @@ hs_err_pid*
 
 # Data directory #
 data
+Results
+
+# Updates directory #
+updates/*.json
 
 # Lib docs #
 *.html

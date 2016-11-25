@@ -44,7 +44,7 @@ public class DefaultHttpService implements HttpService {
             return request.execute();
         });
         ListenableFuture<HttpResponse> failureTestFuture = Futures.transformAsync(responseFuture, httpResponse -> {
-            if (httpResponse == null || httpResponse.getContent() == null) {
+            if (httpResponse == null || httpResponse.getContent() == null || httpResponse.getContent().read(new byte[1]) == -1) {
                 return get(url);
             }
             return returnHttpResponse(httpResponse);
