@@ -249,4 +249,12 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
     public JLabel getDownloadProgressionLabel() {
         return downloadLabel;
     }
+
+    public JCheckBox getGenomesCheckBox() {
+        return genomesCheckBox;
+    }
+
+    public JCheckBox getGenesCheckBox() {
+        return genesCheckBox;
+    }
 }
