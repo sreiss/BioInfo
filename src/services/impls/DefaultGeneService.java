@@ -19,19 +19,22 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 public class DefaultGeneService implements GeneService {
+    private final int PROCESS_STACK_SIZE = 40;
     private final StatisticsService statisticsService;
     private final HttpService httpService;
     private final ParseService parseService;
     private final ListeningExecutorService executorService;
     private final ProgramStatsService programStatsService;
+    private final ProgressService progressService;
 
     @Inject
-    public DefaultGeneService(StatisticsService statisticsService, HttpService httpService, ParseService parseService, ListeningExecutorService listeningExecutorService, ProgramStatsService programStatsService) {
+    public DefaultGeneService(StatisticsService statisticsService, HttpService httpService, ParseService parseService, ListeningExecutorService listeningExecutorService, ProgramStatsService programStatsService, ProgressService progressService) {
         this.statisticsService = statisticsService;
         this.httpService = httpService;
         this.parseService = parseService;
         this.executorService = listeningExecutorService;
         this.programStatsService = programStatsService;
+        this.progressService = progressService;
     }
 
     public String generateUrlForGene(String id) {
@@ -147,6 +150,8 @@ public class DefaultGeneService implements GeneService {
             @Override
             public InputStream apply(HttpResponse httpResponse) {
                 try {
+                    progressService.getCurrentDownloadProgress().getProgress().incrementAndGet();
+                    progressService.invalidateDownloadProgress();
                     return httpResponse.getContent();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -170,6 +175,8 @@ public class DefaultGeneService implements GeneService {
         List<ListenableFuture<XSSFSheet>> geneFutures = new ArrayList<>();
         Iterator<Tuple<String, String>> iterator;
         if (geneIds != null && geneIds.size() > 0) {
+            progressService.getCurrentDownloadProgress().getTotal().addAndGet(geneIds.size());
+            progressService.invalidateDownloadProgress();
             iterator = geneIds.iterator();
             Tuple<String, String> current;
             while (iterator.hasNext()) {

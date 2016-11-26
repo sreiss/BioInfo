@@ -7,7 +7,6 @@ import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -25,8 +24,7 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
     private JButton interruptButton;
     private JScrollPane kingdomScrollPane;
     private JButton optionsButton;
-    private JLabel optionsLabel;
-    private JPanel rightPannel;
+    private JPanel kingdomPanel;
     private JPanel optionsPannel;
     private JTextArea logTextArea;
     private JCheckBox virusesCheckBox;
@@ -34,6 +32,15 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
     private JCheckBox eukaryotaCheckBox;
     private JPanel bottomPannel;
     private JLabel timeRemainingLabel;
+    private JPanel zipPanel;
+    private JCheckBox genomesCheckBox;
+    private JCheckBox genesCheckBox;
+    private JPanel optionsPanel;
+    private JPanel downloadProgressionPannel;
+    private JPanel downloadProgressionTextPanel;
+    private JPanel downloadProgressionBarPanel;
+    private JLabel downloadLabel;
+    private JProgressBar downloadProgressionBar;
 
     public JTree getKingdomTree() {
         return kingdomTree;
@@ -43,8 +50,8 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
         return optionsPannel;
     }
 
-    public JPanel getRightPannel() {
-        return rightPannel;
+    public JPanel getKingdomPanel() {
+        return kingdomPanel;
     }
 
     public JLabel getProgressionLabel() {
@@ -161,15 +168,12 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
         optionsPannel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
         optionsPannel.setEnabled(true);
         topPannel.add(optionsPannel, BorderLayout.EAST);
-        optionsLabel = new JLabel();
-        optionsLabel.setText("Kingdoms");
-        optionsPannel.add(optionsLabel);
-        rightPannel = new JPanel();
-        rightPannel.setLayout(new BorderLayout(0, 0));
-        optionsPannel.add(rightPannel);
+        kingdomPanel = new JPanel();
+        kingdomPanel.setLayout(new BorderLayout(0, 0));
+        optionsPannel.add(kingdomPanel);
         final JPanel panel1 = new JPanel();
         panel1.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
-        rightPannel.add(panel1, BorderLayout.CENTER);
+        kingdomPanel.add(panel1, BorderLayout.CENTER);
         eukaryotaCheckBox = new JCheckBox();
         eukaryotaCheckBox.setSelected(true);
         eukaryotaCheckBox.setText("Eukaryota");
@@ -236,5 +240,13 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
      */
     public JComponent $$$getRootComponent$$$() {
         return mainPanel;
+    }
+
+    public JProgressBar getDownloadProgressionBar() {
+        return downloadProgressionBar;
+    }
+
+    public JLabel getDownloadProgressionLabel() {
+        return downloadLabel;
     }
 }

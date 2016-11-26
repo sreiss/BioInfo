@@ -144,28 +144,38 @@ public class MainController implements Observer {
     @Override
     public void update(Observable o, Object arg) {
         if (o instanceof ProgressService) {
-            TaskProgress progress = (TaskProgress) arg;
-            switch (progress.getStep()) {
-                case KingdomGathering:
-                    view.updateGlobalProgressionText("Gathering kingdoms.");
-                    break;
-                case KingdomsCreation:
-                    break;
-                case DirectoriesCreationFinished:
-                    view.updateGlobalProgressionText("Directories created.");
-                    refreshTree();
-                    break;
-                case OrganismProcessing:
-                    view.updateGlobalProgressionText("Processing organisms.");
-                    break;
-                default:
-                    break;
+            if (arg instanceof DownloadTaskPogress) {
+                DownloadTaskPogress progress = (DownloadTaskPogress) arg;
+                view.getDownloadProgressionBar().setIndeterminate(false);
+                if (view.getDownloadProgressionBar().getMaximum() != progress.getTotal().get()) {
+                    view.getDownloadProgressionBar().setMaximum(progress.getTotal().get());
+                }
+                view.getDownloadProgressionBar().setValue(progress.getProgress().get());
+                view.getDownloadProgressionLabel().setText(String.format("Downloading: %d/%d", progress.getProgress().get(), progress.getTotal().get()));
+            } else if (arg instanceof TaskProgress) {
+                TaskProgress progress = (TaskProgress) arg;
+                switch (progress.getStep()) {
+                    case KingdomGathering:
+                        view.updateGlobalProgressionText("Gathering kingdoms.");
+                        break;
+                    case KingdomsCreation:
+                        break;
+                    case DirectoriesCreationFinished:
+                        view.updateGlobalProgressionText("Directories created.");
+                        refreshTree();
+                        break;
+                    case OrganismProcessing:
+                        view.updateGlobalProgressionText("Processing organisms.");
+                        break;
+                    default:
+                        break;
+                }
+                if (view.getGlobalProgressionBar().getMaximum() != progress.getTotal().get()) {
+                    view.setGlobalProgressionBar(progress.getTotal().get());
+                }
+                view.updateGlobalProgressionBar(progress.getProgress().get());
+                view.updateGlobalProgressionText(String.format("Progression: %d/%d", progress.getProgress().get(), progress.getTotal().get()));
             }
-            if (view.getGlobalProgressionBar().getMaximum() != progress.getTotal().get()) {
-                view.setGlobalProgressionBar(progress.getTotal().get());
-            }
-            view.updateGlobalProgressionBar(progress.getProgress().get());
-            view.updateGlobalProgressionText(String.format("Progression: %d/%d", progress.getProgress().get(), progress.getTotal().get()));
         } else if (o instanceof ProgramStatsService) {
             ProgramStat programStat = (ProgramStat) arg;
 

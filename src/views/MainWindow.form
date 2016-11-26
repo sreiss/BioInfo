@@ -15,57 +15,6 @@
         <properties/>
         <border type="none"/>
         <children>
-          <grid id="1eda4" binding="optionsPannel" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="1">
-            <constraints border-constraint="East"/>
-            <properties>
-              <enabled value="true"/>
-            </properties>
-            <border type="none"/>
-            <children>
-              <component id="e0845" class="javax.swing.JLabel" binding="optionsLabel">
-                <constraints/>
-                <properties>
-                  <text value="Kingdoms"/>
-                </properties>
-              </component>
-              <grid id="3515" binding="rightPannel" layout-manager="BorderLayout" hgap="0" vgap="0">
-                <constraints/>
-                <properties/>
-                <border type="none"/>
-                <children>
-                  <grid id="9eea9" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="1">
-                    <constraints border-constraint="Center"/>
-                    <properties/>
-                    <border type="none"/>
-                    <children>
-                      <component id="1e6ac" class="javax.swing.JCheckBox" binding="eukaryotaCheckBox">
-                        <constraints/>
-                        <properties>
-                          <selected value="true"/>
-                          <text value="Eukaryota"/>
-                        </properties>
-                      </component>
-                      <component id="5117a" class="javax.swing.JCheckBox" binding="virusesCheckBox">
-                        <constraints/>
-                        <properties>
-                          <selected value="true"/>
-                          <text value="Viruses"/>
-                        </properties>
-                      </component>
-                      <component id="6396e" class="javax.swing.JCheckBox" binding="prokaryotesCheckBox">
-                        <constraints/>
-                        <properties>
-                          <horizontalAlignment value="11"/>
-                          <selected value="true"/>
-                          <text value="Prokaryota"/>
-                        </properties>
-                      </component>
-                    </children>
-                  </grid>
-                </children>
-              </grid>
-            </children>
-          </grid>
           <scrollpane id="d325a" binding="kingdomScrollPane">
             <constraints border-constraint="Center"/>
             <properties/>
@@ -92,6 +41,39 @@
         <properties/>
         <border type="none"/>
         <children>
+          <grid id="f2e0" binding="downloadProgressionPannel" layout-manager="BorderLayout" hgap="0" vgap="0">
+            <constraints/>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <grid id="4c394" binding="downloadProgressionTextPanel" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="1">
+                <constraints border-constraint="North"/>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <component id="fa0e3" class="javax.swing.JLabel" binding="downloadLabel">
+                    <constraints/>
+                    <properties>
+                      <text value="Downloading"/>
+                    </properties>
+                  </component>
+                </children>
+              </grid>
+              <grid id="1f270" binding="downloadProgressionBarPanel" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="1">
+                <constraints border-constraint="South"/>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <component id="94acd" class="javax.swing.JProgressBar" binding="downloadProgressionBar">
+                    <constraints/>
+                    <properties>
+                      <preferredSize width="300" height="12"/>
+                    </properties>
+                  </component>
+                </children>
+              </grid>
+            </children>
+          </grid>
           <grid id="4eedc" binding="progressionPannel" layout-manager="BorderLayout" hgap="0" vgap="0">
             <constraints/>
             <properties/>
@@ -155,6 +137,72 @@
                 <properties>
                   <enabled value="false"/>
                   <text value="Interrupt"/>
+                </properties>
+              </component>
+            </children>
+          </grid>
+        </children>
+      </grid>
+      <grid id="c6ae4" binding="optionsPanel" layout-manager="GridBagLayout">
+        <constraints border-constraint="East"/>
+        <properties/>
+        <border type="none" title="Options">
+          <title-color color="-16777216"/>
+        </border>
+        <children>
+          <grid id="ada03" binding="zipPanel" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="0">
+            <constraints>
+              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false"/>
+              <gridbag top="5" left="10" bottom="5" right="10" weightx="0.0" weighty="1.0"/>
+            </constraints>
+            <properties/>
+            <border type="none" title="Zip">
+              <color color="-16777216"/>
+            </border>
+            <children>
+              <component id="da8c" class="javax.swing.JCheckBox" binding="genomesCheckBox">
+                <constraints/>
+                <properties>
+                  <text value="Genomes"/>
+                </properties>
+              </component>
+              <component id="9a2b0" class="javax.swing.JCheckBox" binding="genesCheckBox">
+                <constraints/>
+                <properties>
+                  <selected value="false"/>
+                  <text value="Valid Genes"/>
+                </properties>
+              </component>
+            </children>
+          </grid>
+          <grid id="3515" binding="kingdomPanel" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="0">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false"/>
+              <gridbag top="20" left="10" bottom="5" right="10" weightx="0.0" weighty="0.0"/>
+            </constraints>
+            <properties/>
+            <border type="none" title="Kingdoms"/>
+            <children>
+              <component id="1e6ac" class="javax.swing.JCheckBox" binding="eukaryotaCheckBox">
+                <constraints/>
+                <properties>
+                  <selected value="true"/>
+                  <text value="Eukaryota"/>
+                </properties>
+              </component>
+              <component id="5117a" class="javax.swing.JCheckBox" binding="virusesCheckBox">
+                <constraints/>
+                <properties>
+                  <selected value="true"/>
+                  <text value="Viruses"/>
+                </properties>
+              </component>
+              <component id="6396e" class="javax.swing.JCheckBox" binding="prokaryotesCheckBox">
+                <constraints/>
+                <properties>
+                  <horizontalAlignment value="11"/>
+                  <selected value="true"/>
+                  <text value="Prokaryota"/>
                 </properties>
               </component>
             </children>
