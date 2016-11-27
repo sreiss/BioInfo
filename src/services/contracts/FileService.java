@@ -4,12 +4,14 @@ import com.google.common.util.concurrent.ListenableFuture;
 import models.Gene;
 import models.Kingdom;
 import models.Organism;
+import models.Sum;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import javax.swing.tree.TreeModel;
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,5 +30,5 @@ public interface FileService {
 
     List<Boolean> createDirectories(List<String> paths);
 
-    XSSFWorkbook fillWorkbookSum(Organism organism, XSSFWorkbook workbook);
+    XSSFWorkbook fillWorkbookSum(Organism organism, HashMap<String, Sum> organismSums, XSSFWorkbook workbook);
 }

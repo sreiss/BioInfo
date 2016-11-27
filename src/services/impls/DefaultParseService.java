@@ -18,8 +18,10 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class DefaultParseService implements ParseService {
     private final OrganismService organismService;
@@ -189,7 +191,7 @@ public class DefaultParseService implements ParseService {
                 bufferedReader.close();
             }
 
-            return organisms;
+            return organisms.stream().filter(organism -> organism.getGeneIds() != null && organism.getGeneIds().size() > 0).collect(Collectors.toList());
         });
 
     }

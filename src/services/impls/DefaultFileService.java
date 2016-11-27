@@ -6,6 +6,7 @@ import com.google.inject.Inject;
 import models.Gene;
 import models.Kingdom;
 import models.Organism;
+import models.Sum;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.xssf.usermodel.XSSFCell;
@@ -84,11 +85,15 @@ public class DefaultFileService implements FileService {
         return sheet;
     }
 
-    public XSSFWorkbook fillWorkbookSum(Organism organism, final XSSFWorkbook workbook) {
-        String sheetName = "Sum";
+    @Override
+    public XSSFWorkbook fillWorkbookSum(Organism organism, HashMap<String, Sum> organismSums, final XSSFWorkbook workbook) {
+        for (Map.Entry<String, Sum> sum: organismSums.entrySet()) {
+            String sheetName = "Sum_" + sum.getKey();
 
-        XSSFSheet sheet = workbook.createSheet(sheetName);
-        fillOrganismInfo(organism, sheet);
+            XSSFSheet sheet = workbook.createSheet(sheetName);
+            fillOrganismInfo(organism, sheet);
+            fillSums(organism, sum.getValue(), workbook, sheet);
+        }
         return workbook;
     }
 
@@ -203,6 +208,120 @@ public class DefaultFileService implements FileService {
         CellStyle numberStyle = workbook.createCellStyle();
         numberStyle.setDataFormat(workbook.getCreationHelper().createDataFormat().getFormat("0"));
         return numberStyle;
+    }
+
+    private XSSFSheet fillSums(Organism organism, Sum sum, XSSFWorkbook workbook, XSSFSheet sheet) {
+        CellStyle numberStyle = buildCellStyleForNumber(workbook);
+        CellStyle probaStyle = buildCellStyleForProba(workbook);
+        XSSFCell tmpCell;
+        XSSFRow row;
+
+        if ((row = sheet.getRow(0)) == null)
+            row = sheet.createRow(0);
+
+        row.createCell(0).setCellValue("");
+        row.createCell(1).setCellValue("Phase 0");
+        row.createCell(2).setCellValue("Freq Phase 0");
+        row.createCell(3).setCellValue("Phase 1");
+        row.createCell(4).setCellValue("Freq Phase 1");
+        row.createCell(5).setCellValue("Phase 2");
+        row.createCell(6).setCellValue("Freq Phase 2");
+
+        int i = 1;
+        Set<String> keys = sum.getTrinuStatPhase0().keySet();
+
+        for (String key : keys) {
+            if ((row = sheet.getRow(i)) == null)
+                row = sheet.createRow(i);
+
+            // Set Trinicludotide
+            row.createCell(0).setCellValue(key);
+
+            // NB phase 0
+            tmpCell = row.createCell(1);
+            tmpCell.setCellValue(sum.getTrinuStatPhase0().get(key));
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(numberStyle);
+            //tmp0 += g.trinuStatPhase0.get(key);
+
+            // Proba phase 0
+            tmpCell = row.createCell(2);
+            tmpCell.setCellValue(sum.getTrinuProbaPhase0().get(key));
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(probaStyle);
+
+            // NB phase 1
+            tmpCell = row.createCell(3);
+            tmpCell.setCellValue(sum.getTrinuStatPhase1().get(key));
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(numberStyle);
+            //tmp1 += g.trinuStatPhase1.get(key);
+
+            // Proba phase 1
+            tmpCell = row.createCell(4);
+            tmpCell.setCellValue(sum.getTrinuProbaPhase1().get(key));
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(probaStyle);
+            //tmpCell.setCellType(XSSFCell.CELL_TYPE_NUMERIC);
+
+            // NB phase 2
+            tmpCell = row.createCell(5);
+            tmpCell.setCellValue(sum.getTrinuStatPhase2().get(key));
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(numberStyle);
+            //tmp2 += g.trinuStatPhase2.get(key);
+
+            // Proba phase 2
+            tmpCell = row.createCell(6);
+            tmpCell.setCellValue(sum.getTrinuProbaPhase2().get(key));
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(probaStyle);
+
+            i++;
+        }
+
+        row = sheet.createRow(i);
+        row.createCell(0).setCellValue("Total");
+
+        tmpCell = row.createCell(1);
+        tmpCell.setCellValue(sum.getTotalTrinucleotide());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(numberStyle);
+
+        tmpCell = row.createCell(2);
+        tmpCell.setCellValue(sum.getTotalProbaTrinu0());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(probaStyle);
+
+        tmpCell = row.createCell(3);
+        tmpCell.setCellValue(sum.getTotalTrinucleotide());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(numberStyle);
+
+        tmpCell = row.createCell(4);
+        tmpCell.setCellValue(sum.getTotalProbaTrinu1());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(probaStyle);
+
+        tmpCell = row.createCell(5);
+        tmpCell.setCellValue(sum.getTotalTrinucleotide());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(numberStyle);
+
+        tmpCell = row.createCell(6);
+        tmpCell.setCellValue(sum.getTotalProbaTrinu2());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(probaStyle);
+
+        sheet.autoSizeColumn(0);
+        sheet.autoSizeColumn(1);
+        sheet.autoSizeColumn(2);
+        sheet.autoSizeColumn(3);
+        sheet.autoSizeColumn(4);
+        sheet.autoSizeColumn(5);
+        sheet.autoSizeColumn(6);
+
+        return sheet;
     }
 
     private XSSFSheet fillOrganismInfo(Organism organism, XSSFSheet sheet) {

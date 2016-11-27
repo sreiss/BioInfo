@@ -15,8 +15,10 @@ import services.contracts.StatisticsService;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 public class DefaultStatisticsService implements StatisticsService {
     private final ListeningExecutorService executorService;
@@ -88,8 +90,14 @@ public class DefaultStatisticsService implements StatisticsService {
     public ListenableFuture<XSSFSheet> computeSum(Organism organism, Gene gene, HashMap<String, Sum> organismSums, XSSFSheet sheet) {
         return executorService.submit(() -> {
             String type = gene.getType();
-            organismSums.putIfAbsent(type, new Sum(type, "", 0, 0));
             Sum sum = organismSums.get(type);
+
+            sum.setDinuStatPhase0(addHashMaps(sum.getDinuStatPhase0(), gene.getDinuStatPhase0()));
+            sum.setDinuStatPhase1(addHashMaps(sum.getDinuStatPhase1(), gene.getDinuStatPhase1()));
+
+            sum.setTrinuStatPhase0(addHashMaps(sum.getTrinuStatPhase0(), gene.getTrinuStatPhase0()));
+            sum.setTrinuStatPhase1(addHashMaps(sum.getTrinuStatPhase1(), gene.getTrinuStatPhase1()));
+            sum.setTrinuStatPhase2(addHashMaps(sum.getTrinuStatPhase2(), gene.getTrinuStatPhase2()));
 
             sum.setTotalDinucleotide(sum.getTotalDinucleotide() + gene.getTotalDinucleotide());
             sum.setTotalTrinucleotide(sum.getTotalTrinucleotide() + gene.getTotalTrinucleotide());
@@ -98,6 +106,18 @@ public class DefaultStatisticsService implements StatisticsService {
 
             return sheet;
         });
+    }
+
+    private LinkedHashMap<String, Integer> addHashMaps(HashMap<String, Integer> hashMap1, HashMap<String, Integer> hashMap2) {
+        LinkedHashMap<String, Integer> result = new LinkedHashMap<>();
+        result.putAll(hashMap1);
+        result.forEach((key, value) -> {
+            Integer toAdd = hashMap2.get(key);
+            if (toAdd != null) {
+                result.put(key, value + toAdd);
+            }
+        });
+        return result;
     }
 
 //

@@ -73,6 +73,27 @@ public class DefaultGeneService implements GeneService {
         return gene;
     }
 
+    private Sum createSum(final String type, final String path, final int totalDinucleotides, final int totalTrinucleotides) {
+
+        Sum sum = new Sum(type, path, totalDinucleotides, totalTrinucleotides);
+
+        sum.setTrinuStatPhase0(initLinkedHashMap());
+        sum.setTrinuStatPhase1(initLinkedHashMap());
+        sum.setTrinuStatPhase2(initLinkedHashMap());
+
+        sum.setTrinuProbaPhase0(initLinkedHashMapProba());
+        sum.setTrinuProbaPhase1(initLinkedHashMapProba());
+        sum.setTrinuProbaPhase2(initLinkedHashMapProba());
+
+        sum.setDinuStatPhase0(initLinkedHashMapDinucleo());
+        sum.setDinuStatPhase1(initLinkedHashMapDinucleo());
+
+        sum.setDinuProbaPhase0(initLinkedHashMapDinucleoProba());
+        sum.setDinuProbaPhase1(initLinkedHashMapDinucleoProba());
+
+        return sum;
+    }
+
     private ListenableFuture<Gene> extractStatisticsSequenceForTrinucleotides(final String sequence, final Gene gene) {
         return executorService.submit(() -> {
             if (sequence.length() % 3 != 0) {
@@ -145,6 +166,7 @@ public class DefaultGeneService implements GeneService {
     }
 
     private ListenableFuture<XSSFSheet> computeSum(Organism organism, Gene gene, HashMap<String, Sum> organismSums, XSSFSheet sheet) {
+        organismSums.putIfAbsent(gene.getType(), createSum(gene.getType(), organism.getPath(), 0, 0));
         return statisticsService.computeSum(organism, gene, organismSums, sheet);
     }
 

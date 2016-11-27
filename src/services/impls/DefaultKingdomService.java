@@ -17,6 +17,8 @@ import services.contracts.*;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -53,7 +55,25 @@ public class DefaultKingdomService implements KingdomService {
 
     @Override
     public String generateKingdomGeneListUrl(Kingdom kingdom) {
-        return "https://www.ncbi.nlm.nih.gov/genomes/Genome2BE/genome2srv.cgi?action=download&orgn=&report=" + kingdom.getId() + "&status=50|40|30|20|&group=--%20All%20" + kingdom.getLabel() + "%20--&subgroup=--%20All%20" + kingdom.getLabel() + "%20--&host=All";
+        try {
+            URL url;
+            String urlString;
+            String host = (kingdom.equals(Kingdom.Viruses) ? "%3B&host=All" : "");
+            if(kingdom.getId().equals("plasmids"))
+            {
+                urlString = "http://www.ncbi.nlm.nih.gov/genomes/Genome2BE/genome2srv.cgi?action=download&orgn=&report=plasmids&king=All&group=All&subgroup=All&format=";
+            }
+            else
+            {
+                urlString = "http://www.ncbi.nlm.nih.gov/genomes/Genome2BE/genome2srv.cgi?action=download&orgn=&report=" + kingdom.getId() + "&status=50|40|30|20|" + host + "&group=--%20All%20" + kingdom.getLabel() + "%20--&subgroup=--%20All%20" + kingdom.getLabel() + "%20--";
+
+            }
+            url = new URL(urlString);
+            return url.toString();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private ListenableFuture<HttpResponse> retrieveKingdom(Kingdom kingdom) {
@@ -64,9 +84,8 @@ public class DefaultKingdomService implements KingdomService {
     private ListenableFuture<List<Boolean>> createDirectories(final Kingdom kingdom, final InputStream inputStream) {
         String dataDir = configService.getProperty("dataDir");
         return Futures.transform(parseService.extractOrganismList(inputStream, kingdom.getId()), new Function<List<Organism>, List<Boolean>>() {
-            @Nullable
             @Override
-            public List<Boolean> apply(@Nullable List<Organism> organisms) {
+            public List<Boolean> apply(List<Organism> organisms) {
                 List < String > paths = new ArrayList<>();
                 for (Organism organism : organisms) {
                     String path = dataDir

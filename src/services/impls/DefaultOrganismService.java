@@ -130,6 +130,7 @@ public class DefaultOrganismService implements OrganismService {
             @Override
             public XSSFWorkbook apply(@Nullable XSSFWorkbook workbook) {
                 System.out.println(organismSums);
+                fileService.fillWorkbookSum(organism, organismSums, workbook);
                 return workbook;
             }
         });

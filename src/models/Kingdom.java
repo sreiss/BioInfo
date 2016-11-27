@@ -6,7 +6,10 @@ import java.util.List;
 public enum Kingdom {
     Eukaryota("euks", "Eukaryota"),
     Prokaryotes("proks", "Prokaryotes"),
-    Viruses("viruses", "Viruses");
+    Viruses("viruses", "Viruses"),
+    Mitochondrion("euks_m", "Mitochondrion"),
+    Chloroplast("euks_c", "Chloroplast"),
+    Plasmids("plasmids", "Plasmids");
 
     private final String id;
     private final String label;

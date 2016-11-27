@@ -28,8 +28,6 @@ public class Organism {
     public String[] id;
     private List<Tuple<String, String>> geneIds;
     private int idIndex=9;
-    
-    private ArrayList<Gene> genes;
 
     public Organism(String name, String group, String subGroup, Date updateDate, List<Tuple<String, String>> geneIds, String kingdomId) {
         this.name = name;
@@ -38,7 +36,6 @@ public class Organism {
         this.updatedDate = updateDate;
         this.kingdomId = kingdomId;
         this.geneIds = geneIds;
-        this.genes = new ArrayList<Gene>();
 
 //        String[] data = s.split(sep);
 //
@@ -174,13 +171,5 @@ public class Organism {
 
     public void setGeneIds(List<Tuple<String, String>> geneIds) {
         this.geneIds = geneIds;
-    }
-
-    public ArrayList<Gene> getGenes() {
-        return genes;
-    }
-
-    public void setGenes(ArrayList<Gene> genes) {
-        this.genes = genes;
     }
 }

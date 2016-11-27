@@ -99,6 +99,9 @@ public class MainController implements Observer {
         if (view.getVirusesCheckBox().isSelected()) {
             kingdoms.add(Kingdom.Viruses);
         }
+        if (view.getPlasmidsCheckBox().isSelected()) {
+            kingdoms.add(Kingdom.Plasmids);
+        }
 
         ListenableFuture<List<Kingdom>> acquireFuture = kingdomService.createKingdomTrees(kingdoms);
         currentFuture = acquireFuture;
