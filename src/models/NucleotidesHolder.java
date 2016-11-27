@@ -32,7 +32,7 @@ abstract class NucleotidesHolder {
     private LinkedHashMap<String, Integer> dinuStatPhase1;
     private LinkedHashMap<String, Double> dinuProbaPhase1;
 
-    public NucleotidesHolder(String type, String path, int totalDinucleotide, int totalTrinucleotide)
+    NucleotidesHolder(String type, String path, int totalDinucleotide, int totalTrinucleotide)
     {
         this.type = type;
         this.path = path;

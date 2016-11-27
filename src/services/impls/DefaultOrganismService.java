@@ -7,6 +7,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
 import models.Kingdom;
 import models.Organism;
+import models.Sum;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import services.contracts.*;
 
@@ -71,8 +72,7 @@ public class DefaultOrganismService implements OrganismService {
 
         for (Organism organism: organisms.subList(startIndex, endIndex)) {
             ListenableFuture<XSSFWorkbook> processGenesFuture = processGenes(organism);
-            ListenableFuture<XSSFWorkbook> processOrganismFuture = Futures.transformAsync(processGenesFuture, workbook -> processOrganism(organism, workbook), executorService);
-            ListenableFuture<XSSFWorkbook> writeUpdateFileFuture = Futures.transform(processOrganismFuture, new Function<XSSFWorkbook, XSSFWorkbook>() {
+            ListenableFuture<XSSFWorkbook> writeUpdateFileFuture = Futures.transform(processGenesFuture, new Function<XSSFWorkbook, XSSFWorkbook>() {
                 @Nullable
                 @Override
                 public XSSFWorkbook apply(@Nullable XSSFWorkbook workbook) {
@@ -110,14 +110,11 @@ public class DefaultOrganismService implements OrganismService {
         }
     }
 
-    private ListenableFuture<XSSFWorkbook> processOrganism(Organism organism, XSSFWorkbook workbook) {
-        return statisticsService.computeSum(organism, workbook);
-    }
-
     private ListenableFuture<XSSFWorkbook> processGenes(Organism organism) {
         List<Tuple<String, String>> geneIds = organism.getGeneIds();
         XSSFWorkbook workbook = fileService.createWorkbook();
-        return Futures.transform(geneService.processGenes(organism, workbook, geneIds, organism.getPath()), new Function<XSSFWorkbook, XSSFWorkbook>() {
+        HashMap<String, Sum> organismSums = new HashMap<>();
+        ListenableFuture<XSSFWorkbook> processGenesFuture = Futures.transform(geneService.processGenes(organism, workbook, geneIds, organism.getPath(), organismSums), new Function<XSSFWorkbook, XSSFWorkbook>() {
             @Nullable
             @Override
             public XSSFWorkbook apply(@Nullable XSSFWorkbook workbook) {
@@ -128,5 +125,14 @@ public class DefaultOrganismService implements OrganismService {
                 return workbook;
             }
         });
+        ListenableFuture<XSSFWorkbook> processSumsFuture = Futures.transform(processGenesFuture, new Function<XSSFWorkbook, XSSFWorkbook>() {
+            @Nullable
+            @Override
+            public XSSFWorkbook apply(@Nullable XSSFWorkbook workbook) {
+                System.out.println(organismSums);
+                return workbook;
+            }
+        });
+        return processSumsFuture;
     }
 }

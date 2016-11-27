@@ -53,7 +53,7 @@ public class DefaultKingdomService implements KingdomService {
 
     @Override
     public String generateKingdomGeneListUrl(Kingdom kingdom) {
-        return "https://www.ncbi.nlm.nih.gov/genomes/Genome2BE/genome2srv.cgi?action=download&orgn=&report=" + kingdom.getId() + "&status=50|40|30|20|&group=--%20All%20" + kingdom.getLabel() + "%20--&subgroup=--%20All%20" + kingdom.getLabel() + "%20--";
+        return "https://www.ncbi.nlm.nih.gov/genomes/Genome2BE/genome2srv.cgi?action=download&orgn=&report=" + kingdom.getId() + "&status=50|40|30|20|&group=--%20All%20" + kingdom.getLabel() + "%20--&subgroup=--%20All%20" + kingdom.getLabel() + "%20--&host=All";
     }
 
     private ListenableFuture<HttpResponse> retrieveKingdom(Kingdom kingdom) {

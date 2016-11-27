@@ -7,12 +7,15 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
 import models.Gene;
 import models.Organism;
+import models.Sum;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import services.contracts.FileService;
 import services.contracts.StatisticsService;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class DefaultStatisticsService implements StatisticsService {
@@ -82,8 +85,19 @@ public class DefaultStatisticsService implements StatisticsService {
         }, executorService);
     }
 
-    public ListenableFuture<XSSFWorkbook> computeSum(Organism organism, XSSFWorkbook workbook) {
-        return executorService.submit(() -> fileService.fillWorkbookSum(organism, workbook));
+    public ListenableFuture<XSSFSheet> computeSum(Organism organism, Gene gene, HashMap<String, Sum> organismSums, XSSFSheet sheet) {
+        return executorService.submit(() -> {
+            String type = gene.getType();
+            organismSums.putIfAbsent(type, new Sum(type, "", 0, 0));
+            Sum sum = organismSums.get(type);
+
+            sum.setTotalDinucleotide(sum.getTotalDinucleotide() + gene.getTotalDinucleotide());
+            sum.setTotalTrinucleotide(sum.getTotalTrinucleotide() + gene.getTotalTrinucleotide());
+            sum.setTotalUnprocessedCds(sum.getTotalUnprocessedCds() + gene.getTotalUnprocessedCds());
+            sum.setTotalCds(sum.getTotalCds() + gene.getTotalCds());
+
+            return sheet;
+        });
     }
 
 //

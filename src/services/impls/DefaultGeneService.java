@@ -17,15 +17,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class DefaultGeneService implements GeneService {
-    private final int PROCESS_STACK_SIZE = 40;
+    private final int PROCESS_STACK_SIZE = 20;
     private final StatisticsService statisticsService;
     private final HttpService httpService;
     private final ParseService parseService;
     private final ListeningExecutorService executorService;
     private final ProgramStatsService programStatsService;
     private final ProgressService progressService;
+    private HashMap<Organism, AtomicInteger> organismOffsets = new HashMap<>();
 
     @Inject
     public DefaultGeneService(StatisticsService statisticsService, HttpService httpService, ParseService parseService, ListeningExecutorService listeningExecutorService, ProgramStatsService programStatsService, ProgressService progressService) {
@@ -142,7 +144,11 @@ public class DefaultGeneService implements GeneService {
         return Futures.transformAsync(trinuFuture, computedGene -> statisticsService.computeStatistics(organism, computedGene, workbook), executorService);
     }
 
-    private ListenableFuture<XSSFSheet> processGene(Organism organism, XSSFWorkbook workbook, String geneId, String type, String path) {
+    private ListenableFuture<XSSFSheet> computeSum(Organism organism, Gene gene, HashMap<String, Sum> organismSums, XSSFSheet sheet) {
+        return statisticsService.computeSum(organism, gene, organismSums, sheet);
+    }
+
+    private ListenableFuture<XSSFSheet> processGene(Organism organism, XSSFWorkbook workbook, String geneId, String type, String path, HashMap<String, Sum> organismSums) {
         Gene gene = createGene(geneId, type, path, 0, 0);
         ListenableFuture<HttpResponse> responseFuture = retrieveGene(geneId);
         ListenableFuture<InputStream> inputStreamFuture = Futures.transform(responseFuture, new Function<HttpResponse, InputStream>() {
@@ -161,7 +167,8 @@ public class DefaultGeneService implements GeneService {
         });
         ListenableFuture<List<String>> extractSequencesFuture = Futures.transformAsync(inputStreamFuture, inputStream -> extractSequences(inputStream, gene), executorService);
         ListenableFuture<XSSFSheet> computeFuture = Futures.transformAsync(extractSequencesFuture, sequences -> compute(organism, gene, workbook, sequences), executorService);
-        return Futures.transform(computeFuture, new Function<XSSFSheet, XSSFSheet>() {
+        ListenableFuture<XSSFSheet> sumFuture = Futures.transformAsync(computeFuture, sheet -> computeSum(organism, gene, organismSums, sheet), executorService);
+        return Futures.transform(sumFuture, new Function<XSSFSheet, XSSFSheet>() {
             @Nullable
             @Override
             public XSSFSheet apply(@Nullable XSSFSheet sheet) {
@@ -171,42 +178,47 @@ public class DefaultGeneService implements GeneService {
     }
 
     @Override
-    public ListenableFuture<XSSFWorkbook> processGenes(Organism organism, XSSFWorkbook workbook, List<Tuple<String, String>> geneIds, String path) {
-        List<ListenableFuture<XSSFSheet>> geneFutures = new ArrayList<>();
-        Iterator<Tuple<String, String>> iterator;
+    public ListenableFuture<XSSFWorkbook> processGenes(Organism organism, XSSFWorkbook workbook, List<Tuple<String, String>> geneIds, String path, HashMap<String, Sum> organismSums) {
         if (geneIds != null && geneIds.size() > 0) {
+            List<ListenableFuture<XSSFSheet>> geneFutures = new ArrayList<>();
+
+            organismOffsets.putIfAbsent(organism, new AtomicInteger());
+            AtomicInteger currentOffset = organismOffsets.get(organism);
+
+            int startIndex = currentOffset.get();
+            int endIndex;
+            boolean isLastLoop;
+            if ((startIndex + PROCESS_STACK_SIZE) < (geneIds.size() - 1)) {
+                endIndex = (startIndex + PROCESS_STACK_SIZE);
+                isLastLoop = false;
+            } else {
+                endIndex = (geneIds.size() - 1);
+                isLastLoop = true;
+            }
+
             progressService.getCurrentDownloadProgress().getTotal().addAndGet(geneIds.size());
             progressService.invalidateDownloadProgress();
-            iterator = geneIds.iterator();
-            Tuple<String, String> current;
-            while (iterator.hasNext()) {
+            for (Tuple<String, String> geneId: geneIds.subList(startIndex, endIndex)) {
                 // X is the gene name, Y the type (chromosome, mitochondrion...)
-                current = iterator.next();
-                geneFutures.add(processGene(organism, workbook, current.getT1(), current.getT2(), path));
+                geneFutures.add(processGene(organism, workbook, geneId.getT1(), geneId.getT2(), path, organismSums));
             }
-        }
-        ListenableFuture<List<XSSFSheet>> sheetsFuture = Futures.successfulAsList(geneFutures);
-        ListenableFuture<List<XSSFSheet>> sumsFuture = Futures.transform(sheetsFuture, new Function<List<XSSFSheet>, List<XSSFSheet>>() {
-            @Nullable
-            @Override
-            public List<XSSFSheet> apply(@Nullable List<XSSFSheet> sheets) {
-                HashMap < String, Sum > sums = new HashMap<String, Sum>();
-                for (Tuple<String, String> geneId: geneIds) {
-                    Sum sum = new Sum(geneId.getT2(), path, 0, 0);
-                    sums.putIfAbsent(geneId.getT2(), sum);
-                    sum = sums.get(geneId.getT2());
-                    //TODO: Sum
+            ListenableFuture<XSSFWorkbook> workbookFuture = Futures.transform(Futures.successfulAsList(geneFutures), new Function<List<XSSFSheet>, XSSFWorkbook>() {
+                @Nullable
+                @Override
+                public XSSFWorkbook apply(@Nullable List<XSSFSheet> unused) {
+                    return workbook;
                 }
-                return sheets;
+            }, executorService);
+
+            if (isLastLoop) {
+                return workbookFuture;
+            } else {
+                currentOffset.set(currentOffset.get() + PROCESS_STACK_SIZE);
+                return Futures.transformAsync(workbookFuture, kingdom1 -> processGenes(organism, workbook, geneIds, path, organismSums), executorService);
             }
-        }, executorService);
-        return Futures.transform(Futures.successfulAsList(geneFutures), new Function<List<XSSFSheet>, XSSFWorkbook>() {
-            @Nullable
-            @Override
-            public XSSFWorkbook apply(@Nullable List<XSSFSheet> unused) {
-                return workbook;
-            }
-        }, executorService);
+        } else {
+            return executorService.submit(() -> workbook);
+        }
     }
 
     private LinkedHashMap<String, Integer> initLinkedHashMap() {
