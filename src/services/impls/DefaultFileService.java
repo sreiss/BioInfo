@@ -94,7 +94,7 @@ public class DefaultFileService implements FileService {
 
     @Override
     public void writeWorkbook(XSSFWorkbook workbook, final String path, final String fileName) throws IOException {
-        String filePath = Paths.get(path, fileName.replace("/", " ").replace(":", " ") + ".xlsx").toString();
+        String filePath = Paths.get(path, sanitizeFileName(fileName) + ".xlsx").toString();
         FileOutputStream stream = new FileOutputStream(filePath);
         workbook.write(stream);
         stream.close();
@@ -107,6 +107,18 @@ public class DefaultFileService implements FileService {
         File file = Paths.get(path, kingdom.getLabel() + ".json").toFile();
         file.createNewFile();
         return file;
+    }
+
+    private String sanitizeFileName(String fileName) {
+        return fileName.replace("\\", " ")
+                .replace("/", " ")
+                .replace(":", " ")
+                .replace("*", " ")
+                .replace("?", " ")
+                .replace("\"", " ")
+                .replace("<", " ")
+                .replace(">", " ")
+                .replace("|", " ");
     }
 
     @Override
