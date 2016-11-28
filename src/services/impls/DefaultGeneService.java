@@ -210,11 +210,11 @@ public class DefaultGeneService implements GeneService {
             int startIndex = currentOffset.get();
             int endIndex;
             boolean isLastLoop;
-            if ((startIndex + PROCESS_STACK_SIZE) < (geneIds.size() - 1)) {
+            if ((startIndex + PROCESS_STACK_SIZE) < geneIds.size()) {
                 endIndex = (startIndex + PROCESS_STACK_SIZE);
                 isLastLoop = false;
             } else {
-                endIndex = (geneIds.size() - 1);
+                endIndex = geneIds.size();
                 isLastLoop = true;
             }
 

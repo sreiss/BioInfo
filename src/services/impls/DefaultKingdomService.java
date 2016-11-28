@@ -61,7 +61,7 @@ public class DefaultKingdomService implements KingdomService {
             String host = (kingdom.equals(Kingdom.Viruses) ? "%3B&host=All" : "");
             if(kingdom.getId().equals("plasmids"))
             {
-                urlString = "http://www.ncbi.nlm.nih.gov/genomes/Genome2BE/genome2srv.cgi?action=download&orgn=&report=plasmids&king=All&group=All&subgroup=All&format=";
+                urlString = "https://www.ncbi.nlm.nih.gov/genomes/Genome2BE/genome2srv.cgi?action=download&orgn=&report=plasmids&king=All&group=All&subgroup=All&format=";
             }
             else
             {

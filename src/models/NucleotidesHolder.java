@@ -2,7 +2,7 @@ package models;
 
 import java.util.LinkedHashMap;
 
-abstract class NucleotidesHolder {
+public abstract class NucleotidesHolder {
     private String type;
     private String path;
     private double totalProbaTrinu1;

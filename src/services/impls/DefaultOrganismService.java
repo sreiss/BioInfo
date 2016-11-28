@@ -125,15 +125,6 @@ public class DefaultOrganismService implements OrganismService {
                 return workbook;
             }
         });
-        ListenableFuture<XSSFWorkbook> processSumsFuture = Futures.transform(processGenesFuture, new Function<XSSFWorkbook, XSSFWorkbook>() {
-            @Nullable
-            @Override
-            public XSSFWorkbook apply(@Nullable XSSFWorkbook workbook) {
-                System.out.println(organismSums);
-                fileService.fillWorkbookSum(organism, organismSums, workbook);
-                return workbook;
-            }
-        });
-        return processSumsFuture;
+        return Futures.transformAsync(processGenesFuture, processedWorkbook -> statisticsService.computeProbabilitiesFromSum(organism, organismSums, workbook), executorService);
     }
 }

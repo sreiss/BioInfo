@@ -3,10 +3,7 @@ package services.impls;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
-import models.Gene;
-import models.Kingdom;
-import models.Organism;
-import models.Sum;
+import models.*;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.xssf.usermodel.XSSFCell;
@@ -73,7 +70,7 @@ public class DefaultFileService implements FileService {
     @Override
     public XSSFSheet fillWorkbook(Organism organism, Gene gene, final XSSFWorkbook workbook) {
         String sheetName;
-        if (gene.getType() != null) {
+        if (!gene.getType().equals("")) {
             sheetName = gene.getType().substring(0, 1).toUpperCase() + gene.getType().substring(1).toLowerCase() + "_" + gene.getName();
         } else {
             sheetName = gene.getName();
@@ -91,8 +88,9 @@ public class DefaultFileService implements FileService {
             String sheetName = "Sum_" + sum.getKey();
 
             XSSFSheet sheet = workbook.createSheet(sheetName);
-            fillOrganismInfo(organism, sheet);
-            fillSums(organism, sum.getValue(), workbook, sheet);
+            fillInfos(organism, sum.getValue(), sheet);
+            fillFileTrinu(sum.getValue(), workbook, sheet);
+            fillFileDinu(sum.getValue(), workbook, sheet);
         }
         return workbook;
     }
@@ -210,121 +208,7 @@ public class DefaultFileService implements FileService {
         return numberStyle;
     }
 
-    private XSSFSheet fillSums(Organism organism, Sum sum, XSSFWorkbook workbook, XSSFSheet sheet) {
-        CellStyle numberStyle = buildCellStyleForNumber(workbook);
-        CellStyle probaStyle = buildCellStyleForProba(workbook);
-        XSSFCell tmpCell;
-        XSSFRow row;
-
-        if ((row = sheet.getRow(0)) == null)
-            row = sheet.createRow(0);
-
-        row.createCell(0).setCellValue("");
-        row.createCell(1).setCellValue("Phase 0");
-        row.createCell(2).setCellValue("Freq Phase 0");
-        row.createCell(3).setCellValue("Phase 1");
-        row.createCell(4).setCellValue("Freq Phase 1");
-        row.createCell(5).setCellValue("Phase 2");
-        row.createCell(6).setCellValue("Freq Phase 2");
-
-        int i = 1;
-        Set<String> keys = sum.getTrinuStatPhase0().keySet();
-
-        for (String key : keys) {
-            if ((row = sheet.getRow(i)) == null)
-                row = sheet.createRow(i);
-
-            // Set Trinicludotide
-            row.createCell(0).setCellValue(key);
-
-            // NB phase 0
-            tmpCell = row.createCell(1);
-            tmpCell.setCellValue(sum.getTrinuStatPhase0().get(key));
-            tmpCell.setCellType(CellType.NUMERIC);
-            tmpCell.setCellStyle(numberStyle);
-            //tmp0 += g.trinuStatPhase0.get(key);
-
-            // Proba phase 0
-            tmpCell = row.createCell(2);
-            tmpCell.setCellValue(sum.getTrinuProbaPhase0().get(key));
-            tmpCell.setCellType(CellType.NUMERIC);
-            tmpCell.setCellStyle(probaStyle);
-
-            // NB phase 1
-            tmpCell = row.createCell(3);
-            tmpCell.setCellValue(sum.getTrinuStatPhase1().get(key));
-            tmpCell.setCellType(CellType.NUMERIC);
-            tmpCell.setCellStyle(numberStyle);
-            //tmp1 += g.trinuStatPhase1.get(key);
-
-            // Proba phase 1
-            tmpCell = row.createCell(4);
-            tmpCell.setCellValue(sum.getTrinuProbaPhase1().get(key));
-            tmpCell.setCellType(CellType.NUMERIC);
-            tmpCell.setCellStyle(probaStyle);
-            //tmpCell.setCellType(XSSFCell.CELL_TYPE_NUMERIC);
-
-            // NB phase 2
-            tmpCell = row.createCell(5);
-            tmpCell.setCellValue(sum.getTrinuStatPhase2().get(key));
-            tmpCell.setCellType(CellType.NUMERIC);
-            tmpCell.setCellStyle(numberStyle);
-            //tmp2 += g.trinuStatPhase2.get(key);
-
-            // Proba phase 2
-            tmpCell = row.createCell(6);
-            tmpCell.setCellValue(sum.getTrinuProbaPhase2().get(key));
-            tmpCell.setCellType(CellType.NUMERIC);
-            tmpCell.setCellStyle(probaStyle);
-
-            i++;
-        }
-
-        row = sheet.createRow(i);
-        row.createCell(0).setCellValue("Total");
-
-        tmpCell = row.createCell(1);
-        tmpCell.setCellValue(sum.getTotalTrinucleotide());
-        tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(numberStyle);
-
-        tmpCell = row.createCell(2);
-        tmpCell.setCellValue(sum.getTotalProbaTrinu0());
-        tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(probaStyle);
-
-        tmpCell = row.createCell(3);
-        tmpCell.setCellValue(sum.getTotalTrinucleotide());
-        tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(numberStyle);
-
-        tmpCell = row.createCell(4);
-        tmpCell.setCellValue(sum.getTotalProbaTrinu1());
-        tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(probaStyle);
-
-        tmpCell = row.createCell(5);
-        tmpCell.setCellValue(sum.getTotalTrinucleotide());
-        tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(numberStyle);
-
-        tmpCell = row.createCell(6);
-        tmpCell.setCellValue(sum.getTotalProbaTrinu2());
-        tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(probaStyle);
-
-        sheet.autoSizeColumn(0);
-        sheet.autoSizeColumn(1);
-        sheet.autoSizeColumn(2);
-        sheet.autoSizeColumn(3);
-        sheet.autoSizeColumn(4);
-        sheet.autoSizeColumn(5);
-        sheet.autoSizeColumn(6);
-
-        return sheet;
-    }
-
-    private XSSFSheet fillOrganismInfo(Organism organism, XSSFSheet sheet) {
+    private <T extends NucleotidesHolder> XSSFSheet fillInfos(Organism organism, T holder, XSSFSheet sheet) {
         XSSFRow row;
 
         if ((row = sheet.getRow(1)) == null)
@@ -335,6 +219,30 @@ public class DefaultFileService implements FileService {
 
         sheet.autoSizeColumn(12);
         sheet.autoSizeColumn(13);
+
+        if ((row = sheet.getRow(2)) == null)
+            row = sheet.createRow(2);
+
+        row.createCell(12).setCellValue("Number of CDS");
+        row.createCell(13).setCellValue(holder.getTotalCds());
+
+        if ((row = sheet.getRow(3)) == null)
+            row = sheet.createRow(3);
+
+        row.createCell(12).setCellValue("Number of unprocessed CDS");
+        row.createCell(13).setCellValue(holder.getTotalUnprocessedCds());
+
+        if ((row = sheet.getRow(4)) == null)
+            row = sheet.createRow(4);
+
+        row.createCell(12).setCellValue("Number of trinucleotides");
+        row.createCell(13).setCellValue(holder.getTotalTrinucleotide());
+
+        if ((row = sheet.getRow(5)) == null)
+            row = sheet.createRow(5);
+
+        row.createCell(12).setCellValue("Number of dinucleotides");
+        row.createCell(13).setCellValue(holder.getTotalDinucleotide());
 
         return sheet;
     }
@@ -382,7 +290,7 @@ public class DefaultFileService implements FileService {
         return sheet;
     }
 
-    private XSSFSheet fillFileTrinu(Gene g, XSSFWorkbook workbook, XSSFSheet sheet) {
+    private <T extends NucleotidesHolder> XSSFSheet fillFileTrinu(T g, XSSFWorkbook workbook, XSSFSheet sheet) {
         CellStyle numberStyle = buildCellStyleForNumber(workbook);
         CellStyle probaStyle = buildCellStyleForProba(workbook);
         XSSFCell tmpCell;
@@ -496,7 +404,7 @@ public class DefaultFileService implements FileService {
         return sheet;
     }
 
-    private XSSFSheet fillFileDinu(Gene g, XSSFWorkbook workbook, XSSFSheet sheet) {
+    private <T extends NucleotidesHolder> XSSFSheet fillFileDinu(T g, XSSFWorkbook workbook, XSSFSheet sheet) {
         CellStyle numberStyle = buildCellStyleForNumber(workbook);
         CellStyle probaStyle = buildCellStyleForProba(workbook);
         XSSFCell tmpCell;
@@ -544,36 +452,35 @@ public class DefaultFileService implements FileService {
             i++;
         }
 
-//        if ((row = sheet.getRow(i)) == null)
-//            row = sheet.createRow(i);
-//
-//        row.createCell(8).setCellValue("Total");
-//
-//        tmpCell = row.createCell(9);
-//        tmpCell.setCellValue(g.getTotalDinucleotide());
-//        tmpCell.setCellType(CellType.NUMERIC);
-//        tmpCell.setCellStyle(numberStyle);
-//
-//        tmpCell = row.createCell(10);
-//        tmpCell.setCellValue(g.getTotalProbaDinu0());
-//        tmpCell.setCellType(CellType.NUMERIC);
-//        tmpCell.setCellStyle(probaStyle);
-//
-//        tmpCell = row.createCell(11);
-//        tmpCell.setCellValue(g.getTotalDinucleotide());
-//        tmpCell.setCellType(CellType.NUMERIC);
-//        tmpCell.setCellStyle(numberStyle);
-//
-//        tmpCell = row.createCell(12);
-//        tmpCell.setCellValue(g.getTotalProbaDinu1());
-//        tmpCell.setCellType(CellType.NUMERIC);
-//        tmpCell.setCellStyle(probaStyle);
+        if ((row = sheet.getRow(i)) == null)
+            row = sheet.createRow(i);
 
+        row.createCell(0).setCellValue("Total");
+
+        tmpCell = row.createCell(1);
+        tmpCell.setCellValue(g.getTotalDinucleotide());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(numberStyle);
+
+        tmpCell = row.createCell(2);
+        tmpCell.setCellValue(g.getTotalProbaDinu0());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(probaStyle);
+
+        tmpCell = row.createCell(3);
+        tmpCell.setCellValue(g.getTotalDinucleotide());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(numberStyle);
+
+        tmpCell = row.createCell(4);
+        tmpCell.setCellValue(g.getTotalProbaDinu1());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(probaStyle);
+
+        sheet.autoSizeColumn(1);
         sheet.autoSizeColumn(2);
         sheet.autoSizeColumn(3);
         sheet.autoSizeColumn(4);
-        sheet.autoSizeColumn(5);
-        sheet.autoSizeColumn(6);
 
         return sheet;
     }

@@ -163,6 +163,12 @@ public class DefaultParseService implements ParseService {
                         geneIds = extractGeneIds(data[7]);
                         // TODO: updateDate index: 11
                         updateDate = parseDateColumn(data[11]);
+                    } else if (Kingdom.Plasmids.equals(kingdomId)){
+                        name = data[0];
+                        group = data[2];
+                        subGroup = data[3];
+                        geneIds = extractGeneIds(data[5]);
+                        updateDate = parseDateColumn(data[16]);
                     } else {
                         name = null;
                         group = null;

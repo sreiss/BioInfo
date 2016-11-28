@@ -16,4 +16,8 @@ public class Gene extends NucleotidesHolder {
         this.name = name;
     }
 
+    @Override
+    public String getType() {
+        return (super.getType() == null) ? "": super.getType();
+    }
 }

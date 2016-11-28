@@ -6,6 +6,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
 import models.Gene;
+import models.NucleotidesHolder;
 import models.Organism;
 import models.Sum;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -14,10 +15,7 @@ import services.contracts.FileService;
 import services.contracts.StatisticsService;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 
 public class DefaultStatisticsService implements StatisticsService {
@@ -30,48 +28,48 @@ public class DefaultStatisticsService implements StatisticsService {
         this.fileService = fileService;
     }
 
-    private ListenableFuture<Gene> computeTrinucleotidesProbabilities(final Gene gene) {
+    private <T extends NucleotidesHolder> ListenableFuture<T> computeTrinucleotidesProbabilities(final T holder) {
         return executorService.submit(() -> {
-            Set<String> keys = gene.getTrinuStatPhase0().keySet();
-            double tmp1, tmp2 = (double) gene.getTotalTrinucleotide();
+            Set<String> keys = holder.getTrinuStatPhase0().keySet();
+            double tmp1, tmp2 = (double) holder.getTotalTrinucleotide();
             double result;
             for(String key: keys){
-                tmp1 = (double) gene.getTrinuStatPhase0().get(key);
+                tmp1 = (double) holder.getTrinuStatPhase0().get(key);
                 result = (tmp1 / tmp2) * 100.0;
-                gene.setTotalProbaTrinu0(gene.getTotalProbaTrinu0() + result);
-                gene.getTrinuProbaPhase0().put(key, result);
+                holder.setTotalProbaTrinu0(holder.getTotalProbaTrinu0() + result);
+                holder.getTrinuProbaPhase0().put(key, result);
 
-                tmp1 = (double) gene.getTrinuStatPhase1().get(key);
+                tmp1 = (double) holder.getTrinuStatPhase1().get(key);
                 result = (tmp1 / tmp2) * 100.0;
-                gene.setTotalProbaTrinu1(gene.getTotalProbaTrinu1() + result);
-                gene.getTrinuProbaPhase1().put(key, result);
+                holder.setTotalProbaTrinu1(holder.getTotalProbaTrinu1() + result);
+                holder.getTrinuProbaPhase1().put(key, result);
 
-                tmp1 = (double) gene.getTrinuStatPhase2().get(key);
+                tmp1 = (double) holder.getTrinuStatPhase2().get(key);
                 result = (tmp1 / tmp2) * 100.0;
-                gene.setTotalProbaTrinu2(gene.getTotalProbaTrinu2() + result);
-                gene.getTrinuProbaPhase2().put(key, result);
+                holder.setTotalProbaTrinu2(holder.getTotalProbaTrinu2() + result);
+                holder.getTrinuProbaPhase2().put(key, result);
             }
-            return gene;
+            return holder;
         });
     }
 
-    private ListenableFuture<Gene> computeDinucleotideProbabilities(final Gene gene) {
+    private <T extends NucleotidesHolder> ListenableFuture<T> computeDinucleotideProbabilities(final T holder) {
         return executorService.submit(() -> {
-            Set<String> keys = gene.getDinuStatPhase0().keySet();
-            double tmp1, tmp2 = (double) gene.getTotalDinucleotide();
+            Set<String> keys = holder.getDinuStatPhase0().keySet();
+            double tmp1, tmp2 = (double) holder.getTotalDinucleotide();
             double result;
             for(String key: keys){
-                tmp1 = (double) gene.getDinuStatPhase0().get(key);
+                tmp1 = (double) holder.getDinuStatPhase0().get(key);
                 result = (tmp1 / tmp2) * 100.0;
-                gene.setTotalProbaDinu0(gene.getTotalProbaDinu0() + result);
-                gene.getDinuProbaPhase0().put(key, result);
+                holder.setTotalProbaDinu0(holder.getTotalProbaDinu0() + result);
+                holder.getDinuProbaPhase0().put(key, result);
 
-                tmp1 = (double) gene.getDinuStatPhase1().get(key);
+                tmp1 = (double) holder.getDinuStatPhase1().get(key);
                 result = (tmp1 / tmp2) * 100.0;
-                gene.setTotalProbaDinu1(gene.getTotalProbaDinu1() + result);
-                gene.getDinuProbaPhase1().put(key, result);
+                holder.setTotalProbaDinu1(holder.getTotalProbaDinu1() + result);
+                holder.getDinuProbaPhase1().put(key, result);
             }
-            return gene;
+            return holder;
         });
     }
 
@@ -105,6 +103,23 @@ public class DefaultStatisticsService implements StatisticsService {
             sum.setTotalCds(sum.getTotalCds() + gene.getTotalCds());
 
             return sheet;
+        });
+    }
+
+    public ListenableFuture<XSSFWorkbook> computeProbabilitiesFromSum(Organism organism, HashMap<String, Sum> organismSums, XSSFWorkbook workbook) {
+        List<ListenableFuture<Sum>> computeFutures = new ArrayList<>();
+        for (Map.Entry<String, Sum> sum: organismSums.entrySet()) {
+            ListenableFuture<Sum> trinuFuture = computeTrinucleotidesProbabilities(sum.getValue());
+            ListenableFuture<Sum> dinuFuture = Futures.transformAsync(trinuFuture, this::computeDinucleotideProbabilities, executorService);
+            computeFutures.add(dinuFuture);
+        }
+        return Futures.transform(Futures.successfulAsList(computeFutures), new Function<List<Sum>, XSSFWorkbook>() {
+            @Nullable
+            @Override
+            public XSSFWorkbook apply(@Nullable List<Sum> sums) {
+                fileService.fillWorkbookSum(organism, organismSums, workbook);
+                return workbook;
+            }
         });
     }
 

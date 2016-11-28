@@ -12,4 +12,5 @@ import java.util.HashMap;
 public interface StatisticsService {
     ListenableFuture<XSSFSheet> computeStatistics(Organism organism, Gene gene, XSSFWorkbook workbook);
     ListenableFuture<XSSFSheet> computeSum(Organism organism, Gene gene, HashMap<String, Sum> organismSums, XSSFSheet sheet);
+    ListenableFuture<XSSFWorkbook> computeProbabilitiesFromSum(Organism organism, HashMap<String, Sum> organismSums, XSSFWorkbook workbook);
 }
