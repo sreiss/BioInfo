@@ -83,15 +83,16 @@ public class DefaultOrganismService implements OrganismService {
             }, executorService);
             processGenesFutures.add(writeUpdateFileFuture);
         }
-        ListenableFuture<List<XSSFWorkbook>> organismFutures = Futures.allAsList(processGenesFutures);
+        ListenableFuture<List<XSSFWorkbook>> organismFutures = Futures.successfulAsList(processGenesFutures);
         ListenableFuture<Kingdom> writeFuture = Futures.transform(organismFutures, new Function<List<XSSFWorkbook>, Kingdom>() {
             @Nullable
             @Override
             public Kingdom apply(@Nullable List<XSSFWorkbook> workbooks) {
                 if (workbooks != null) {
                     for (int i = 0; i < workbooks.size(); i++) {
-                        Organism organism = organisms.get(i);
                         try {
+                            int offset = Math.abs(currentOffset.get() - PROCESS_STACK_SIZE) + i;
+                            Organism organism = organisms.get(offset);
                             fileService.writeWorkbook(workbooks.get(i), organism.getPath(), organism.getName());
                         } catch (IOException e) {
                             e.printStackTrace();

@@ -23,11 +23,6 @@ public class DefaultHttpService implements HttpService {
     private final ListeningExecutorService executorService;
     private final ProgramStatsService programStatsService;
 
-    enum Method {
-        GET,
-        POST
-    }
-
     @Inject
     public DefaultHttpService(HttpTransport transport, RateLimiter rateLimiter, @Named("HttpExecutor") ListeningExecutorService listeningExecutorService, ProgramStatsService programStatsService) {
         this.requestFactory = transport.createRequestFactory(new HttpRequestInitializer());

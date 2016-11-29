@@ -30,24 +30,26 @@ public class DefaultStatisticsService implements StatisticsService {
 
     private <T extends NucleotidesHolder> ListenableFuture<T> computeTrinucleotidesProbabilities(final T holder) {
         return executorService.submit(() -> {
-            Set<String> keys = holder.getTrinuStatPhase0().keySet();
-            double tmp1, tmp2 = (double) holder.getTotalTrinucleotide();
-            double result;
-            for(String key: keys){
-                tmp1 = (double) holder.getTrinuStatPhase0().get(key);
-                result = (tmp1 / tmp2) * 100.0;
-                holder.setTotalProbaTrinu0(holder.getTotalProbaTrinu0() + result);
-                holder.getTrinuProbaPhase0().put(key, result);
+            if (holder.getTotalTrinucleotide() >  0) {
+                Set<String> keys = holder.getTrinuStatPhase0().keySet();
+                double tmp1, tmp2 = (double) holder.getTotalTrinucleotide();
+                double result;
+                for(String key: keys){
+                    tmp1 = (double) holder.getTrinuStatPhase0().get(key);
+                    result = (tmp1 / tmp2) * 100.0;
+                    holder.setTotalProbaTrinu0(holder.getTotalProbaTrinu0() + result);
+                    holder.getTrinuProbaPhase0().put(key, result);
 
-                tmp1 = (double) holder.getTrinuStatPhase1().get(key);
-                result = (tmp1 / tmp2) * 100.0;
-                holder.setTotalProbaTrinu1(holder.getTotalProbaTrinu1() + result);
-                holder.getTrinuProbaPhase1().put(key, result);
+                    tmp1 = (double) holder.getTrinuStatPhase1().get(key);
+                    result = (tmp1 / tmp2) * 100.0;
+                    holder.setTotalProbaTrinu1(holder.getTotalProbaTrinu1() + result);
+                    holder.getTrinuProbaPhase1().put(key, result);
 
-                tmp1 = (double) holder.getTrinuStatPhase2().get(key);
-                result = (tmp1 / tmp2) * 100.0;
-                holder.setTotalProbaTrinu2(holder.getTotalProbaTrinu2() + result);
-                holder.getTrinuProbaPhase2().put(key, result);
+                    tmp1 = (double) holder.getTrinuStatPhase2().get(key);
+                    result = (tmp1 / tmp2) * 100.0;
+                    holder.setTotalProbaTrinu2(holder.getTotalProbaTrinu2() + result);
+                    holder.getTrinuProbaPhase2().put(key, result);
+                }
             }
             return holder;
         });
@@ -55,19 +57,21 @@ public class DefaultStatisticsService implements StatisticsService {
 
     private <T extends NucleotidesHolder> ListenableFuture<T> computeDinucleotideProbabilities(final T holder) {
         return executorService.submit(() -> {
-            Set<String> keys = holder.getDinuStatPhase0().keySet();
-            double tmp1, tmp2 = (double) holder.getTotalDinucleotide();
-            double result;
-            for(String key: keys){
-                tmp1 = (double) holder.getDinuStatPhase0().get(key);
-                result = (tmp1 / tmp2) * 100.0;
-                holder.setTotalProbaDinu0(holder.getTotalProbaDinu0() + result);
-                holder.getDinuProbaPhase0().put(key, result);
+            if (holder.getTotalDinucleotide() > 0) {
+                Set<String> keys = holder.getDinuStatPhase0().keySet();
+                double tmp1, tmp2 = (double) holder.getTotalDinucleotide();
+                double result;
+                for(String key: keys){
+                    tmp1 = (double) holder.getDinuStatPhase0().get(key);
+                    result = (tmp1 / tmp2) * 100.0;
+                    holder.setTotalProbaDinu0(holder.getTotalProbaDinu0() + result);
+                    holder.getDinuProbaPhase0().put(key, result);
 
-                tmp1 = (double) holder.getDinuStatPhase1().get(key);
-                result = (tmp1 / tmp2) * 100.0;
-                holder.setTotalProbaDinu1(holder.getTotalProbaDinu1() + result);
-                holder.getDinuProbaPhase1().put(key, result);
+                    tmp1 = (double) holder.getDinuStatPhase1().get(key);
+                    result = (tmp1 / tmp2) * 100.0;
+                    holder.setTotalProbaDinu1(holder.getTotalProbaDinu1() + result);
+                    holder.getDinuProbaPhase1().put(key, result);
+                }
             }
             return holder;
         });
