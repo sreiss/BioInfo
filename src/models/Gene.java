@@ -1,5 +1,7 @@
 package models;
 
+import java.util.HashMap;
+
 public class Gene extends NucleotidesHolder {
     private String name;
 

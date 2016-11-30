@@ -10,6 +10,9 @@ public abstract class NucleotidesHolder {
     private double totalProbaDinu0;
     private double totalProbaDinu1;
     private double totalProbaTrinu0;
+    private int totalPrefTrinu0;
+    private int totalPrefTrinu1;
+    private int totalPrefTrinu2;
     private int totalTrinucleotide;
     private int totalDinucleotide;
     private int totalCds;
@@ -18,12 +21,15 @@ public abstract class NucleotidesHolder {
     // Trinucleotide
     private LinkedHashMap<String, Integer> trinuStatPhase0;
     private LinkedHashMap<String, Double> trinuProbaPhase0;
+    private LinkedHashMap<String, Integer> trinuPrefPhase0;
 
     private LinkedHashMap<String, Integer> trinuStatPhase1;
     private LinkedHashMap<String, Double> trinuProbaPhase1;
+    private LinkedHashMap<String, Integer> trinuPrefPhase1;
 
     private LinkedHashMap<String, Integer> trinuStatPhase2;
     private LinkedHashMap<String, Double> trinuProbaPhase2;
+    private LinkedHashMap<String, Integer> trinuPrefPhase2;
 
     // Dinucleotide
     private LinkedHashMap<String, Integer> dinuStatPhase0;
@@ -41,6 +47,9 @@ public abstract class NucleotidesHolder {
         this.totalProbaTrinu0 = 0.0;
         this.totalProbaTrinu1 = 0.0;
         this.totalProbaTrinu2 = 0.0;
+        this.totalPrefTrinu0 = 0;
+        this.totalPrefTrinu1 = 0;
+        this.totalPrefTrinu2 = 0;
         this.totalProbaDinu0 = 0.0;
         this.totalProbaDinu1 = 0.0;
         this.totalCds = 0;
@@ -54,6 +63,32 @@ public abstract class NucleotidesHolder {
     public void setTotalTrinucleotide(int totalTrinucleotide) {
         this.totalTrinucleotide = totalTrinucleotide;
     }
+    
+    public int getTotalPrefTrinu0() {
+    	return totalPrefTrinu0;
+    }
+    
+    public void setTotalPrefTrinu0(int totalPrefTrinu0) {
+    	this.totalPrefTrinu0 = totalPrefTrinu0;
+    }
+    
+    public int getTotalPrefTrinu1() {
+    	return totalPrefTrinu1;
+    }
+    
+    public void setTotalPrefTrinu1(int totalPrefTrinu1) {
+    	this.totalPrefTrinu1 = totalPrefTrinu1;
+    }
+
+    
+    public int getTotalPrefTrinu2() {
+    	return totalPrefTrinu2;
+    }
+    
+    public void setTotalPrefTrinu2(int totalPrefTrinu2) {
+    	this.totalPrefTrinu2 = totalPrefTrinu2;
+    }
+
 
     public int getTotalDinucleotide() {
         return totalDinucleotide;
@@ -78,6 +113,14 @@ public abstract class NucleotidesHolder {
     public void setTrinuProbaPhase0(LinkedHashMap<String, Double> trinuProbaPhase0) {
         this.trinuProbaPhase0 = trinuProbaPhase0;
     }
+    
+    public LinkedHashMap<String, Integer> getTrinuPrefPhase0() {
+    	return trinuPrefPhase0;
+    }
+
+    public void setTrinuPrefPhase0(LinkedHashMap<String, Integer> trinuPrefPhase0) {
+        this.trinuPrefPhase0 = trinuPrefPhase0;
+    }
 
     public LinkedHashMap<String, Integer> getTrinuStatPhase1() {
         return trinuStatPhase1;
@@ -94,6 +137,14 @@ public abstract class NucleotidesHolder {
     public void setTrinuProbaPhase1(LinkedHashMap<String, Double> trinuProbaPhase1) {
         this.trinuProbaPhase1 = trinuProbaPhase1;
     }
+    
+    public LinkedHashMap<String, Integer> getTrinuPrefPhase1() {
+    	return trinuPrefPhase1;
+    }
+
+    public void setTrinuPrefPhase1(LinkedHashMap<String, Integer> trinuPrefPhase1) {
+        this.trinuPrefPhase1 = trinuPrefPhase1;
+    }
 
     public LinkedHashMap<String, Integer> getTrinuStatPhase2() {
         return trinuStatPhase2;
@@ -109,6 +160,14 @@ public abstract class NucleotidesHolder {
 
     public void setTrinuProbaPhase2(LinkedHashMap<String, Double> trinuProbaPhase2) {
         this.trinuProbaPhase2 = trinuProbaPhase2;
+    }
+    
+    public LinkedHashMap<String, Integer> getTrinuPrefPhase2() {
+    	return trinuPrefPhase2;
+    }
+
+    public void setTrinuPrefPhase2(LinkedHashMap<String, Integer> trinuPrefPhase2) {
+        this.trinuPrefPhase2 = trinuPrefPhase2;
     }
 
     public LinkedHashMap<String, Integer> getDinuStatPhase0() {

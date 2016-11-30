@@ -306,6 +306,9 @@ public class DefaultFileService implements FileService {
         row.createCell(4).setCellValue("Freq Phase 1");
         row.createCell(5).setCellValue("Phase 2");
         row.createCell(6).setCellValue("Freq Phase 2");
+        row.createCell(7).setCellValue("Phase préf 0");
+        row.createCell(8).setCellValue("Phase préf 1");
+        row.createCell(9).setCellValue("Phase préf 2");
 
         int i = 1;
         Set<String> keys = g.getTrinuStatPhase0().keySet();
@@ -356,6 +359,25 @@ public class DefaultFileService implements FileService {
             tmpCell.setCellValue(g.getTrinuProbaPhase2().get(key));
             tmpCell.setCellType(CellType.NUMERIC);
             tmpCell.setCellStyle(probaStyle);
+            
+            //Phase préf 0
+            tmpCell = row.createCell(7);
+            tmpCell.setCellValue(g.getTrinuPrefPhase0().get(key));
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(numberStyle);
+            
+            //Phase préf 1
+            tmpCell = row.createCell(8);
+            tmpCell.setCellValue(g.getTrinuPrefPhase1().get(key));
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(numberStyle);
+            
+            //Phase préf 2
+            tmpCell = row.createCell(9);
+            tmpCell.setCellValue(g.getTrinuPrefPhase2().get(key));
+            tmpCell.setCellType(CellType.NUMERIC);
+            tmpCell.setCellStyle(numberStyle);
+            
 
             i++;
         }
@@ -393,6 +415,22 @@ public class DefaultFileService implements FileService {
         tmpCell.setCellType(CellType.NUMERIC);
         tmpCell.setCellStyle(probaStyle);
 
+        tmpCell = row.createCell(7);
+        tmpCell.setCellValue(g.getTotalPrefTrinu0());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(numberStyle);
+
+        tmpCell = row.createCell(8);
+        tmpCell.setCellValue(g.getTotalPrefTrinu1());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(numberStyle);
+
+        tmpCell = row.createCell(9);
+        tmpCell.setCellValue(g.getTotalPrefTrinu2());
+        tmpCell.setCellType(CellType.NUMERIC);
+        tmpCell.setCellStyle(numberStyle);
+
+
         sheet.autoSizeColumn(0);
         sheet.autoSizeColumn(1);
         sheet.autoSizeColumn(2);
@@ -400,6 +438,9 @@ public class DefaultFileService implements FileService {
         sheet.autoSizeColumn(4);
         sheet.autoSizeColumn(5);
         sheet.autoSizeColumn(6);
+        sheet.autoSizeColumn(7);
+        sheet.autoSizeColumn(8);
+        sheet.autoSizeColumn(9);
 
         return sheet;
     }
