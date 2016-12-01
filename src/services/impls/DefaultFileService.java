@@ -306,9 +306,9 @@ public class DefaultFileService implements FileService {
         row.createCell(4).setCellValue("Freq Phase 1");
         row.createCell(5).setCellValue("Phase 2");
         row.createCell(6).setCellValue("Freq Phase 2");
-        row.createCell(7).setCellValue("Phase préf 0");
-        row.createCell(8).setCellValue("Phase préf 1");
-        row.createCell(9).setCellValue("Phase préf 2");
+        row.createCell(7).setCellValue("Phase pref 0");
+        row.createCell(8).setCellValue("Phase pref 1");
+        row.createCell(9).setCellValue("Phase pref 2");
 
         int i = 1;
         Set<String> keys = g.getTrinuStatPhase0().keySet();
@@ -360,19 +360,19 @@ public class DefaultFileService implements FileService {
             tmpCell.setCellType(CellType.NUMERIC);
             tmpCell.setCellStyle(probaStyle);
             
-            //Phase préf 0
+            //Phase prÃ©f 0
             tmpCell = row.createCell(7);
             tmpCell.setCellValue(g.getTrinuPrefPhase0().get(key));
             tmpCell.setCellType(CellType.NUMERIC);
             tmpCell.setCellStyle(numberStyle);
             
-            //Phase préf 1
+            //Phase prÃ©f 1
             tmpCell = row.createCell(8);
             tmpCell.setCellValue(g.getTrinuPrefPhase1().get(key));
             tmpCell.setCellType(CellType.NUMERIC);
             tmpCell.setCellStyle(numberStyle);
             
-            //Phase préf 2
+            //Phase prÃ©f 2
             tmpCell = row.createCell(9);
             tmpCell.setCellValue(g.getTrinuPrefPhase2().get(key));
             tmpCell.setCellType(CellType.NUMERIC);

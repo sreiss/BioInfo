@@ -190,6 +190,10 @@ public class DefaultKingdomService implements KingdomService {
         }
     }
 
+    /**
+     * Creates the file trees for the given kingdoms and starts the time estimation.
+     * The remaining time is estimated over the 100 last processings.
+     */
     public ListenableFuture<List<Kingdom>> createKingdomTrees(final List<Kingdom> kingdoms) {
         programStatsService.resetAcquisitionTime();
         programStatsService.beginAcquisitionTimeEstimation();

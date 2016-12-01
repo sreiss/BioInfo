@@ -54,15 +54,14 @@ public class DefaultParseService implements ParseService {
                 && !Pattern.compile(CodingSequence.REGEX_ATGC).matcher(sequence).find();
     }
 
+    /**
+     * Extracts the sequences from a given input stream for the given gene.
+     */
     @Override
     public ListenableFuture<List<String>> extractSequences(final InputStream inputStream, Gene gene) {
         return executorService.submit(() -> {
-            if (gene.getName().trim().equals("NC_011068.1")) {
-                System.out.println(gene.getName());
-            }
-
             if (inputStream == null) {
-                throw new NullPointerException("Response was null.");
+                throw new NullPointerException("InputStream was null.");
             }
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
@@ -140,56 +139,6 @@ public class DefaultParseService implements ParseService {
                     }
                 }
             }
-//            while ((line = reader.readLine()) != null) {
-//                if (line.startsWith(CodingSequence.START_CDS_INFO)) {
-//                    Pattern pattern = Pattern.compile(CodingSequence.REGEX_COMPLETE);
-//                    Matcher matcher = pattern.matcher(line);
-//
-//                    if (matcher.find()) {
-//                        String s = matcher.group();
-//                        pattern = Pattern.compile(CodingSequence.REGEX_LOCATOR);
-//                        matcher = pattern.matcher(s);
-//                        boolean locatorsOk = true;
-//                        while (matcher.find() && locatorsOk) {
-//                            locatorsOk = checkLocator(matcher.group());
-//                        }
-//
-//                        if (locatorsOk) {
-//                            String sequence = "", line2;
-//
-//                            running = true;
-//                            while (running) {
-//                                reader.mark(1);
-//                                int character = reader.read();
-//                                if (character == -1) {
-//                                    running = false;
-//                                } else {
-//                                    reader.reset();
-//                                    if (character == CodingSequence.START_CDS_INFO.charAt(0)) {
-//                                        running = false;
-//                                    } else {
-//                                        line2 = reader.readLine();
-//                                        if (line2 == null) {
-//                                            running = false;
-//                                        } else {
-//                                            sequence += line2;
-//                                        }
-//                                    }
-//                                }
-//                            }
-//
-//                            if (checkSequence(sequence)) {
-//                                gene.setTotalCds(gene.getTotalCds() + 1);
-//                                sequences.add(sequence);
-//                            } else {
-//                                gene.setTotalCds(gene.getTotalCds() + 1);
-//                                gene.setTotalUnprocessedCds(gene.getTotalUnprocessedCds() + 1);
-//                            }
-//                        }
-//
-//                    }
-//                }
-//            }
 
             reader.close();
             inputStream.close();
@@ -198,6 +147,9 @@ public class DefaultParseService implements ParseService {
         });
     }
 
+    /**
+     * Parses the organisms in the given input stream.
+     */
     @Override
     public ListenableFuture<List<Organism>> extractOrganismList(final InputStream inputStream, final String kingdomId) {
         return executorService.submit(() -> {
@@ -279,6 +231,9 @@ public class DefaultParseService implements ParseService {
 
     }
 
+    /**
+     * Extracts the geneIds from the given entry in the organism list file. It returns a tuple containing the gene name, and it's type (chromosome, mitochondrion...)
+     */
     private List<Tuple<String, String>> extractGeneIds(String segmentsColumn){
         String[] tmpSegments;
         List<Tuple<String, String>> segments;

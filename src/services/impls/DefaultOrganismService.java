@@ -49,6 +49,10 @@ public class DefaultOrganismService implements OrganismService {
         return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     }
 
+    /**
+     * This method processes the organisms of the given kingdom.
+     * The second argument are the updates of the kingdom. The key is the organism and the value, the date.
+     */
     @Override
     public ListenableFuture<Kingdom> processOrganisms(Kingdom kingdom, Map<String, Date> updates) {
         List<Organism> organisms = kingdom.getOrganisms();
@@ -58,6 +62,8 @@ public class DefaultOrganismService implements OrganismService {
         kingdomOffsets.putIfAbsent(kingdom, new AtomicInteger());
         AtomicInteger currentOffset = kingdomOffsets.get(kingdom);
 
+        // This part is to avoid a too high pressure on the memory.
+        // The number of simultaneously processed organisms is determined by PROCESS_STACK_SIZE.
         int startIndex = currentOffset.get();
         int endIndex;
         boolean isLastLoop;
@@ -72,16 +78,7 @@ public class DefaultOrganismService implements OrganismService {
 
         for (Organism organism: organisms.subList(startIndex, endIndex)) {
             ListenableFuture<XSSFWorkbook> processGenesFuture = processGenes(organism);
-            ListenableFuture<XSSFWorkbook> writeUpdateFileFuture = Futures.transform(processGenesFuture, new Function<XSSFWorkbook, XSSFWorkbook>() {
-                @Nullable
-                @Override
-                public XSSFWorkbook apply(@Nullable XSSFWorkbook workbook) {
-                    Date now = new Date();
-                    updates.putIfAbsent(organism.getName(), now);
-                    return workbook;
-                }
-            }, executorService);
-            processGenesFutures.add(writeUpdateFileFuture);
+            processGenesFutures.add(processGenesFuture);
         }
         ListenableFuture<List<XSSFWorkbook>> organismFutures = Futures.successfulAsList(processGenesFutures);
         ListenableFuture<Kingdom> writeFuture = Futures.transform(organismFutures, new Function<List<XSSFWorkbook>, Kingdom>() {
@@ -94,6 +91,9 @@ public class DefaultOrganismService implements OrganismService {
                             int offset = Math.abs(currentOffset.get() - PROCESS_STACK_SIZE) + i;
                             Organism organism = organisms.get(offset);
                             fileService.writeWorkbook(workbooks.get(i), organism.getPath(), organism.getName());
+                            //Writes the update file
+                            Date now = new Date();
+                            updates.putIfAbsent(organism.getName(), now);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -111,6 +111,9 @@ public class DefaultOrganismService implements OrganismService {
         }
     }
 
+    /**
+     * Creates the workbook for an organism then starts to process its genes.
+     */
     private ListenableFuture<XSSFWorkbook> processGenes(Organism organism) {
         List<Tuple<String, String>> geneIds = organism.getGeneIds();
         XSSFWorkbook workbook = fileService.createWorkbook();
