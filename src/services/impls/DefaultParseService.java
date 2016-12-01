@@ -69,6 +69,7 @@ public class DefaultParseService implements ParseService {
             String line;
             boolean running;
 
+            System.out.println("Extracting : " + gene.getName());
             while((line=reader.readLine()) != null) {
                 if (line.startsWith(CodingSequence.START_CDS_INFO)) {
                     Pattern p = Pattern.compile(CodingSequence.REGEX_COMPLETE);

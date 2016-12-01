@@ -44,6 +44,7 @@ public class DefaultHttpService implements HttpService {
                 return get(url);
             }
 
+            /*
             BufferedReader br = new BufferedReader(new InputStreamReader(httpResponse.getContent()));
             br.mark(1);
             int firstByte = br.read();
@@ -52,6 +53,7 @@ public class DefaultHttpService implements HttpService {
             }
 
             br.reset();
+            */
 
             return returnHttpResponse(httpResponse);
         }, executorService);
