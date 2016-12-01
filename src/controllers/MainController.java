@@ -10,6 +10,8 @@ import views.MainWindow;
 import javax.annotation.Nullable;
 import javax.swing.*;
 import javax.swing.tree.TreeModel;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Observable;
@@ -53,6 +55,15 @@ public class MainController implements Observer {
             }
             resetProgressService();
             ((JButton) e.getSource()).setEnabled(false);
+        });
+
+        view.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                super.windowClosing(e);
+                currentFuture.cancel(true);
+                System.exit(0);
+            }
         });
 
         view.getKingdomTree().setModel(null);
