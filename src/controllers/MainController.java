@@ -40,6 +40,7 @@ public class MainController implements Observer {
         view.setTitle("Test");
         view.pack();
         view.setVisible(true);
+        view.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         view.addExecuteListener(e -> {
             acquire();
