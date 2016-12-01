@@ -54,8 +54,8 @@
 	<classpathentry kind="lib" path="lib/httpasyncclient/httpasyncclient-4.1.1.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/json-simple-1.1.1"/>
-	<classpathentry kind="lib" path="C:/Users/leoga/Documents/workspace/JAVA/BioInfo/lib/json-simple/json-simple-1.1.1.jar"/>
-	<classpathentry kind="lib" path="C:/Users/leoga/Documents/workspace/JAVA/BioInfo/lib/commons-io-2.5/commons-io-2.5.jar"/>
-	<classpathentry kind="lib" path="C:/Users/leoga/Documents/workspace/JAVA/BioInfo/lib/commons-io-2.5/commons-io-2.5-javadoc.jar"/>
+	<classpathentry kind="lib" path="lib/json-simple/json-simple-1.1.1.jar"/>
+	<classpathentry kind="lib" path="lib/commons-io-2.5/commons-io-2.5.jar"/>
+	<classpathentry kind="lib" path="lib/commons-io-2.5/commons-io-2.5-javadoc.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
