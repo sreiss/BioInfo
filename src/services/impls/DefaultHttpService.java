@@ -10,7 +10,9 @@ import services.contracts.ProgramStatsService;
 import services.contracts.ProgressService;
 
 import javax.annotation.Nullable;
+import java.io.BufferedInputStream;
 import java.io.InputStream;
+import java.io.PushbackInputStream;
 import java.net.SocketTimeoutException;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -40,9 +42,19 @@ public class DefaultHttpService implements HttpService {
             return request.execute();
         });
         ListenableFuture<HttpResponse> failureTestFuture = Futures.transformAsync(responseFuture, httpResponse -> {
-            if (httpResponse == null || httpResponse.getContent() == null || httpResponse.getContent().read(new byte[1]) == -1) {
+            if (httpResponse == null) {
                 return get(url);
             }
+
+
+            PushbackInputStream inputStream = new PushbackInputStream(httpResponse.getContent());
+            int firstByte = inputStream.read(new byte[1]);
+            if (firstByte == -1) {
+                return get(url);
+            }
+
+            inputStream.unread(firstByte);
+
             return returnHttpResponse(httpResponse);
         }, executorService);
 
