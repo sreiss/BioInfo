@@ -64,6 +64,10 @@ public class DefaultGeneService implements GeneService {
         gene.setTrinuProbaPhase1(initLinkedHashMapProba());
         gene.setTrinuProbaPhase2(initLinkedHashMapProba());
 
+        gene.setTrinuPrefPhase0(initLinkedHashMap());
+        gene.setTrinuPrefPhase2(initLinkedHashMap());
+        gene.setTrinuPrefPhase1(initLinkedHashMap());
+
         gene.setDinuStatPhase0(initLinkedHashMapDinucleo());
         gene.setDinuStatPhase1(initLinkedHashMapDinucleo());
 
@@ -84,6 +88,10 @@ public class DefaultGeneService implements GeneService {
         sum.setTrinuProbaPhase0(initLinkedHashMapProba());
         sum.setTrinuProbaPhase1(initLinkedHashMapProba());
         sum.setTrinuProbaPhase2(initLinkedHashMapProba());
+        
+        sum.setTrinuPrefPhase0(initLinkedHashMap());
+        sum.setTrinuPrefPhase2(initLinkedHashMap());
+        sum.setTrinuPrefPhase1(initLinkedHashMap());
 
         sum.setDinuStatPhase0(initLinkedHashMapDinucleo());
         sum.setDinuStatPhase1(initLinkedHashMapDinucleo());
@@ -102,7 +110,14 @@ public class DefaultGeneService implements GeneService {
             String codon0, codon1, codon2;
 
             int j = 0;
-
+            
+            /*LinkedHashMap<String, Integer> beforeCount0 = gene.getTrinuStatPhase0();
+            LinkedHashMap<String, Integer> beforeCount1 = gene.getTrinuStatPhase1();
+            LinkedHashMap<String, Integer> beforeCount2 = gene.getTrinuStatPhase2();
+            LinkedHashMap<String, Integer> afterCount0 = initLinkedHashMap();
+            LinkedHashMap<String, Integer> afterCount1 = initLinkedHashMap();
+            LinkedHashMap<String, Integer> afterCount2 = initLinkedHashMap();
+*/
             for (int i = 0; i < sequence.length() - 3; i += 3) {
                 codon0 = sequence.substring(i, i + 3);
                 codon1 = sequence.substring(i + 1, i + 4);
@@ -114,7 +129,18 @@ public class DefaultGeneService implements GeneService {
             }
 
             gene.setTotalTrinucleotide(gene.getTotalTrinucleotide() + j);
-
+  /*          
+            for(String s : beforeCount0.keySet()) {
+            	afterCount0.put(s, gene.getTrinuStatPhase0().get(s) - beforeCount0.get(s));
+            	afterCount1.put(s, gene.getTrinuStatPhase1().get(s) - beforeCount1.get(s));
+            	afterCount2.put(s, gene.getTrinuStatPhase2().get(s) - beforeCount2.get(s));
+            	
+            	int max = Math.max(beforeCount0.get(s), Math.max(beforeCount1.get(s), beforeCount2.get(s)));
+            	gene.getTrinuPrefPhase0().put(s, gene.getTrinuPrefPhase0().get(s) + (beforeCount0.get(s) == max ? 1 : 0));
+            	gene.getTrinuPrefPhase1().put(s, gene.getTrinuPrefPhase1().get(s) + (beforeCount1.get(s) == max ? 1 : 0));
+            	gene.getTrinuPrefPhase2().put(s, gene.getTrinuPrefPhase2().get(s) + (beforeCount2.get(s) == max ? 1 : 0));
+            }
+*/
             return gene;
         });
     }
