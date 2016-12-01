@@ -10,9 +10,7 @@ import services.contracts.ProgramStatsService;
 import services.contracts.ProgressService;
 
 import javax.annotation.Nullable;
-import java.io.BufferedInputStream;
-import java.io.InputStream;
-import java.io.PushbackInputStream;
+import java.io.*;
 import java.net.SocketTimeoutException;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -46,14 +44,14 @@ public class DefaultHttpService implements HttpService {
                 return get(url);
             }
 
-
-            PushbackInputStream inputStream = new PushbackInputStream(httpResponse.getContent());
-            int firstByte = inputStream.read(new byte[1]);
+            BufferedReader br = new BufferedReader(new InputStreamReader(httpResponse.getContent()));
+            br.mark(1);
+            int firstByte = br.read();
             if (firstByte == -1) {
                 return get(url);
             }
 
-            inputStream.unread(firstByte);
+            br.reset();
 
             return returnHttpResponse(httpResponse);
         }, executorService);
