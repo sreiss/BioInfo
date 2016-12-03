@@ -9,4 +9,5 @@ import java.util.concurrent.Future;
 
 public interface HttpService {
     ListenableFuture<HttpResponse> get(final String url);
+    ListenableFuture<HttpResponse> get(final String url, final String geneId);
 }

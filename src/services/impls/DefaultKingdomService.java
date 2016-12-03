@@ -3,10 +3,7 @@ package services.impls;
 import com.google.api.client.http.HttpResponse;
 import com.google.common.base.Function;
 import com.google.common.primitives.Booleans;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.*;
 import com.google.inject.Inject;
 import models.Kingdom;
 import models.Organism;
@@ -168,18 +165,18 @@ public class DefaultKingdomService implements KingdomService {
             }
         }, executorService);
         ListenableFuture<Kingdom> kingdomProcessedFuture = Futures.transformAsync(progressFuture, kingdom1 -> organismService.processOrganisms(kingdom, updates.getOrDefault(kingdom, new HashMap<>())), executorService);
-        Futures.addCallback(kingdomProcessedFuture, new FutureCallback<Kingdom>() {
-            @Override
-            public void onSuccess(@Nullable Kingdom kingdom) {
-                writeUpdateFile(kingdom);
-            }
 
-            @Override
-            public void onFailure(Throwable throwable) {
-                writeUpdateFile(kingdom);
-            }
+        kingdomProcessedFuture.addListener(() -> {
+            writeUpdateFile(kingdom);
         }, executorService);
-        return kingdomProcessedFuture;
+        return Futures.catching(kingdomProcessedFuture, Throwable.class, new Function<Throwable, Kingdom>() {
+            @Nullable
+            @Override
+            public Kingdom apply(@Nullable Throwable throwable) {
+                writeUpdateFile(kingdom);
+                return kingdom;
+            }
+        });
     }
 
     private void writeUpdateFile(Kingdom kingdom) {

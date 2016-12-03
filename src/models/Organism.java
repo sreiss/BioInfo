@@ -89,7 +89,7 @@ public class Organism {
 //                try {
 //                    updatedDate = format.parse(data[updatedDateIndex]);
 //                } catch (ParseException e) {
-//                    System.err.println(e.getMessage());
+//                    System.err.println(e.getDownloaded());
 //                    e.printStackTrace();
 //                }
 //            }

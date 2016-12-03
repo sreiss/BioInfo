@@ -61,7 +61,9 @@ public class MainController implements Observer {
             @Override
             public void windowClosing(WindowEvent e) {
                 super.windowClosing(e);
-                currentFuture.cancel(true);
+                if (currentFuture != null) {
+                    currentFuture.cancel(true);
+                }
                 System.exit(0);
             }
         });
@@ -75,7 +77,6 @@ public class MainController implements Observer {
     private void resetProgressService() {
         TaskProgress taskProgress = progressService.getCurrentProgress();
         taskProgress.getProgress().set(0);
-        taskProgress.setMessage(null);
         taskProgress.setStep(null);
         taskProgress.getTotal().set(0);
     }
@@ -166,6 +167,8 @@ public class MainController implements Observer {
                 }
                 view.getDownloadProgressionBar().setValue(progress.getProgress().get());
                 view.getDownloadProgressionLabel().setText(String.format("Downloading: %d/%d", progress.getProgress().get(), progress.getTotal().get()));
+                view.getDownloadedLabel().setText(progress.getDownloaded());
+                view.getDownloadingLabel().setText(progress.getDownloading());
             } else if (arg instanceof TaskProgress) {
                 TaskProgress progress = (TaskProgress) arg;
                 switch (progress.getStep()) {
@@ -189,6 +192,10 @@ public class MainController implements Observer {
                 }
                 view.updateGlobalProgressionBar(progress.getProgress().get());
                 view.updateGlobalProgressionText(String.format("Progression: %d/%d", progress.getProgress().get(), progress.getTotal().get()));
+            } else if (arg instanceof ApiStatus) {
+                ApiStatus apiStatus = (ApiStatus) arg;
+                view.getApiStatusLabel().setText(apiStatus.getMessage());
+                view.getApiStatusLabel().setForeground(apiStatus.getColor());
             }
         } else if (o instanceof ProgramStatsService) {
             ProgramStat programStat = (ProgramStat) arg;

@@ -70,10 +70,10 @@ public class DefaultFileService implements FileService {
     @Override
     public XSSFSheet fillWorkbook(Organism organism, Gene gene, final XSSFWorkbook workbook) {
         String sheetName;
-        if (!gene.getType().equals("")) {
+        if (!gene.getType().equals("") && !gene.getType().toLowerCase().equals("unknown")) {
             sheetName = gene.getType().substring(0, 1).toUpperCase() + gene.getType().substring(1).toLowerCase() + "_" + gene.getName();
         } else {
-            sheetName = gene.getName();
+            sheetName = "DNA_" + gene.getName();
         }
         XSSFSheet sheet = workbook.createSheet(sheetName);
         sheet = fillFileDinu(gene, workbook, sheet);
@@ -85,7 +85,12 @@ public class DefaultFileService implements FileService {
     @Override
     public XSSFWorkbook fillWorkbookSum(Organism organism, HashMap<String, Sum> organismSums, final XSSFWorkbook workbook) {
         for (Map.Entry<String, Sum> sum: organismSums.entrySet()) {
-            String sheetName = "Sum_" + sum.getKey();
+            String sheetName;
+            if (!sum.getKey().toLowerCase().equals("unknown")) {
+                sheetName = "Sum_" + sum.getKey();
+            } else {
+                sheetName = "Sum_DNA";
+            }
 
             XSSFSheet sheet = workbook.createSheet(sheetName);
             fillInfos(organism, sum.getValue(), sheet);

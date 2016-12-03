@@ -45,7 +45,7 @@ public class DefaultGeneService implements GeneService {
 
     private ListenableFuture<HttpResponse> retrieveGene(String geneId) {
         String url = generateUrlForGene(geneId);
-        return httpService.get(url);
+        return httpService.get(url, geneId);
     }
 
     private ListenableFuture<List<String>> extractSequences(InputStream inputStream, Gene gene) {
@@ -88,7 +88,7 @@ public class DefaultGeneService implements GeneService {
         sum.setTrinuProbaPhase0(initLinkedHashMapProba());
         sum.setTrinuProbaPhase1(initLinkedHashMapProba());
         sum.setTrinuProbaPhase2(initLinkedHashMapProba());
-        
+
         sum.setTrinuPrefPhase0(initLinkedHashMap());
         sum.setTrinuPrefPhase2(initLinkedHashMap());
         sum.setTrinuPrefPhase1(initLinkedHashMap());
@@ -199,18 +199,15 @@ public class DefaultGeneService implements GeneService {
     private ListenableFuture<XSSFSheet> processGene(Organism organism, XSSFWorkbook workbook, String geneId, String type, String path, HashMap<String, Sum> organismSums) {
         Gene gene = createGene(geneId, type, path, 0, 0);
         ListenableFuture<HttpResponse> responseFuture = retrieveGene(geneId);
-        ListenableFuture<InputStream> inputStreamFuture = Futures.transform(responseFuture, new Function<HttpResponse, InputStream>() {
-            @Nullable
-            @Override
-            public InputStream apply(HttpResponse httpResponse) {
-                try {
-                    progressService.getCurrentDownloadProgress().getProgress().incrementAndGet();
-                    progressService.invalidateDownloadProgress();
-                    return httpResponse.getContent();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    return null;
-                }
+        ListenableFuture<InputStream> inputStreamFuture = Futures.transformAsync(responseFuture, httpResponse -> {
+            try {
+                progressService.getCurrentDownloadProgress().getProgress().incrementAndGet();
+                progressService.getCurrentDownloadProgress().setDownloaded(geneId);
+                progressService.invalidateDownloadProgress();
+                return Futures.immediateFuture(httpResponse.getContent());
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
             }
         });
         ListenableFuture<List<String>> extractSequencesFuture = Futures.transformAsync(inputStreamFuture, inputStream -> extractSequences(inputStream, gene), executorService);

@@ -215,7 +215,7 @@ public class DefaultParseService implements ParseService {
                             try {
                                 updatedDate = format.parse(data[updatedDateIndex]);
                             } catch (ParseException e) {
-                                System.err.println(e.getMessage());
+                                System.err.println(e.getDownloaded());
                                 e.printStackTrace();
                             }
                         }
