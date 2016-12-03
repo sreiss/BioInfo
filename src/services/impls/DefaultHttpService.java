@@ -53,7 +53,7 @@ public class DefaultHttpService implements HttpService {
             return request.execute();
         });
         ListenableFuture<HttpResponse> failureCatchingFuture = Futures.catchingAsync(responseFuture, Throwable.class, exception -> {
-            if (exception instanceof SocketException) {
+            if (exception instanceof SocketTimeoutException) {
                 progressService.getCurrentApiStatus().setMessage("There seems to be a problem with the API, the last few requests where not answered. The processing might stop for a while.");
                 progressService.getCurrentApiStatus().setColor(ApiStatus.OFFLINE_COLOR);
                 progressService.invalidateApiStatus();
