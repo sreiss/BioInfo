@@ -20,7 +20,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DefaultOrganismService implements OrganismService {
-    private final int PROCESS_STACK_SIZE = 40;
+    private final int PROCESS_STACK_SIZE = 10;
     private final GeneService geneService;
     private final ListeningExecutorService executorService;
     private final ProgressService progressService;
