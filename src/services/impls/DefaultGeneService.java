@@ -102,11 +102,19 @@ public class DefaultGeneService implements GeneService {
         return sum;
     }
 
-    private ListenableFuture<Gene> extractStatisticsSequenceForTrinucleotides(final String sequence, final Gene gene) {
+    @SuppressWarnings("unchecked")
+	private ListenableFuture<Gene> extractStatisticsSequenceForTrinucleotides(final String sequence, final Gene gene) {
         return executorService.submit(() -> {
             String codon0, codon1, codon2;
 
             int j = 0;
+            
+			LinkedHashMap<String, Integer> beforeCount0 = (LinkedHashMap<String, Integer>) gene.getTrinuStatPhase0().clone();
+            LinkedHashMap<String, Integer> beforeCount1 = (LinkedHashMap<String, Integer>) gene.getTrinuStatPhase1().clone();
+            LinkedHashMap<String, Integer> beforeCount2 = (LinkedHashMap<String, Integer>) gene.getTrinuStatPhase2().clone();
+            /*LinkedHashMap<String, Integer> afterCount0 = initLinkedHashMap();
+            LinkedHashMap<String, Integer> afterCount1 = initLinkedHashMap();
+            LinkedHashMap<String, Integer> afterCount2 = initLinkedHashMap();*/
 
             for (int i = 0; i < sequence.length() - 3; i += 3) {
                 codon0 = sequence.substring(i, i + 3);
@@ -116,6 +124,29 @@ public class DefaultGeneService implements GeneService {
                 gene.getTrinuStatPhase1().put(codon1, gene.getTrinuStatPhase1().get(codon1) + 1);
                 gene.getTrinuStatPhase2().put(codon2, gene.getTrinuStatPhase2().get(codon2) + 1);
                 j++;
+            }
+            
+            for (String s : beforeCount0.keySet()) {
+            	beforeCount0.put(s, gene.getTrinuStatPhase0().get(s) - beforeCount0.get(s));
+            	beforeCount1.put(s, gene.getTrinuStatPhase1().get(s) - beforeCount1.get(s));
+            	beforeCount2.put(s, gene.getTrinuStatPhase2().get(s) - beforeCount2.get(s));
+            	
+            	int max = Math.max(beforeCount0.get(s), Math.max(beforeCount1.get(s), beforeCount2.get(s)));
+            	
+            	if (max == beforeCount0.get(s)) {
+                	gene.getTrinuPrefPhase0().put(s, gene.getTrinuPrefPhase0().get(s) + 1);
+                	gene.setTotalPrefTrinu0(gene.getTotalPrefTrinu0() + 1);
+            	}
+            	
+            	if (max == beforeCount1.get(s)) {
+                	gene.getTrinuPrefPhase1().put(s, gene.getTrinuPrefPhase1().get(s) + 1);
+                	gene.setTotalPrefTrinu1(gene.getTotalPrefTrinu1() + 1);
+            	}
+            	
+            	if (max == beforeCount2.get(s)) {
+                	gene.getTrinuPrefPhase2().put(s, gene.getTrinuPrefPhase2().get(s) + 1);
+                	gene.setTotalPrefTrinu2(gene.getTotalPrefTrinu2() + 1);
+            	}
             }
 
             gene.setTotalTrinucleotide(gene.getTotalTrinucleotide() + j);
