@@ -262,7 +262,7 @@ public class DefaultGeneService implements GeneService {
                 return Futures.transformAsync(workbookFuture, kingdom1 -> processGenes(organism, workbook, geneIds, path, organismSums), executorService);
             }
         } else {
-            return executorService.submit(() -> workbook);
+            return Futures.immediateFuture(workbook);
         }
     }
 

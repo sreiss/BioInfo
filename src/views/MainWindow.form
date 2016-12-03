@@ -41,39 +41,6 @@
         <properties/>
         <border type="none"/>
         <children>
-          <grid id="f2e0" binding="downloadProgressionPannel" layout-manager="BorderLayout" hgap="0" vgap="0">
-            <constraints/>
-            <properties/>
-            <border type="none"/>
-            <children>
-              <grid id="4c394" binding="downloadProgressionTextPanel" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="1">
-                <constraints border-constraint="North"/>
-                <properties/>
-                <border type="none"/>
-                <children>
-                  <component id="fa0e3" class="javax.swing.JLabel" binding="downloadLabel">
-                    <constraints/>
-                    <properties>
-                      <text value="Downloading"/>
-                    </properties>
-                  </component>
-                </children>
-              </grid>
-              <grid id="1f270" binding="downloadProgressionBarPanel" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="1">
-                <constraints border-constraint="South"/>
-                <properties/>
-                <border type="none"/>
-                <children>
-                  <component id="94acd" class="javax.swing.JProgressBar" binding="downloadProgressionBar">
-                    <constraints/>
-                    <properties>
-                      <preferredSize width="300" height="12"/>
-                    </properties>
-                  </component>
-                </children>
-              </grid>
-            </children>
-          </grid>
           <grid id="4eedc" binding="progressionPannel" layout-manager="BorderLayout" hgap="0" vgap="0">
             <constraints/>
             <properties/>

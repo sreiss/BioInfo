@@ -172,6 +172,7 @@ public class DefaultParseService implements ParseService {
                     Date updateDate = null;
                     List<Tuple<String, String>> geneIds;
 
+                    System.out.println(data);
                     if (Kingdom.Eukaryota.equals(kingdomId)) {
                         name = data[0];
                         group = data[4];

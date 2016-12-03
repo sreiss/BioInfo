@@ -37,11 +37,6 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
     private JCheckBox genomesCheckBox;
     private JCheckBox genesCheckBox;
     private JPanel optionsPanel;
-    private JPanel downloadProgressionPannel;
-    private JPanel downloadProgressionTextPanel;
-    private JPanel downloadProgressionBarPanel;
-    private JLabel downloadLabel;
-    private JProgressBar downloadProgressionBar;
     private JCheckBox plasmidsCheckBox;
     private JLabel downloadingLabel;
     private JLabel downloadedLabel;
@@ -154,14 +149,6 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
         return timeRemainingLabel;
     }
 
-    public JProgressBar getDownloadProgressionBar() {
-        return downloadProgressionBar;
-    }
-
-    public JLabel getDownloadProgressionLabel() {
-        return downloadLabel;
-    }
-
     public JCheckBox getGenomesCheckBox() {
         return genomesCheckBox;
     }
@@ -213,21 +200,6 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
         bottomPannel = new JPanel();
         bottomPannel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
         mainPanel.add(bottomPannel, BorderLayout.SOUTH);
-        downloadProgressionPannel = new JPanel();
-        downloadProgressionPannel.setLayout(new BorderLayout(0, 0));
-        bottomPannel.add(downloadProgressionPannel);
-        downloadProgressionTextPanel = new JPanel();
-        downloadProgressionTextPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
-        downloadProgressionPannel.add(downloadProgressionTextPanel, BorderLayout.NORTH);
-        downloadLabel = new JLabel();
-        downloadLabel.setText("Downloading");
-        downloadProgressionTextPanel.add(downloadLabel);
-        downloadProgressionBarPanel = new JPanel();
-        downloadProgressionBarPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
-        downloadProgressionPannel.add(downloadProgressionBarPanel, BorderLayout.SOUTH);
-        downloadProgressionBar = new JProgressBar();
-        downloadProgressionBar.setPreferredSize(new Dimension(300, 12));
-        downloadProgressionBarPanel.add(downloadProgressionBar);
         progressionPannel = new JPanel();
         progressionPannel.setLayout(new BorderLayout(0, 0));
         bottomPannel.add(progressionPannel);

@@ -161,12 +161,6 @@ public class MainController implements Observer {
         if (o instanceof ProgressService) {
             if (arg instanceof DownloadTaskPogress) {
                 DownloadTaskPogress progress = (DownloadTaskPogress) arg;
-                view.getDownloadProgressionBar().setIndeterminate(false);
-                if (view.getDownloadProgressionBar().getMaximum() != progress.getTotal().get()) {
-                    view.getDownloadProgressionBar().setMaximum(progress.getTotal().get());
-                }
-                view.getDownloadProgressionBar().setValue(progress.getProgress().get());
-                view.getDownloadProgressionLabel().setText(String.format("Downloading: %d/%d", progress.getProgress().get(), progress.getTotal().get()));
                 view.getDownloadedLabel().setText(progress.getDownloaded());
                 view.getDownloadingLabel().setText(progress.getDownloading());
             } else if (arg instanceof TaskProgress) {
@@ -194,7 +188,7 @@ public class MainController implements Observer {
                 view.updateGlobalProgressionText(String.format("Progression: %d/%d", progress.getProgress().get(), progress.getTotal().get()));
             } else if (arg instanceof ApiStatus) {
                 ApiStatus apiStatus = (ApiStatus) arg;
-                view.getApiStatusLabel().setText(apiStatus.getMessage());
+                view.getApiStatusLabel().setText("<html>" + apiStatus.getMessage() + "</html>");
                 view.getApiStatusLabel().setForeground(apiStatus.getColor());
             }
         } else if (o instanceof ProgramStatsService) {

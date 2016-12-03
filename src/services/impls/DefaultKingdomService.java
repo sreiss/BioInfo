@@ -55,15 +55,12 @@ public class DefaultKingdomService implements KingdomService {
         try {
             URL url;
             String urlString;
-            String host = (kingdom.equals(Kingdom.Viruses) ? "%3B&host=All" : "");
-            if(kingdom.getId().equals("plasmids"))
-            {
-                urlString = "https://www.ncbi.nlm.nih.gov/genomes/Genome2BE/genome2srv.cgi?action=download&orgn=&report=plasmids&king=All&group=All&subgroup=All&format=";
-            }
-            else
-            {
-                urlString = "http://www.ncbi.nlm.nih.gov/genomes/Genome2BE/genome2srv.cgi?action=download&orgn=&report=" + kingdom.getId() + "&status=50|40|30|20|" + host + "&group=--%20All%20" + kingdom.getLabel() + "%20--&subgroup=--%20All%20" + kingdom.getLabel() + "%20--";
-
+            if(Kingdom.Plasmids.equals(kingdom.getId())) {
+                urlString = "http://www.ncbi.nlm.nih.gov/genomes/Genome2BE/genome2srv.cgi?action=download&orgn=&report=plasmids&king=All&group=All&subgroup=All&format=";
+            } else if(Kingdom.Viruses.equals(kingdom.getId())) {
+                urlString = "http://www.ncbi.nlm.nih.gov/genomes/Genome2BE/genome2srv.cgi?action=download&orgn=&report=" + kingdom.getId() + "&status=50|40|30|20|%3B&host=All&group=--%20All%20" + kingdom.getLabel() + "%20--&subgroup=--%20All%20" + kingdom.getLabel() + "%20--";
+            } else {
+                urlString = "http://www.ncbi.nlm.nih.gov/genomes/Genome2BE/genome2srv.cgi?action=download&orgn=&report=" + kingdom.getId() + "&status=50|40|30|20|%3B&group=--%20All%20" + kingdom.getLabel() + "%20--&subgroup=--%20All%20" + kingdom.getLabel() + "%20--&format=";
             }
             url = new URL(urlString);
             return url.toString();
@@ -80,21 +77,18 @@ public class DefaultKingdomService implements KingdomService {
 
     private ListenableFuture<List<Boolean>> createDirectories(final Kingdom kingdom, final InputStream inputStream) {
         String dataDir = configService.getProperty("dataDir");
-        return Futures.transform(parseService.extractOrganismList(inputStream, kingdom.getId()), new Function<List<Organism>, List<Boolean>>() {
-            @Override
-            public List<Boolean> apply(List<Organism> organisms) {
-                List < String > paths = new ArrayList<>();
-                for (Organism organism : organisms) {
-                    String path = dataDir
-                            + kingdom.getLabel()
-                            + "/" + organism.getGroup()
-                            + "/" + organism.getSubGroup();
-                    organism.setPath(path);
-                    paths.add(path);
-                }
-                kingdom.setOrganisms(organisms);
-                return fileService.createDirectories(paths);
+        return Futures.transform(parseService.extractOrganismList(inputStream, kingdom.getId()), (Function<List<Organism>, List<Boolean>>) organisms -> {
+            List < String > paths = new ArrayList<>();
+            for (Organism organism : organisms) {
+                String path = dataDir
+                        + kingdom.getLabel()
+                        + "/" + organism.getGroup()
+                        + "/" + organism.getSubGroup();
+                organism.setPath(path);
+                paths.add(path);
             }
+            kingdom.setOrganisms(organisms);
+            return fileService.createDirectories(paths);
         }, executorService);
     }
 
