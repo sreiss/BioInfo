@@ -17,10 +17,12 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class DefaultKingdomService implements KingdomService {
+    private final int PROCESS_STACK_SIZE = 50;
     private final ParseService parseService;
     private final FileService fileService;
     private final ConfigService configService;
@@ -29,6 +31,7 @@ public class DefaultKingdomService implements KingdomService {
     private final ListeningExecutorService executorService;
     private final ProgressService progressService;
     private final ProgramStatsService programStatsService;
+    private boolean interrupted = false;
     private HashMap<Kingdom, Map<String, Date>> updates = new HashMap<>();
 
     @Inject
@@ -70,6 +73,11 @@ public class DefaultKingdomService implements KingdomService {
         }
     }
 
+    @Override
+    public void setInterrupted(boolean interrupted) {
+        this.interrupted = true;
+    }
+
     private ListenableFuture<HttpResponse> retrieveKingdom(Kingdom kingdom) {
         String url = generateKingdomGeneListUrl(kingdom);
         return httpService.get(url);
@@ -104,6 +112,54 @@ public class DefaultKingdomService implements KingdomService {
         });
     }
 
+    private ListenableFuture<Kingdom> createKingdomTree(Kingdom kingdom) {
+        interrupted = false;
+        return executorService.submit(() -> {
+            Kingdom modifiedKingdom = loadUpdateFile(kingdom).get();
+            String url = generateKingdomGeneListUrl(kingdom);
+            HttpResponse httpResponse = httpService.get(url).get();
+            InputStream content = httpResponse.getContent();
+            List<Boolean> creationResults = createDirectories(kingdom, content).get();
+
+            kingdom.setOrganisms(kingdom.getOrganisms().stream().filter(organism -> {
+                Date remoteUpdate = organism.getUpdatedDate();
+                Date localUpdate = updates.get(kingdom).get(organism.getName());
+                // No local update found
+                return remoteUpdate == null || localUpdate == null || localUpdate.before(remoteUpdate);
+            }).collect(Collectors.toList()));
+
+            progressService.getCurrentProgress().setStep(TaskProgress.Step.DirectoriesCreationFinished);
+            progressService.invalidateProgress();
+
+            TaskProgress progress = progressService.getCurrentProgress();
+            progress.setStep(TaskProgress.Step.OrganismProcessing);
+            progress.getTotal().addAndGet(kingdom.getOrganisms().size());
+            progressService.invalidateProgress();
+
+            programStatsService.setRemainingRequests(programStatsService.getRemainingRequests() + kingdom.getOrganisms().size());
+
+            return processKingdom(modifiedKingdom, 0);
+        });
+    }
+
+    private Kingdom processKingdom(Kingdom kingdom, int index) throws ExecutionException, InterruptedException {
+        if (!interrupted) {
+            int nextIndex = index + PROCESS_STACK_SIZE;
+            if (nextIndex > kingdom.getOrganisms().size()) {
+                nextIndex = kingdom.getOrganisms().size();
+            }
+            if (index < kingdom.getOrganisms().size()) {
+                List<ListenableFuture<Organism>> organismFutures = new ArrayList<>();
+                for (Organism organism: kingdom.getOrganisms().subList(index, nextIndex)) {
+                    organismFutures.add(organismService.processOrganism(kingdom, organism));
+                }
+                List<Organism> organisms = Futures.successfulAsList(organismFutures).get();
+                return processKingdom(kingdom, index + PROCESS_STACK_SIZE);
+            }
+        }
+        return kingdom;
+    }
+
     /**
      * This is one of the most important methods.
      * It first loads the update file associated to the kingdom (under "./updates/{kingdomLabel}")
@@ -111,6 +167,7 @@ public class DefaultKingdomService implements KingdomService {
      * then checks if an update is needed, then notifies the user interface through the progressService of the number of organisms to process,
      * then processes the organisms, and if the later is a success or a failure, writes the current updates file.
      */
+    /*
     private ListenableFuture<Kingdom> createKingdomTree(final Kingdom kingdom) {
         ListenableFuture<Kingdom> loadUpdateFileFuture = loadUpdateFile(kingdom);
         ListenableFuture<HttpResponse> responseFuture = Futures.transformAsync(loadUpdateFileFuture, this::retrieveKingdom, executorService);
@@ -172,6 +229,7 @@ public class DefaultKingdomService implements KingdomService {
             }
         }, executorService);
     }
+    */
 
     private void writeUpdateFile(Kingdom kingdom) {
         try {

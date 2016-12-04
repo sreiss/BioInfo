@@ -3,6 +3,7 @@ package controllers;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
 import models.Kingdom;
 import services.contracts.*;
@@ -25,15 +26,17 @@ public class MainController implements Observer {
     private final ConfigService configService;
     private final ProgressService progressService;
     private final ProgramStatsService programStatsService;
+    private final ListeningExecutorService executorService;
     ListenableFuture<List<Kingdom>> currentFuture;
 
     @Inject
-    public MainController(final KingdomService kingdomService, final FileService fileService, final ConfigService configService, final ProgressService progressService, final ProgramStatsService programStatsService) throws InterruptedException {
+    public MainController(final KingdomService kingdomService, final FileService fileService, final ConfigService configService, final ProgressService progressService, final ProgramStatsService programStatsService, ListeningExecutorService executorService) throws InterruptedException {
         this.kingdomService = kingdomService;
         this.fileService = fileService;
         this.configService = configService;
         this.progressService = progressService;
         this.programStatsService = programStatsService;
+        this.executorService = executorService;
 
         progressService.addObserver(this);
         programStatsService.addObserver(this);
@@ -153,7 +156,7 @@ public class MainController implements Observer {
                 }
                 resetProgressService();
             }
-        });
+        }, executorService);
     }
 
     @Override

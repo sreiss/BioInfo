@@ -8,5 +8,8 @@ import java.util.List;
 
 public interface KingdomService {
     String generateKingdomGeneListUrl(Kingdom kingdom);
+
+    void setInterrupted(boolean interrupted);
+
     ListenableFuture<List<Kingdom>> createKingdomTrees(List<Kingdom> kingdoms);
 }

@@ -14,7 +14,7 @@ public interface OrganismService {
 
     DateFormat getUpdateDateFormat();
 
-    ListenableFuture<Kingdom> processOrganisms(Kingdom kingdom, Map<String, Date> updates);
+    ListenableFuture<Organism> processOrganism(Kingdom kingdom, Organism organism);
 //    ListenableFuture<List<Organism>> extractGenes(List<Organism> organisms);
 //    ListenableFuture<Organism> extractGenes(Organism organism);
 //    ListenableFuture<List<Organism>> processGenes(List<Organism> organisms);

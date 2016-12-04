@@ -5,10 +5,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
-import models.Gene;
-import models.NucleotidesHolder;
-import models.Organism;
-import models.Sum;
+import models.*;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import services.contracts.FileService;
@@ -89,6 +86,31 @@ public class DefaultStatisticsService implements StatisticsService {
         }, executorService);
     }
 
+    @Override
+    public ListenableFuture<Gene> computeStatistics(Kingdom kingdom, Organism organism, Gene gene) {
+        ListenableFuture<Gene> dinuFuture = computeDinucleotideProbabilities(gene);
+        return Futures.transformAsync(dinuFuture, this::computeTrinucleotidesProbabilities, executorService);
+    }
+
+    @Override
+    public ListenableFuture<Sum> computeSum(Kingdom kingdom, Organism organism, Sum sum, Gene gene) {
+        return executorService.submit(() -> {
+            sum.setDinuStatPhase0(addHashMaps(sum.getDinuStatPhase0(), gene.getDinuStatPhase0()));
+            sum.setDinuStatPhase1(addHashMaps(sum.getDinuStatPhase1(), gene.getDinuStatPhase1()));
+
+            sum.setTrinuStatPhase0(addHashMaps(sum.getTrinuStatPhase0(), gene.getTrinuStatPhase0()));
+            sum.setTrinuStatPhase1(addHashMaps(sum.getTrinuStatPhase1(), gene.getTrinuStatPhase1()));
+            sum.setTrinuStatPhase2(addHashMaps(sum.getTrinuStatPhase2(), gene.getTrinuStatPhase2()));
+
+            sum.setTotalDinucleotide(sum.getTotalDinucleotide() + gene.getTotalDinucleotide());
+            sum.setTotalTrinucleotide(sum.getTotalTrinucleotide() + gene.getTotalTrinucleotide());
+            sum.setTotalUnprocessedCds(sum.getTotalUnprocessedCds() + gene.getTotalUnprocessedCds());
+            sum.setTotalCds(sum.getTotalCds() + gene.getTotalCds());
+
+            return sum;
+        });
+    }
+
     public ListenableFuture<XSSFSheet> computeSum(Organism organism, Gene gene, HashMap<String, Sum> organismSums, XSSFSheet sheet) {
         return executorService.submit(() -> {
             String type = gene.getType();
@@ -125,6 +147,16 @@ public class DefaultStatisticsService implements StatisticsService {
                 return workbook;
             }
         }, executorService);
+    }
+
+    @Override
+    public ListenableFuture<Sum> computeProbabilitiesFromSum(Organism organism, Sum organismSum) {
+        return executorService.submit(() -> {
+            computeTrinucleotidesProbabilities(organismSum).get();
+            computeDinucleotideProbabilities(organismSum).get();
+
+            return organismSum;
+        });
     }
 
     private LinkedHashMap<String, Integer> addHashMaps(HashMap<String, Integer> hashMap1, HashMap<String, Integer> hashMap2) {

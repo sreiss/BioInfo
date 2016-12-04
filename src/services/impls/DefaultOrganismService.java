@@ -1,33 +1,27 @@
 package services.impls;
 
-import com.google.common.base.Function;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
+import models.Gene;
 import models.Kingdom;
 import models.Organism;
 import models.Sum;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import services.contracts.*;
-
-import javax.annotation.Nullable;
-import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class DefaultOrganismService implements OrganismService {
-    private final int PROCESS_STACK_SIZE = 10;
     private final GeneService geneService;
     private final ListeningExecutorService executorService;
     private final ProgressService progressService;
     private final FileService fileService;
     private final ProgramStatsService programStatsService;
     private final StatisticsService statisticsService;
-    private HashMap<Kingdom, AtomicInteger> kingdomOffsets = new HashMap<Kingdom, AtomicInteger>();
 
     @Inject
     public DefaultOrganismService(GeneService geneService, ListeningExecutorService listeningExecutorService, ProgressService progressService, FileService fileService, ProgramStatsService programStatsService, StatisticsService statisticsService) {
@@ -49,89 +43,38 @@ public class DefaultOrganismService implements OrganismService {
         return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     }
 
-    /**
-     * This method processes the organisms of the given kingdom.
-     * The second argument are the updates of the kingdom. The key is the organism and the value, the date.
-     */
     @Override
-    public ListenableFuture<Kingdom> processOrganisms(Kingdom kingdom, Map<String, Date> updates) {
-        List<Organism> organisms = kingdom.getOrganisms();
+    public ListenableFuture<Organism> processOrganism(Kingdom kingdom, Organism organism) {
+        return executorService.submit(() -> {
+            HashMap<String, Sum> organismSums = new HashMap<>();
+            List<Tuple<String, String>> geneIds = organism.getGeneIds();
+            List<ListenableFuture<Gene>> geneFutures = new ArrayList<>();
+            for (Tuple<String, String> geneId: geneIds) {
+                geneFutures.add(geneService.processGene(kingdom, organism, organismSums, geneId));
+            }
+            List<Gene> genes = Futures.successfulAsList(geneFutures).get();
 
-        List<ListenableFuture<XSSFWorkbook>> processGenesFutures = new ArrayList<>();
-
-        kingdomOffsets.putIfAbsent(kingdom, new AtomicInteger());
-        AtomicInteger currentOffset = kingdomOffsets.get(kingdom);
-
-        // This part is to avoid a too high pressure on the memory.
-        // The number of simultaneously processed organisms is determined by PROCESS_STACK_SIZE.
-        int startIndex = currentOffset.get();
-        int endIndex;
-        boolean isLastLoop;
-        if ((startIndex + PROCESS_STACK_SIZE) < (organisms.size() - 1)) {
-            endIndex = (startIndex + PROCESS_STACK_SIZE);
-            isLastLoop = false;
-        } else {
-            endIndex = (organisms.size() - 1);
-            isLastLoop = true;
-        }
-
-
-        for (Organism organism: organisms.subList(startIndex, endIndex)) {
-            ListenableFuture<XSSFWorkbook> processGenesFuture = processGenes(organism);
-            processGenesFutures.add(processGenesFuture);
-        }
-        ListenableFuture<List<XSSFWorkbook>> organismFutures = Futures.successfulAsList(processGenesFutures);
-        ListenableFuture<Kingdom> writeFuture = Futures.transform(organismFutures, new Function<List<XSSFWorkbook>, Kingdom>() {
-            @Nullable
-            @Override
-            public Kingdom apply(@Nullable List<XSSFWorkbook> workbooks) {
-                if (workbooks != null) {
-                    for (int i = 0; i < workbooks.size(); i++) {
-                        try {
-                            int offset = Math.abs(currentOffset.get() - PROCESS_STACK_SIZE) + i;
-                            if (offset < 0) {
-                                offset = 0;
-                            }
-                            Organism organism = organisms.get(offset);
-                            fileService.writeWorkbook(workbooks.get(i), organism.getPath(), organism.getName());
-                            //Writes the update file
-                            Date now = new Date();
-                            updates.putIfAbsent(organism.getName(), now);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
+            XSSFWorkbook workbook = fileService.createWorkbook();
+            for (Gene gene: genes) {
+                if (gene != null) {
+                    fileService.fillWorkbook(organism, gene, workbook);
                 }
-                return kingdom;
             }
-        }, executorService);
+            fileService.fillWorkbookSum(organism, organismSums, workbook);
+            fileService.writeWorkbook(workbook, organism.getPath(), organism.getName());
 
-        if (isLastLoop) {
-            return writeFuture;
-        } else {
-            currentOffset.set(currentOffset.get() + PROCESS_STACK_SIZE);
-            return Futures.transformAsync(writeFuture, kingdom1 -> processOrganisms(kingdom, updates), executorService);
-        }
-    }
-
-    /**
-     * Creates the workbook for an organism then starts to process its genes.
-     */
-    private ListenableFuture<XSSFWorkbook> processGenes(Organism organism) {
-        List<Tuple<String, String>> geneIds = organism.getGeneIds();
-        XSSFWorkbook workbook = fileService.createWorkbook();
-        HashMap<String, Sum> organismSums = new HashMap<>();
-        ListenableFuture<XSSFWorkbook> processGenesFuture = Futures.transform(geneService.processGenes(organism, workbook, geneIds, organism.getPath(), organismSums), new Function<XSSFWorkbook, XSSFWorkbook>() {
-            @Nullable
-            @Override
-            public XSSFWorkbook apply(@Nullable XSSFWorkbook workbook) {
-                programStatsService.addDate(ZonedDateTime.now());
-                programStatsService.setRemainingRequests(programStatsService.getRemainingRequests());
-                progressService.getCurrentProgress().getProgress().incrementAndGet();
-                progressService.invalidateProgress();
-                return workbook;
+            for (Map.Entry<String, Sum> organismSumEntry: organismSums.entrySet()) {
+                statisticsService.computeProbabilitiesFromSum(organism, organismSumEntry.getValue());
             }
-        }, executorService);
-        return Futures.transformAsync(processGenesFuture, processedWorkbook -> statisticsService.computeProbabilitiesFromSum(organism, organismSums, workbook), executorService);
+
+            programStatsService.addDate(ZonedDateTime.now());
+            programStatsService.setRemainingRequests(programStatsService.getRemainingRequests());
+            progressService.getCurrentProgress().getProgress().incrementAndGet();
+            progressService.invalidateProgress();
+
+            System.out.print(organism.getName());
+
+            return organism;
+        });
     }
 }
