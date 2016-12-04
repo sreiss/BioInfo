@@ -16,7 +16,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class DefaultGeneService implements GeneService {
+public class DefaultGeneService extends NucleotideHolderService implements GeneService {
     private final int PROCESS_STACK_SIZE = 20;
     private final StatisticsService statisticsService;
     private final HttpService httpService;
@@ -65,33 +65,8 @@ public class DefaultGeneService implements GeneService {
         return gene;
     }
 
-    private Sum createSum(final String type, final String path, final int totalDinucleotides, final int totalTrinucleotides) {
-
-        Sum sum = new Sum(type, path, totalDinucleotides, totalTrinucleotides);
-
-        sum.setTrinuStatPhase0(initLinkedHashMap());
-        sum.setTrinuStatPhase1(initLinkedHashMap());
-        sum.setTrinuStatPhase2(initLinkedHashMap());
-
-        sum.setTrinuProbaPhase0(initLinkedHashMapProba());
-        sum.setTrinuProbaPhase1(initLinkedHashMapProba());
-        sum.setTrinuProbaPhase2(initLinkedHashMapProba());
-
-        sum.setTrinuPrefPhase0(initLinkedHashMap());
-        sum.setTrinuPrefPhase2(initLinkedHashMap());
-        sum.setTrinuPrefPhase1(initLinkedHashMap());
-
-        sum.setDinuStatPhase0(initLinkedHashMapDinucleo());
-        sum.setDinuStatPhase1(initLinkedHashMapDinucleo());
-
-        sum.setDinuProbaPhase0(initLinkedHashMapDinucleoProba());
-        sum.setDinuProbaPhase1(initLinkedHashMapDinucleoProba());
-
-        return sum;
-    }
-
     @Override
-    public ListenableFuture<Gene> processGene(Kingdom kingdom, Organism organism, HashMap<String, Sum> organismSums, Tuple<String, String> geneId) {
+    public ListenableFuture<Gene> processGene(Kingdom kingdom, Organism organism, Tuple<String, String> geneId) {
         return executorService.submit(() -> {
             Gene gene = createGene(geneId.getT1(), geneId.getT2(), organism.getPath(), 0, 0);
 
@@ -111,11 +86,6 @@ public class DefaultGeneService implements GeneService {
             gene = extractStatisticsSequenceForDinucleotides(sequences, gene, 0);
             gene = extractStatisticsSequenceForTrinucleotides(sequences, gene, 0);
             gene = statisticsService.computeStatistics(kingdom, organism, gene).get();
-
-            organismSums.putIfAbsent(gene.getType(), createSum(gene.getType(), organism.getPath(), 0, 0));
-            Sum sum = organismSums.get(gene.getType());
-            sum = statisticsService.computeSum(kingdom, organism, sum, gene).get();
-            organismSums.put(gene.getType(), sum);
 
             return gene;
         });
@@ -205,49 +175,5 @@ public class DefaultGeneService implements GeneService {
             return extractStatisticsSequenceForTrinucleotides(sequences, gene, index + 1);
         }
         return gene;
-    }
-
-    private LinkedHashMap<String, Integer> initLinkedHashMap() {
-        LinkedHashMap<String, Integer> hash = new LinkedHashMap<String, Integer>();
-        for (CodingSequence.Nucleotide s0 : CodingSequence.Nucleotide.values()) {
-            for (CodingSequence.Nucleotide s1 : CodingSequence.Nucleotide.values()) {
-                for (CodingSequence.Nucleotide s2 : CodingSequence.Nucleotide.values()) {
-                    hash.put(s0.toString() + s1.toString() + s2.toString(), 0);
-                }
-            }
-        }
-        return hash;
-    }
-
-    private LinkedHashMap<String, Double> initLinkedHashMapProba() {
-        LinkedHashMap<String, Double> hash = new LinkedHashMap<String, Double>();
-        for (CodingSequence.Nucleotide s0 : CodingSequence.Nucleotide.values()) {
-            for (CodingSequence.Nucleotide s1 : CodingSequence.Nucleotide.values()) {
-                for (CodingSequence.Nucleotide s2 : CodingSequence.Nucleotide.values()) {
-                    hash.put(s0.toString() + s1.toString() + s2.toString(), 0.0);
-                }
-            }
-        }
-        return hash;
-    }
-
-    private LinkedHashMap<String, Integer> initLinkedHashMapDinucleo() {
-        LinkedHashMap<String, Integer> hash = new LinkedHashMap<String, Integer>();
-        for (CodingSequence.Nucleotide s0 : CodingSequence.Nucleotide.values()) {
-            for (CodingSequence.Nucleotide s1 : CodingSequence.Nucleotide.values()) {
-                hash.put(s0.toString() + s1.toString(), 0);
-            }
-        }
-        return hash;
-    }
-
-    private LinkedHashMap<String, Double> initLinkedHashMapDinucleoProba() {
-        LinkedHashMap<String, Double> hash = new LinkedHashMap<String, Double>();
-        for (CodingSequence.Nucleotide s0 : CodingSequence.Nucleotide.values()) {
-            for (CodingSequence.Nucleotide s1 : CodingSequence.Nucleotide.values()) {
-                hash.put(s0.toString() + s1.toString(), 0.0);
-            }
-        }
-        return hash;
     }
 }
