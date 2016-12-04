@@ -95,6 +95,9 @@ public class DefaultGeneService implements GeneService {
         return executorService.submit(() -> {
             Gene gene = createGene(geneId.getT1(), geneId.getT2(), organism.getPath(), 0, 0);
 
+            progressService.getCurrentDownloadProgress().setDownloading(geneId.getT1());
+            progressService.invalidateDownloadProgress();
+
             String url = generateUrlForGene(geneId.getT1());
             HttpResponse httpResponse = httpService.get(url).get();
 
@@ -109,7 +112,8 @@ public class DefaultGeneService implements GeneService {
             gene = extractStatisticsSequenceForTrinucleotides(sequences, gene, 0);
             gene = statisticsService.computeStatistics(kingdom, organism, gene).get();
 
-            Sum sum = organismSums.putIfAbsent(gene.getType(), createSum(gene.getType(), organism.getPath(), 0, 0));
+            organismSums.putIfAbsent(gene.getType(), createSum(gene.getType(), organism.getPath(), 0, 0));
+            Sum sum = organismSums.get(gene.getType());
             sum = statisticsService.computeSum(kingdom, organism, sum, gene).get();
             organismSums.put(gene.getType(), sum);
 

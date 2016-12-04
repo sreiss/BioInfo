@@ -64,7 +64,7 @@ public class DefaultOrganismService implements OrganismService {
             fileService.writeWorkbook(workbook, organism.getPath(), organism.getName());
 
             for (Map.Entry<String, Sum> organismSumEntry: organismSums.entrySet()) {
-                statisticsService.computeProbabilitiesFromSum(organism, organismSumEntry.getValue());
+                organismSumEntry.setValue(statisticsService.computeProbabilitiesFromSum(organism, organismSumEntry.getValue()).get());
             }
 
             programStatsService.addDate(ZonedDateTime.now());

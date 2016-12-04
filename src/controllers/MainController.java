@@ -55,6 +55,7 @@ public class MainController implements Observer {
         view.addInteruptListener(e -> {
             if (currentFuture != null) {
                 currentFuture.cancel(true);
+                kingdomService.interrupt();
             }
             resetProgressService();
             ((JButton) e.getSource()).setEnabled(false);
@@ -66,6 +67,7 @@ public class MainController implements Observer {
                 super.windowClosing(e);
                 if (currentFuture != null) {
                     currentFuture.cancel(true);
+                    kingdomService.interrupt();
                 }
                 System.exit(0);
             }

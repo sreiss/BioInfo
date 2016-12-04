@@ -74,18 +74,6 @@ public class DefaultStatisticsService implements StatisticsService {
         });
     }
 
-    public ListenableFuture<XSSFSheet> computeStatistics(Organism organism, Gene gene, XSSFWorkbook workbook) {
-        ListenableFuture<Gene> dinuFuture = computeDinucleotideProbabilities(gene);
-        ListenableFuture<Gene> trinuFuture = Futures.transformAsync(dinuFuture, this::computeTrinucleotidesProbabilities, executorService);
-        return Futures.transform(trinuFuture, new Function<Gene, XSSFSheet>() {
-            @Nullable
-            @Override
-            public XSSFSheet apply(@Nullable Gene computedGene) {
-                return fileService.fillWorkbook(organism, computedGene, workbook);
-            }
-        }, executorService);
-    }
-
     @Override
     public ListenableFuture<Gene> computeStatistics(Kingdom kingdom, Organism organism, Gene gene) {
         ListenableFuture<Gene> dinuFuture = computeDinucleotideProbabilities(gene);
@@ -111,44 +99,6 @@ public class DefaultStatisticsService implements StatisticsService {
         });
     }
 
-    public ListenableFuture<XSSFSheet> computeSum(Organism organism, Gene gene, HashMap<String, Sum> organismSums, XSSFSheet sheet) {
-        return executorService.submit(() -> {
-            String type = gene.getType();
-            Sum sum = organismSums.get(type);
-
-            sum.setDinuStatPhase0(addHashMaps(sum.getDinuStatPhase0(), gene.getDinuStatPhase0()));
-            sum.setDinuStatPhase1(addHashMaps(sum.getDinuStatPhase1(), gene.getDinuStatPhase1()));
-
-            sum.setTrinuStatPhase0(addHashMaps(sum.getTrinuStatPhase0(), gene.getTrinuStatPhase0()));
-            sum.setTrinuStatPhase1(addHashMaps(sum.getTrinuStatPhase1(), gene.getTrinuStatPhase1()));
-            sum.setTrinuStatPhase2(addHashMaps(sum.getTrinuStatPhase2(), gene.getTrinuStatPhase2()));
-
-            sum.setTotalDinucleotide(sum.getTotalDinucleotide() + gene.getTotalDinucleotide());
-            sum.setTotalTrinucleotide(sum.getTotalTrinucleotide() + gene.getTotalTrinucleotide());
-            sum.setTotalUnprocessedCds(sum.getTotalUnprocessedCds() + gene.getTotalUnprocessedCds());
-            sum.setTotalCds(sum.getTotalCds() + gene.getTotalCds());
-
-            return sheet;
-        });
-    }
-
-    public ListenableFuture<XSSFWorkbook> computeProbabilitiesFromSum(Organism organism, HashMap<String, Sum> organismSums, XSSFWorkbook workbook) {
-        List<ListenableFuture<Sum>> computeFutures = new ArrayList<>();
-        for (Map.Entry<String, Sum> sum: organismSums.entrySet()) {
-            ListenableFuture<Sum> trinuFuture = computeTrinucleotidesProbabilities(sum.getValue());
-            ListenableFuture<Sum> dinuFuture = Futures.transformAsync(trinuFuture, this::computeDinucleotideProbabilities, executorService);
-            computeFutures.add(dinuFuture);
-        }
-        return Futures.transform(Futures.successfulAsList(computeFutures), new Function<List<Sum>, XSSFWorkbook>() {
-            @Nullable
-            @Override
-            public XSSFWorkbook apply(@Nullable List<Sum> sums) {
-                fileService.fillWorkbookSum(organism, organismSums, workbook);
-                return workbook;
-            }
-        }, executorService);
-    }
-
     @Override
     public ListenableFuture<Sum> computeProbabilitiesFromSum(Organism organism, Sum organismSum) {
         return executorService.submit(() -> {
@@ -170,34 +120,4 @@ public class DefaultStatisticsService implements StatisticsService {
         });
         return result;
     }
-
-//
-//    /*
-//    public void file() {
-//        XSSFCell tmpCell;
-//        XSSFRow row;
-//
-//        if((row = this.CurrentSheet.getRow(0)) == null)
-//            row = this.CurrentSheet.createRow(0);
-//
-//        row.createCell(0).setCellValue("Trinucleotide");
-//        row.createCell(1).setCellValue("Nombre Phase 0");
-//        row.createCell(2).setCellValue("Proba Phase 0");
-//        row.createCell(3).setCellValue("Nombre Phase 1");
-//        row.createCell(4).setCellValue("Proba Phase 1");
-//        row.createCell(5).setCellValue("Nombre Phase 2");
-//        row.createCell(6).setCellValue("Proba Phase 2");
-//    }
-//
-//    public void computeProbabilities(int total, LinkedHashMap<String, Integer> Stat, LinkedHashMap<String, Double> Proba)
-//    {
-//        Set<String> keys = Stat.keySet();
-//        double tmp1, tmp2 = (double) total;
-//        for(String key: keys){
-//            tmp1 = (double) Stat.get(key);
-////            Proba.put(key, Math.round(((tmp1 / tmp2) * 100.0) * 100.0) / 100.0);
-//            Proba.put(key, (tmp1 / tmp2) * 100.0);
-//        }
-//    }
-//    */
 }
