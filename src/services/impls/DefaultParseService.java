@@ -1,5 +1,6 @@
 package services.impls;
 
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
@@ -43,12 +44,17 @@ public class DefaultParseService implements ParseService {
     }
 
     private static boolean checkLocator(String locator) {
+        if (locator == null) {
+            return false;
+        }
         String[] indexes = locator.split("\\.\\.");
         return indexes.length == 2 && Integer.parseInt(indexes[0]) < Integer.parseInt(indexes[1]);
     }
 
     private static boolean checkSequence(String sequence) {
-        return (sequence.length() % 3 == 0)
+        return sequence != null
+                && (sequence.length() > 0)
+                && (sequence.length() % 3 == 0)
                 && CodingSequence.InitCodon.contains(sequence.substring(0, 3))
                 && CodingSequence.StopCodon.contains(sequence.substring(sequence.length() - 3))
                 && !Pattern.compile(CodingSequence.REGEX_ATGC).matcher(sequence).find();
@@ -60,89 +66,72 @@ public class DefaultParseService implements ParseService {
     @Override
     public ListenableFuture<List<String>> extractSequences(final InputStream inputStream, Gene gene) {
         return executorService.submit(() -> {
-            if (inputStream == null) {
-                throw new NullPointerException("InputStream was null.");
-            }
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             List<String> sequences = new ArrayList<String>();
             String line;
             boolean running;
 
             System.out.println("Extracting : " + gene.getName());
-            while((line=reader.readLine()) != null) {
-                if (line.startsWith(CodingSequence.START_CDS_INFO)) {
-                    Pattern p = Pattern.compile(CodingSequence.REGEX_COMPLETE);
-                    Matcher m = p.matcher(line);
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+                while ((line = reader.readLine()) != null) {
+                    if (line.startsWith(CodingSequence.START_CDS_INFO)) {
+                        Pattern p = Pattern.compile(CodingSequence.REGEX_COMPLETE);
+                        Matcher m = p.matcher(line);
 
-                    if (m.find()) {
-                        String s = m.group();
-                        p = Pattern.compile(CodingSequence.REGEX_LOCATOR);
-                        m = p.matcher(s);
-                        boolean locators_ok = true;
-                        while (m.find() && locators_ok) {
-                            locators_ok = checkLocator(m.group());
-                        }
-                        if (locators_ok) {
-                            String sequence = "", line2=null;
-
-                            running=true;
-                            while(running)
-                            {
-                                reader.mark(1);
-                                int temp=reader.read();
-                                if(temp==-1)
-                                {
-                                    running=false;
-                                }
-                                else
-                                {
-                                    reader.reset();
-                                    if(temp==CodingSequence.START_CDS_INFO.charAt(0))
-                                    {
-                                        running=false;
-                                    }
-                                    else
-                                    {
-                                        try
-                                        {
-                                            line2 = reader.readLine();
-                                        }
-                                        catch(SocketException e)
-                                        {
-                                            e.printStackTrace();
-                                        }
-                                        catch(IOException e)
-                                        {
-                                            running=false;
-                                        }
-                                        if(line2==null)
-                                        {
-                                            running=false;
-                                        }
-                                        else
-                                        {
-                                            sequence += line2;
-                                        }
-                                    }
-                                }
+                        if (m.find()) {
+                            String s = m.group();
+                            p = Pattern.compile(CodingSequence.REGEX_LOCATOR);
+                            m = p.matcher(s);
+                            boolean locators_ok = true;
+                            while (m.find() && locators_ok) {
+                                locators_ok = checkLocator(m.group());
                             }
+                            if (locators_ok) {
+                                String sequence = "", line2 = null;
 
-                            if (checkSequence(sequence)) {
-                                gene.setTotalCds(gene.getTotalCds() + 1);
+                                running = true;
+                                while (running) {
+                                    reader.mark(1);
+                                    int temp = reader.read();
+                                    if (temp == -1) {
+                                        running = false;
+                                    } else {
+                                        reader.reset();
+                                        if (temp == CodingSequence.START_CDS_INFO.charAt(0)) {
+                                            running = false;
+                                        } else {
+                                            try {
+                                                line2 = reader.readLine();
+                                            } catch (SocketException e) {
+                                                e.printStackTrace();
+                                            } catch (IOException e) {
+                                                running = false;
+                                            }
+                                            if (line2 == null) {
+                                                running = false;
+                                            } else {
+                                                sequence += line2;
+                                            }
+                                        }
+                                    }
+                                }
 
-                                sequences.add(sequence);
-                            } else {
-                                gene.setTotalCds(gene.getTotalCds() + 1);
-                                gene.setTotalUnprocessedCds(gene.getTotalUnprocessedCds() + 1);
+                                if (checkSequence(sequence)) {
+                                    gene.setTotalCds(gene.getTotalCds() + 1);
+
+                                    sequences.add(sequence);
+                                } else {
+                                    gene.setTotalCds(gene.getTotalCds() + 1);
+                                    gene.setTotalUnprocessedCds(gene.getTotalUnprocessedCds() + 1);
+                                }
                             }
                         }
                     }
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                inputStream.close();
             }
-
-            reader.close();
-            inputStream.close();
 
             return sequences;
         });
@@ -159,12 +148,16 @@ public class DefaultParseService implements ParseService {
 
             String line;
 
-            synchronized (DefaultParseService.this) {
-                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+
+            InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+            try {
                 BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
                 bufferedReader.readLine();
                 while ((line = bufferedReader.readLine()) != null) {
                     String[] data = line.split(sep);
+                    if (data.length == 0) {
+                        break;
+                    }
 
                     String name;
                     String group;
@@ -225,6 +218,8 @@ public class DefaultParseService implements ParseService {
                 inputStream.close();
                 inputStreamReader.close();
                 bufferedReader.close();
+            } catch (Exception e){
+                e.printStackTrace();
             }
 
             return organisms.stream().filter(organism -> organism.getGeneIds() != null && organism.getGeneIds().size() > 0).collect(Collectors.toList());

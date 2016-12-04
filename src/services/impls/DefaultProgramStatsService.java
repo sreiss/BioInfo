@@ -61,7 +61,6 @@ public class DefaultProgramStatsService extends Observable implements ProgramSta
             if (requestDates.size() > 0) {
                 long averageMilliSecondes = totalMilliSeconds / requestDates.size();
                 long totalRemaining = averageMilliSecondes * remainingRequests;
-                System.out.println(totalRemaining);
                 ProgramStat programStat = new ProgramStat();
                 programStat.setTimeRemaining(totalRemaining);
                 setChanged();

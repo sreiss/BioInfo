@@ -292,6 +292,9 @@
                       <gridbag weightx="1.0" weighty="1.0"/>
                     </constraints>
                     <properties>
+                      <horizontalTextPosition value="2"/>
+                      <maximumSize width="290" height="16"/>
+                      <preferredSize width="290" height="16"/>
                       <text value="-"/>
                     </properties>
                   </component>

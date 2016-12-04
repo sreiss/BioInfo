@@ -390,6 +390,9 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
         gbc.insets = new Insets(5, 10, 5, 10);
         panel6.add(panel7, gbc);
         apiStatusLabel = new JLabel();
+        apiStatusLabel.setHorizontalTextPosition(2);
+        apiStatusLabel.setMaximumSize(new Dimension(290, 16));
+        apiStatusLabel.setPreferredSize(new Dimension(290, 16));
         apiStatusLabel.setText("-");
         gbc = new GridBagConstraints();
         gbc.gridx = 0;

@@ -89,6 +89,9 @@ public class DefaultOrganismService implements OrganismService {
                     for (int i = 0; i < workbooks.size(); i++) {
                         try {
                             int offset = Math.abs(currentOffset.get() - PROCESS_STACK_SIZE) + i;
+                            if (offset < 0) {
+                                offset = 0;
+                            }
                             Organism organism = organisms.get(offset);
                             fileService.writeWorkbook(workbooks.get(i), organism.getPath(), organism.getName());
                             //Writes the update file
@@ -128,7 +131,7 @@ public class DefaultOrganismService implements OrganismService {
                 progressService.invalidateProgress();
                 return workbook;
             }
-        });
+        }, executorService);
         return Futures.transformAsync(processGenesFuture, processedWorkbook -> statisticsService.computeProbabilitiesFromSum(organism, organismSums, workbook), executorService);
     }
 }

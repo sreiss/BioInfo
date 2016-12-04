@@ -125,7 +125,7 @@ public class DefaultKingdomService implements KingdomService {
                     return null;
                 }
             }
-        });
+        }, executorService);
         ListenableFuture<List<Boolean>> createDirectoriesFuture = Futures.transformAsync(inputStreamFuture, inputStream -> createDirectories(kingdom, inputStream), executorService);
         ListenableFuture<List<Organism>> checkIfNeedsUpdateFuture = Futures.transform(createDirectoriesFuture, new Function<List<Boolean>, List<Organism>>() {
             @Nullable
@@ -170,7 +170,7 @@ public class DefaultKingdomService implements KingdomService {
                 writeUpdateFile(kingdom);
                 return kingdom;
             }
-        });
+        }, executorService);
     }
 
     private void writeUpdateFile(Kingdom kingdom) {
@@ -199,6 +199,6 @@ public class DefaultKingdomService implements KingdomService {
                 programStatsService.endAcquisitionTimeEstimation();
                 return kingdoms;
             }
-        });
+        }, executorService);
     }
 }

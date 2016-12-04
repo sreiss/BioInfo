@@ -19,7 +19,12 @@ public class CodingSequence {
         }
 
         public static boolean contains(String letter) {
-            return valueOf(letter) != null;
+            for (Nucleotide nucleotide: Nucleotide.values()) {
+                if (nucleotide.name().equals(letter)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         @Override
@@ -45,7 +50,12 @@ public class CodingSequence {
         }
 
         public static boolean contains(String codon) {
-            return valueOf(codon) != null;
+            for (InitCodon initCodon: InitCodon.values()) {
+                if (initCodon.name().equals(codon)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -61,7 +71,12 @@ public class CodingSequence {
         }
 
         public static boolean contains(String codon) {
-            return valueOf(codon) != null;
+            for (StopCodon stopCodon: StopCodon.values()) {
+                if (stopCodon.name().equals(codon)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 

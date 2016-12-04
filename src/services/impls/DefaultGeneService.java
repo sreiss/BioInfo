@@ -239,7 +239,17 @@ public class DefaultGeneService implements GeneService {
 
     @Override
     public ListenableFuture<XSSFWorkbook> processGenes(Organism organism, XSSFWorkbook workbook, List<Tuple<String, String>> geneIds, String path, HashMap<String, Sum> organismSums) {
-        if (geneIds != null && geneIds.size() > 0) {
+        return processGenes(organism, workbook, geneIds, path, organismSums, 0);
+    }
+
+    private ListenableFuture<XSSFWorkbook> processGenes(Organism organism, XSSFWorkbook workbook, List<Tuple<String, String>> geneIds, String path, HashMap<String, Sum> organismSums, int index) {
+        if (geneIds != null && geneIds.size() > 0 && index < geneIds.size()) {
+            Tuple<String, String> geneId = geneIds.get(index);
+            if (geneId != null) {
+                ListenableFuture<XSSFSheet> processFuture = processGene(organism, workbook, geneId.getT1(), geneId.getT2(), path, organismSums);
+                return Futures.transformAsync(processFuture, sheet -> processGenes(organism, workbook, geneIds, path, organismSums, index + 1), executorService);
+            }
+            /*
             List<ListenableFuture<XSSFSheet>> geneFutures = new ArrayList<>();
 
             organismOffsets.putIfAbsent(organism, new AtomicInteger());
@@ -275,10 +285,9 @@ public class DefaultGeneService implements GeneService {
             } else {
                 currentOffset.set(currentOffset.get() + PROCESS_STACK_SIZE);
                 return Futures.transformAsync(workbookFuture, kingdom1 -> processGenes(organism, workbook, geneIds, path, organismSums), executorService);
-            }
-        } else {
-            return Futures.immediateFuture(workbook);
+            }*/
         }
+        return Futures.immediateFuture(workbook);
     }
 
     private LinkedHashMap<String, Integer> initLinkedHashMap() {

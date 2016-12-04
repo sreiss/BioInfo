@@ -124,7 +124,7 @@ public class DefaultStatisticsService implements StatisticsService {
                 fileService.fillWorkbookSum(organism, organismSums, workbook);
                 return workbook;
             }
-        });
+        }, executorService);
     }
 
     private LinkedHashMap<String, Integer> addHashMaps(HashMap<String, Integer> hashMap1, HashMap<String, Integer> hashMap2) {
