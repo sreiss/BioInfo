@@ -71,7 +71,6 @@ public class DefaultOrganismService extends NucleotideHolderService implements O
                     fileService.fillWorkbook(organism, gene, workbook);
                 }
             }
-            fileService.fillWorkbookSum(organism, organismSums, workbook);
 
             for (Map.Entry<String, Sum> organismSumEntry: organismSums.entrySet()) {
                 organismSumEntry.setValue(statisticsService.computeProbabilitiesFromSum(organism, organismSumEntry.getValue()).get());
