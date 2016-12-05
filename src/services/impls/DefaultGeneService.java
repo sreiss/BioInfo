@@ -39,7 +39,11 @@ public class DefaultGeneService extends NucleotideHolderService implements GeneS
         return "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id="+id+"&rettype=fasta_cds_na&retmode=text";
     }
 
-    private Gene createGene(final String name, final String type, final String path, final int totalDinucleotides, final int totalTrinucleotides) {
+    private Gene createGene(String name, String type, String path, int totalDinucleotides, int totalTrinucleotides) {
+        type = type.trim();
+        if (!type.toLowerCase().equals("chromosome") && !type.toLowerCase().equals("mitochodrion") && !type.toLowerCase().equals("chloroplast") && !type.toLowerCase().equals("dna")) {
+            type = "Unknown";
+        }
 
         Gene gene = new Gene(name, type, path, totalDinucleotides, totalTrinucleotides);
 
