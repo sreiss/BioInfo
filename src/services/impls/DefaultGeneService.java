@@ -17,7 +17,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DefaultGeneService extends NucleotideHolderService implements GeneService {
-    private final int PROCESS_STACK_SIZE = 20;
     private final StatisticsService statisticsService;
     private final HttpService httpService;
     private final ParseService parseService;
