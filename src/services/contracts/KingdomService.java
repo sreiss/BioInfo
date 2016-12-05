@@ -15,4 +15,9 @@ public interface KingdomService {
     void interrupt();
 
     boolean getShouldInterrupt();
+    
+    void setGenesCkBIsSelected(Boolean isSelected);
+    Boolean getGenesCkBIsSelected();
+    void setGenomesCkBIsSelected(Boolean isSelected);
+    Boolean getGenomesCkBIsSelected();
 }

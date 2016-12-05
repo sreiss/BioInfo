@@ -14,7 +14,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import services.contracts.*;
-
 import javax.annotation.Nullable;
 
 import java.io.File;
@@ -41,6 +40,8 @@ public class DefaultKingdomService implements KingdomService {
     private HashMap<Kingdom, Map<String, Date>> updates = new HashMap<>();
     private HashMap<Kingdom, ListenableFuture<List<Organism>>> currentFutures = new HashMap<>();
     private boolean shouldInterrupt = false;
+    private Boolean genesCkBIsSelected;
+    private Boolean genomesCkBIsSelected;
 
     @Inject
     public DefaultKingdomService(GeneService geneService,
@@ -61,11 +62,14 @@ public class DefaultKingdomService implements KingdomService {
         this.executorService = listeningExecutorService;
         this.progressService = progressService;
         this.programStatsService = programStatsService;
+        
+        this.genomesCkBIsSelected = false;
+        this.genesCkBIsSelected = false;
     }
 
     @Override
     public String generateKingdomGeneListUrl(Kingdom kingdom) {
-        try {
+    	try {
             URL url;
             String urlString;
             if(Kingdom.Plasmids.equals(kingdom.getId())) {
@@ -99,6 +103,11 @@ public class DefaultKingdomService implements KingdomService {
 
     private ListenableFuture<List<Boolean>> createDirectories(final Kingdom kingdom, final InputStream inputStream) {
         String dataDir = configService.getProperty("dataDir");
+        String zipGene = configService.getProperty("gene");
+        String zipGenome = configService.getProperty("genome");
+        Boolean tmpGenesCkBIsSelected = genesCkBIsSelected;
+        Boolean tmpGenomesCkBIsSelected = genomesCkBIsSelected;
+
         return Futures.transform(parseService.extractOrganismList(inputStream, kingdom.getId()), (Function<List<Organism>, List<Boolean>>) organisms -> {
             List < String > paths = new ArrayList<>();
             for (Organism organism : organisms) {
@@ -108,6 +117,26 @@ public class DefaultKingdomService implements KingdomService {
                         + "/" + organism.getSubGroup();
                 organism.setPath(path);
                 paths.add(path);
+
+                String zipPath = null;
+                
+                if(tmpGenesCkBIsSelected){                    	
+                    zipPath = zipGene
+                            + kingdom.getLabel()
+                            + "/" + organism.getGroup()
+                            + "/" + organism.getSubGroup()
+                            + "/" + organism.getName();                    
+                    paths.add(zipPath);
+                }
+
+                if(tmpGenomesCkBIsSelected){                    	
+                    zipPath = zipGenome
+                            + kingdom.getLabel()
+                            + "/" + organism.getGroup()
+                            + "/" + organism.getSubGroup()
+                            + "/" + organism.getName();                    
+                    paths.add(zipPath);
+                }
             }
             kingdom.setOrganisms(organisms);
             return fileService.createDirectories(paths);
@@ -340,5 +369,21 @@ public class DefaultKingdomService implements KingdomService {
     @Override
     public boolean getShouldInterrupt() {
         return shouldInterrupt;
+    }
+    
+    public void setGenomesCkBIsSelected(Boolean isSelected){
+    	this.genomesCkBIsSelected = isSelected;
+    }
+    
+    public Boolean getGenomesCkBIsSelected(){
+    	return this.genomesCkBIsSelected;
+    }
+    
+    public void setGenesCkBIsSelected(Boolean isSelected){
+    	this.genesCkBIsSelected = isSelected;
+    }
+    
+    public Boolean getGenesCkBIsSelected(){
+    	return this.genesCkBIsSelected;
     }
 }

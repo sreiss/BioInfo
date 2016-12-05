@@ -5,6 +5,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
+import Utils.ZipUtils;
 import models.Kingdom;
 import services.contracts.*;
 import views.MainWindow;
@@ -13,6 +14,9 @@ import javax.swing.*;
 import javax.swing.tree.TreeModel;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import org.apache.commons.io.FileUtils;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Observable;
@@ -102,7 +106,8 @@ public class MainController implements Observer {
     }
 
     private void acquire() {
-        view.getTimeRemainingLabel().setText("Estimating ETA...");
+        
+    	view.getTimeRemainingLabel().setText("Estimating ETA...");
         view.updateGlobalProgressionText("Begining the acquisition, the startup might take some time...");
 
         List<Kingdom> kingdoms = new ArrayList<Kingdom>();
@@ -119,6 +124,25 @@ public class MainController implements Observer {
         if (view.getPlasmidsCheckBox().isSelected()) {
             kingdoms.add(Kingdom.Plasmids);
         }
+        
+        // Necessaire au zippage
+        JCheckBox genomesCkb = view.getGenomesCheckBox();
+    	JCheckBox genesCkb = view.getGenesCheckBox();
+    	kingdomService.setGenesCkBIsSelected(genesCkb.isSelected());
+    	kingdomService.setGenomesCkBIsSelected(genomesCkb.isSelected());
+    	
+    	//gene
+        String zipGene = configService.getProperty("gene");
+    	String[] explodeGenePath = zipGene.split("/");
+    	//genome
+        String zipGenome = configService.getProperty("genome");
+    	String[] explodeGenomePath = zipGenome.split("/");
+    	
+    	ZipUtils.cleanSaveFolder(zipGene,explodeGenePath);
+    	ZipUtils.cleanSaveFolder(zipGenome,explodeGenomePath);
+
+        Boolean genesBool = genesCkb.isSelected();
+        Boolean genomesBool = genomesCkb.isSelected();
 
         ListenableFuture<List<Kingdom>> acquireFuture = kingdomService.createKingdomTrees(kingdoms);
         currentFuture = acquireFuture;
@@ -136,10 +160,29 @@ public class MainController implements Observer {
                 view.setGlobalProgressionBar(0);
                 view.getExecuteButton().setEnabled(true);
                 view.getTimeRemainingLabel().setText("");
+
+                if(genesBool){
+                	if (new File(zipGene).exists()) {
+                		ZipUtils zip = new ZipUtils(zipGene, explodeGenePath[1] + ".zip");
+                		zip.ExecuteZip();
+                	}
+                }
+
+                if(genomesBool){
+                	if (new File(zipGenome).exists()) {
+                		ZipUtils zip = new ZipUtils(zipGenome, explodeGenomePath[1] + ".zip");
+                		zip.createGenomeDirectory(new File(zipGenome));
+                        zip.ExecuteZip();
+                	}
+                }
             }
 
             @Override
             public void onFailure(Throwable throwable) {
+
+                String zipGene = configService.getProperty("zipDir");
+                String zipGenome = configService.getProperty("zipDir");
+
                 if (throwable instanceof CancellationException) {
                     view.updateGlobalProgressionText("Processing interrupted.");
                     progressService.getCurrentProgress().getTotal().set(0);
@@ -160,6 +203,22 @@ public class MainController implements Observer {
                     view.getInterruptButton().setEnabled(false);
                     view.getTimeRemainingLabel().setText("");
                 }
+
+                if(new File(zipGene).exists() && genesBool){
+                    if (new File(zipGene).exists()) {
+                        ZipUtils zip = new ZipUtils(zipGene, explodeGenePath[1] + ".zip");
+                        zip.ExecuteZip();
+                    }
+                }
+
+                if(new File(zipGenome).exists() && genomesBool){
+                    if (new File(zipGenome).exists()) {
+                        ZipUtils zip = new ZipUtils(zipGenome, explodeGenomePath[1] + ".zip");
+                        zip.createGenomeDirectory(new File(zipGenome));
+                        zip.ExecuteZip();
+                    }
+                }
+
                 resetProgressService();
             }
         }, executorService);

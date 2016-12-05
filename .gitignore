@@ -18,6 +18,8 @@ hs_err_pid*
 # Data directory #
 data
 Results
+Gene
+Genome
 
 # Updates directory #
 updates/*.json
@@ -26,3 +28,6 @@ updates/*.json
 *.html
 
 *.eml
+
+# dossier de sauvegarde #
+*.zip

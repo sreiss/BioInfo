@@ -8,11 +8,15 @@ import models.CodingSequence;
 import models.Gene;
 import models.Kingdom;
 import models.Organism;
+import services.contracts.ConfigService;
+import services.contracts.KingdomService;
 import services.contracts.OrganismService;
 import services.contracts.ParseService;
 import services.contracts.Tuple;
-
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -28,6 +32,8 @@ import java.util.stream.Collectors;
 public class DefaultParseService implements ParseService {
     private final OrganismService organismService;
     private final ListeningExecutorService executorService;
+    private final ConfigService configService;
+	private final KingdomService kingdomService;
 
     private Date parseDateColumn(String column) throws ParseException {
         if (column == null || column.equals("-")) return null;
@@ -44,9 +50,11 @@ public class DefaultParseService implements ParseService {
     }
 
     @Inject
-    public DefaultParseService(OrganismService organismService, ListeningExecutorService listeningExecutorService) {
+    public DefaultParseService(OrganismService organismService, ListeningExecutorService listeningExecutorService, ConfigService configService , KingdomService kingdomService) {
         this.organismService = organismService;
         this.executorService = listeningExecutorService;
+        this.configService = configService;
+		this.kingdomService = kingdomService;
     }
 
     private static boolean checkLocator(String locator) {
@@ -77,8 +85,59 @@ public class DefaultParseService implements ParseService {
             boolean running;
 
             System.out.println("Extracting : " + gene.getName());
+
+            //Gene
+			FileWriter fwGene = null;
+			BufferedWriter bwGene = null;
+			String zipGenePath = configService.getProperty("gene");
+			//Genome
+			FileWriter fwGenome = null;
+			BufferedWriter bwGenome = null;
+			String zipGenomePath = configService.getProperty("genome");
+			File fileGenome = null;
+
+            String[] explodePath = gene.getPath().split("/");
+			
+			if(kingdomService.getGenesCkBIsSelected()){
+				for(int i = 2; i < explodePath.length; i++){
+					zipGenePath += explodePath[i] + "/";
+				}
+				
+				fwGene = new FileWriter(new File(zipGenePath + gene.getName() + ".txt")); 
+				bwGene =  new BufferedWriter(fwGene);
+			}
+			
+			if(kingdomService.getGenomesCkBIsSelected()){
+				for(int i = 2; i < explodePath.length; i++){
+					zipGenomePath += explodePath[i] + "/";
+				}
+				
+				fileGenome = new File(zipGenomePath + explodePath[5] + ".txt");
+				
+				if(fileGenome.exists()){
+					fwGenome = new FileWriter(fileGenome,true); 
+					bwGenome =  new BufferedWriter(fwGenome);
+					bwGenome.newLine();
+					bwGenome.newLine();
+				} else {
+					fwGenome = new FileWriter(fileGenome);
+					bwGenome =  new BufferedWriter(fwGenome);
+				}
+			}
+
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
                 while ((line = reader.readLine()) != null) {
+
+                    if(kingdomService.getGenesCkBIsSelected()){
+						bwGene.write(line);
+						bwGene.newLine();
+					}
+					
+					if(kingdomService.getGenomesCkBIsSelected()){
+						bwGenome.write(line);
+						bwGenome.newLine();
+					}
+
                     if (line.startsWith(CodingSequence.START_CDS_INFO)) {
                         Pattern p = Pattern.compile(CodingSequence.REGEX_COMPLETE);
                         Matcher m = p.matcher(line);
@@ -107,6 +166,17 @@ public class DefaultParseService implements ParseService {
                                         } else {
                                             try {
                                                 line2 = reader.readLine();
+
+                                                if(kingdomService.getGenesCkBIsSelected()){
+													bwGene.write(line2);
+													bwGene.newLine();
+												}
+												
+												if(kingdomService.getGenomesCkBIsSelected()){
+													bwGenome.write(line2);
+													bwGenome.newLine();
+												}
+
                                             } catch (SocketException e) {
                                                 e.printStackTrace();
                                             } catch (IOException e) {
@@ -137,8 +207,15 @@ public class DefaultParseService implements ParseService {
                 e.printStackTrace();
             } finally {
                 inputStream.close();
+                
+                if(kingdomService.getGenesCkBIsSelected()){
+					bwGene.close();
+				}
+				
+				if(kingdomService.getGenomesCkBIsSelected()){
+					bwGenome.close();
+				}
             }
-
             return sequences;
         });
     }
@@ -234,37 +311,37 @@ public class DefaultParseService implements ParseService {
                 e.printStackTrace();
             }
 
-            return organisms.stream().filter(organism -> organism.getGeneIds() != null && organism.getGeneIds().size() > 0).collect(Collectors.toList());
-        });
+			return organisms.stream().filter(organism -> organism.getGeneIds() != null && organism.getGeneIds().size() > 0).collect(Collectors.toList());
+		});
 
-    }
+	}
 
-    /**
-     * Extracts the geneIds from the given entry in the organism list file. It returns a tuple containing the gene name, and it's type (chromosome, mitochondrion...)
-     */
-    private List<Tuple<String, String>> extractGeneIds(String segmentsColumn){
-        String[] tmpSegments;
-        List<Tuple<String, String>> segments;
-        if (segmentsColumn.compareTo("-") == 0) {
-            return null;
-        } else {
-            tmpSegments = segmentsColumn.split(";");
-            segments = new ArrayList<>(tmpSegments.length);
-            if (tmpSegments.length > 0) {
-                Tuple<String, String> tuple;
-                for (String segment : tmpSegments) {
-                    String[] segmentParts = segment.split(":");
-                    if (segmentParts.length == 2) {
-                        tuple = new Tuple<>(segmentParts[1].trim().split("/")[0], segmentParts[0].trim().split(" ")[0]);
-                    } else {
-                        tuple = new Tuple<>(segmentParts[0].trim().split("/")[0], null);
-                    }
-                    segments.add(tuple);
-                }
-            }
-            return segments;
-        }
-        /*
+	/**
+	 * Extracts the geneIds from the given entry in the organism list file. It returns a tuple containing the gene name, and it's type (chromosome, mitochondrion...)
+	 */
+	private List<Tuple<String, String>> extractGeneIds(String segmentsColumn){
+		String[] tmpSegments;
+		List<Tuple<String, String>> segments;
+		if (segmentsColumn.compareTo("-") == 0) {
+			return null;
+		} else {
+			tmpSegments = segmentsColumn.split(";");
+			segments = new ArrayList<>(tmpSegments.length);
+			if (tmpSegments.length > 0) {
+				Tuple<String, String> tuple;
+				for (String segment : tmpSegments) {
+					String[] segmentParts = segment.split(":");
+					if (segmentParts.length == 2) {
+						tuple = new Tuple<>(segmentParts[1].trim().split("/")[0], segmentParts[0].trim().split(" ")[0]);
+					} else {
+						tuple = new Tuple<>(segmentParts[0].trim().split("/")[0], null);
+					}
+					segments.add(tuple);
+				}
+			}
+			return segments;
+		}
+		/*
         String[] res;
         if(line.compareTo("-") != 0)
         {
@@ -290,6 +367,6 @@ public class DefaultParseService implements ParseService {
             res = null;
         }
         return res;
-        */
-    }
+		 */
+	}
 }
