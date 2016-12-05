@@ -31,7 +31,15 @@ public class DefaultParseService implements ParseService {
 
     private Date parseDateColumn(String column) throws ParseException {
         if (column == null || column.equals("-")) return null;
-        DateFormat dateFormat = new SimpleDateFormat("dd/mm/yyyy", Locale.FRENCH);
+        String[] parts = column.trim().split("/");
+        if (parts.length != 3) return null;
+        String pattern;
+        if (parts[0].length() == 4) {
+            pattern = "yyyy/mm/dd";
+        } else {
+            pattern = "dd/mm/yyyy";
+        }
+        DateFormat dateFormat = new SimpleDateFormat(pattern, Locale.FRENCH);
         return dateFormat.parse(column);
     }
 
@@ -160,11 +168,13 @@ public class DefaultParseService implements ParseService {
                     String name;
                     String group;
                     String subGroup;
+                    String bioProject;
                     Date updateDate = null;
                     List<Tuple<String, String>> geneIds;
 
                     if (Kingdom.Eukaryota.equals(kingdomId)) {
                         name = data[0];
+                        bioProject = data[3];
                         group = data[4];
                         subGroup = data[5];
                         geneIds = extractGeneIds(data[9]);
@@ -172,6 +182,7 @@ public class DefaultParseService implements ParseService {
                         updateDate = parseDateColumn(data[15]);
                     } else if (Kingdom.Prokaryotes.equals(kingdomId)) {
                         name = data[0];
+                        bioProject = data[4];
                         group = data[5];
                         subGroup = data[6];
                         geneIds = extractGeneIds(data[10]);
@@ -179,6 +190,7 @@ public class DefaultParseService implements ParseService {
                         updateDate = parseDateColumn(data[16]);
                     } else if (Kingdom.Viruses.equals(kingdomId)) {
                         name = data[0];
+                        bioProject = data[1];
                         group = data[2];
                         subGroup = data[3];
                         geneIds = extractGeneIds(data[7]);
@@ -186,18 +198,20 @@ public class DefaultParseService implements ParseService {
                         updateDate = parseDateColumn(data[11]);
                     } else if (Kingdom.Plasmids.equals(kingdomId)){
                         name = data[0];
+                        bioProject = null;
                         group = data[2];
                         subGroup = data[3];
                         geneIds = extractGeneIds(data[5]);
                         updateDate = parseDateColumn(data[16]);
                     } else {
                         name = null;
+                        bioProject = null;
                         group = null;
                         subGroup = null;
                         geneIds = null;
                     }
 
-                    organisms.add(organismService.createOrganism(name, group, subGroup, updateDate, geneIds, kingdomId));
+                    organisms.add(organismService.createOrganism(name, bioProject, group, subGroup, updateDate, geneIds, kingdomId));
                     /*
                     if (data.length > updatedDateIndex) {
                         if (data[updatedDateIndex].compareTo("-") == 0) {

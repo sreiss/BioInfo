@@ -4,15 +4,13 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
 import models.*;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
-import services.contracts.ConfigService;
 import services.contracts.FileService;
 import services.contracts.OrganismService;
 
@@ -23,9 +21,15 @@ import java.io.*;
 import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class DefaultFileService implements FileService {
+    private final short NORMAL_COLOR = IndexedColors.WHITE.getIndex();
+    private final short PRIMARY_COLOR = IndexedColors.AQUA.getIndex();
+    private final short SECONDARY_COLOR = IndexedColors.CORAL.getIndex();
+    private final short PRIMARY_INFO_COLOR = IndexedColors.AQUA.getIndex();
+    private final short SECONDARY_INFO_COLOR = IndexedColors.CORAL.getIndex();
     private final ListeningExecutorService executorService;
     private final OrganismService organismService;
 
@@ -53,6 +57,10 @@ public class DefaultFileService implements FileService {
             }
         }
         return root;
+    }
+
+    private DateFormat getDateFileFormat() {
+        return new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);
     }
 
     @Override
@@ -94,7 +102,7 @@ public class DefaultFileService implements FileService {
             }
 
             XSSFSheet sheet = workbook.createSheet(sheetName);
-            fillInfos(organism, sum.getValue(), sheet);
+            fillInfos(organism, sum.getValue(), workbook, sheet);
             fillFileTrinu(sum.getValue(), workbook, sheet);
             fillFileDinu(sum.getValue(), workbook, sheet);
         }
@@ -214,41 +222,114 @@ public class DefaultFileService implements FileService {
         return numberStyle;
     }
 
-    private <T extends NucleotidesHolder> XSSFSheet fillInfos(Organism organism, T holder, XSSFSheet sheet) {
+    private CellStyle buildCellStyleForProba(XSSFWorkbook workbook, short indexedColor) {
+        CellStyle probaStyle = buildCellStyleForProba(workbook);
+        probaStyle.setFillForegroundColor(indexedColor);
+        probaStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        return probaStyle;
+    }
+
+    private CellStyle buildCellStyleForNumber(XSSFWorkbook workbook, short indexedColor) {
+        CellStyle numberStyle = buildCellStyleForNumber(workbook);
+        numberStyle.setFillForegroundColor(indexedColor);
+        numberStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        return numberStyle;
+    }
+
+    private CellStyle buildCellStyle(XSSFWorkbook workbook, short indexedColor) {
+        CellStyle cellStyle = workbook.createCellStyle();
+        cellStyle.setFillForegroundColor(indexedColor);
+        cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        return cellStyle;
+    }
+
+    private <T extends NucleotidesHolder> XSSFSheet fillInfos(Organism organism, T holder, XSSFWorkbook workbook, XSSFSheet sheet) {
+        CellStyle secondaryNumberStyle = buildCellStyleForNumber(workbook, SECONDARY_COLOR);
+        CellStyle secondaryStyle = buildCellStyle(workbook, SECONDARY_COLOR);
+        CellStyle primaryStyle = buildCellStyle(workbook, PRIMARY_COLOR);
+
+        secondaryNumberStyle.setAlignment(HorizontalAlignment.LEFT);
+        primaryStyle.setAlignment(HorizontalAlignment.LEFT);
+        secondaryStyle.setAlignment(HorizontalAlignment.LEFT);
+
         XSSFRow row;
+        XSSFCell cell;
 
         if ((row = sheet.getRow(1)) == null)
             row = sheet.createRow(1);
 
-        row.createCell(12).setCellValue("Organism Name");
-        row.createCell(13).setCellValue(organism.getName());
+        cell = row.createCell(12);
+        cell.setCellValue("Organism Name");
+        cell.setCellStyle(primaryStyle);
 
-        sheet.autoSizeColumn(12);
-        sheet.autoSizeColumn(13);
-
-        if ((row = sheet.getRow(2)) == null)
-            row = sheet.createRow(2);
-
-        row.createCell(12).setCellValue("Number of CDS");
-        row.createCell(13).setCellValue(holder.getTotalCds());
+        cell = row.createCell(13);
+        cell.setCellValue(organism.getName());
+        cell.setCellStyle(secondaryStyle);
 
         if ((row = sheet.getRow(3)) == null)
             row = sheet.createRow(3);
 
-        row.createCell(12).setCellValue("Number of unprocessed CDS");
-        row.createCell(13).setCellValue(holder.getTotalUnprocessedCds());
+        cell = row.createCell(12);
+        cell.setCellValue("Number of nucleotides");
+        cell.setCellStyle(primaryStyle);
 
-        if ((row = sheet.getRow(4)) == null)
-            row = sheet.createRow(4);
-
-        row.createCell(12).setCellValue("Number of trinucleotides");
-        row.createCell(13).setCellValue(holder.getTotalTrinucleotide());
+        cell = row.createCell(13);
+        cell.setCellValue(holder.getTotalTrinucleotide() + holder.getTotalDinucleotide());
+        cell.setCellStyle(secondaryNumberStyle);
 
         if ((row = sheet.getRow(5)) == null)
             row = sheet.createRow(5);
 
-        row.createCell(12).setCellValue("Number of dinucleotides");
-        row.createCell(13).setCellValue(holder.getTotalDinucleotide());
+        cell = row.createCell(12);
+        cell.setCellValue("Number of cds sequences");
+        cell.setCellStyle(primaryStyle);
+
+        cell = row.createCell(13);
+        cell.setCellValue(holder.getTotalCds());
+        cell.setCellStyle(secondaryNumberStyle);
+
+        if ((row = sheet.getRow(7)) == null)
+            row = sheet.createRow(7);
+
+        cell = row.createCell(12);
+        cell.setCellValue("Number of invalid cds");
+        cell.setCellStyle(primaryStyle);
+
+        cell = row.createCell(13);
+        cell.setCellValue(holder.getTotalUnprocessedCds());
+        cell.setCellStyle(secondaryNumberStyle);
+
+        if ((row = sheet.getRow(9)) == null)
+            row = sheet.createRow(9);
+
+        cell = row.createCell(12);
+        cell.setCellValue("Modification date");
+        cell.setCellStyle(primaryStyle);
+
+        if (organism.getUpdatedDate() != null) {
+            DateFormat format = getDateFileFormat();
+            cell = row.createCell(13);
+            cell.setCellValue(format.format(organism.getUpdatedDate()));
+        } else {
+            cell = row.createCell(13);
+            cell.setCellValue("NC");
+        }
+        cell.setCellStyle(secondaryStyle);
+
+
+        if ((row = sheet.getRow(11)) == null)
+            row = sheet.createRow(11);
+
+        cell = row.createCell(12);
+        cell.setCellValue("BioProject");
+        cell.setCellStyle(primaryStyle);
+
+        cell = row.createCell(13);
+        cell.setCellValue(organism.getBioProject());
+        cell.setCellStyle(secondaryStyle);
+
+        sheet.autoSizeColumn(12);
+        sheet.autoSizeColumn(13);
 
         return sheet;
     }
@@ -297,34 +378,86 @@ public class DefaultFileService implements FileService {
     }
 
     private <T extends NucleotidesHolder> XSSFSheet fillFileTrinu(T g, XSSFWorkbook workbook, XSSFSheet sheet) {
-        CellStyle numberStyle = buildCellStyleForNumber(workbook);
-        CellStyle probaStyle = buildCellStyleForProba(workbook);
+        CellStyle normalStyle = buildCellStyle(workbook, NORMAL_COLOR);
+        CellStyle primaryStyle = buildCellStyle(workbook, PRIMARY_COLOR);
+        CellStyle normalNumberStyle = buildCellStyleForNumber(workbook, NORMAL_COLOR);
+        CellStyle normalProbaStyle = buildCellStyleForProba(workbook, NORMAL_COLOR);
+        CellStyle primaryNumberStyle = buildCellStyleForNumber(workbook, PRIMARY_COLOR);
+        CellStyle primaryProbaStyle = buildCellStyleForProba(workbook, PRIMARY_COLOR);
+        CellStyle secondaryNumberStyle = buildCellStyleForNumber(workbook, SECONDARY_COLOR);
+
+        normalNumberStyle.setAlignment(HorizontalAlignment.CENTER);
+        normalProbaStyle.setAlignment(HorizontalAlignment.CENTER);
+        primaryNumberStyle.setAlignment(HorizontalAlignment.CENTER);
+        primaryProbaStyle.setAlignment(HorizontalAlignment.CENTER);
+        secondaryNumberStyle.setAlignment(HorizontalAlignment.CENTER);
+
         XSSFCell tmpCell;
         XSSFRow row;
 
         if ((row = sheet.getRow(0)) == null)
             row = sheet.createRow(0);
 
-        row.createCell(0).setCellValue("");
-        row.createCell(1).setCellValue("Phase 0");
-        row.createCell(2).setCellValue("Freq Phase 0");
-        row.createCell(3).setCellValue("Phase 1");
-        row.createCell(4).setCellValue("Freq Phase 1");
-        row.createCell(5).setCellValue("Phase 2");
-        row.createCell(6).setCellValue("Freq Phase 2");
-        row.createCell(7).setCellValue("Phase pref 0");
-        row.createCell(8).setCellValue("Phase pref 1");
-        row.createCell(9).setCellValue("Phase pref 2");
+        tmpCell = row.createCell(0);
+        tmpCell.setCellValue("");
+        tmpCell.setCellStyle(primaryStyle);
+        tmpCell = row.createCell(1);
+        tmpCell.setCellValue("Phase 0");
+        tmpCell.setCellStyle(primaryStyle);
+        tmpCell = row.createCell(2);
+        tmpCell.setCellValue("Freq Phase 0");
+        tmpCell.setCellStyle(primaryStyle);
+        tmpCell = row.createCell(3);
+        tmpCell.setCellValue("Phase 1");
+        tmpCell.setCellStyle(primaryStyle);
+        tmpCell = row.createCell(4);
+        tmpCell.setCellValue("Freq Phase 1");
+        tmpCell.setCellStyle(primaryStyle);
+        tmpCell = row.createCell(5);
+        tmpCell.setCellValue("Phase 2");
+        tmpCell.setCellStyle(primaryStyle);
+        tmpCell = row.createCell(6);
+        tmpCell.setCellValue("Freq Phase 2");
+        tmpCell.setCellStyle(primaryStyle);
+        tmpCell = row.createCell(7);
+        tmpCell.setCellValue("Phase pref 0");
+        tmpCell.setCellStyle(primaryStyle);
+        tmpCell = row.createCell(8);
+        tmpCell.setCellValue("Phase pref 1");
+        tmpCell.setCellStyle(primaryStyle);
+        tmpCell = row.createCell(9);
+        tmpCell.setCellValue("Phase pref 2");
+        tmpCell.setCellStyle(primaryStyle);
 
         int i = 1;
         Set<String> keys = g.getTrinuStatPhase0().keySet();
 
+        CellStyle style = normalStyle;
+        CellStyle probaStyle = normalProbaStyle;
+        CellStyle numberStyle = normalNumberStyle;
+        CellStyle prefNumberStyle = normalNumberStyle;
+
         for (String key : keys) {
+
+            if (i % 2 == 1) {
+                style = normalStyle;
+                probaStyle = normalProbaStyle;
+                numberStyle = normalNumberStyle;
+                prefNumberStyle = normalNumberStyle;
+            } else {
+                style = primaryStyle;
+                probaStyle = primaryProbaStyle;
+                numberStyle = primaryNumberStyle;
+                prefNumberStyle = secondaryNumberStyle;
+            }
+
             if ((row = sheet.getRow(i)) == null)
                 row = sheet.createRow(i);
 
             // Set Trinicludotide
-            row.createCell(0).setCellValue(key);
+            tmpCell = row.createCell(0);
+            tmpCell.setCellValue(key);
+            tmpCell.setCellStyle(style);
 
             // NB phase 0
             tmpCell = row.createCell(1);
@@ -365,76 +498,78 @@ public class DefaultFileService implements FileService {
             tmpCell.setCellValue(g.getTrinuProbaPhase2().get(key));
             tmpCell.setCellType(CellType.NUMERIC);
             tmpCell.setCellStyle(probaStyle);
-            
+
             //Phase préf 0
             tmpCell = row.createCell(7);
             tmpCell.setCellValue(g.getTrinuPrefPhase0().get(key));
             tmpCell.setCellType(CellType.NUMERIC);
-            tmpCell.setCellStyle(numberStyle);
-            
+            tmpCell.setCellStyle(prefNumberStyle);
+
             //Phase préf 1
             tmpCell = row.createCell(8);
             tmpCell.setCellValue(g.getTrinuPrefPhase1().get(key));
             tmpCell.setCellType(CellType.NUMERIC);
-            tmpCell.setCellStyle(numberStyle);
-            
+            tmpCell.setCellStyle(prefNumberStyle);
+
             //Phase préf 2
             tmpCell = row.createCell(9);
             tmpCell.setCellValue(g.getTrinuPrefPhase2().get(key));
             tmpCell.setCellType(CellType.NUMERIC);
-            tmpCell.setCellStyle(numberStyle);
-            
+            tmpCell.setCellStyle(prefNumberStyle);
+
 
             i++;
         }
 
-        row = sheet.createRow(i);
-        row.createCell(0).setCellValue("Total");
+        row = sheet.createRow(i + 1);
+        tmpCell = row.createCell(0);
+        tmpCell.setCellValue("Total");
+        tmpCell.setCellStyle(primaryStyle);
 
         tmpCell = row.createCell(1);
         tmpCell.setCellValue(g.getTotalTrinucleotide());
         tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(numberStyle);
+        tmpCell.setCellStyle(primaryNumberStyle);
 
         tmpCell = row.createCell(2);
         tmpCell.setCellValue(g.getTotalProbaTrinu0());
         tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(probaStyle);
+        tmpCell.setCellStyle(primaryProbaStyle);
 
         tmpCell = row.createCell(3);
         tmpCell.setCellValue(g.getTotalTrinucleotide());
         tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(numberStyle);
+        tmpCell.setCellStyle(primaryNumberStyle);
 
         tmpCell = row.createCell(4);
         tmpCell.setCellValue(g.getTotalProbaTrinu1());
         tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(probaStyle);
+        tmpCell.setCellStyle(primaryProbaStyle);
 
         tmpCell = row.createCell(5);
         tmpCell.setCellValue(g.getTotalTrinucleotide());
         tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(numberStyle);
+        tmpCell.setCellStyle(primaryNumberStyle);
 
         tmpCell = row.createCell(6);
         tmpCell.setCellValue(g.getTotalProbaTrinu2());
         tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(probaStyle);
+        tmpCell.setCellStyle(primaryProbaStyle);
 
         tmpCell = row.createCell(7);
         tmpCell.setCellValue(g.getTotalPrefTrinu0());
         tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(numberStyle);
+        tmpCell.setCellStyle(primaryNumberStyle);
 
         tmpCell = row.createCell(8);
         tmpCell.setCellValue(g.getTotalPrefTrinu1());
         tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(numberStyle);
+        tmpCell.setCellStyle(primaryNumberStyle);
 
         tmpCell = row.createCell(9);
         tmpCell.setCellValue(g.getTotalPrefTrinu2());
         tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(numberStyle);
+        tmpCell.setCellStyle(primaryNumberStyle);
 
 
         sheet.autoSizeColumn(0);
@@ -452,8 +587,18 @@ public class DefaultFileService implements FileService {
     }
 
     private <T extends NucleotidesHolder> XSSFSheet fillFileDinu(T g, XSSFWorkbook workbook, XSSFSheet sheet) {
-        CellStyle numberStyle = buildCellStyleForNumber(workbook);
-        CellStyle probaStyle = buildCellStyleForProba(workbook);
+        CellStyle normalStyle = buildCellStyle(workbook, NORMAL_COLOR);
+        CellStyle primaryStyle = buildCellStyle(workbook, PRIMARY_COLOR);
+        CellStyle normalNumberStyle = buildCellStyleForNumber(workbook, NORMAL_COLOR);
+        CellStyle normalProbaStyle = buildCellStyleForProba(workbook, NORMAL_COLOR);
+        CellStyle primaryNumberStyle = buildCellStyleForNumber(workbook, PRIMARY_COLOR);
+        CellStyle primaryProbaStyle = buildCellStyleForProba(workbook, PRIMARY_COLOR);
+
+        normalNumberStyle.setAlignment(HorizontalAlignment.CENTER);
+        normalProbaStyle.setAlignment(HorizontalAlignment.CENTER);
+        primaryNumberStyle.setAlignment(HorizontalAlignment.CENTER);
+        primaryProbaStyle.setAlignment(HorizontalAlignment.CENTER);
+
         XSSFCell tmpCell;
         XSSFRow row;
 
@@ -462,15 +607,33 @@ public class DefaultFileService implements FileService {
         if ((row = sheet.getRow(rowNumber)) == null)
             row = sheet.createRow(rowNumber);
 
+        CellStyle style = normalStyle;
+        CellStyle probaStyle = normalProbaStyle;
+        CellStyle numberStyle = normalNumberStyle;
+        CellStyle prefNumberStyle = normalNumberStyle;
+
         Set<String> keys = g.getDinuStatPhase0().keySet();
 
-        int i = rowNumber + 1;
+        int i = rowNumber + 3;
         for (String key : keys) {
+
+            if (i % 2 == 1) {
+                style = normalStyle;
+                probaStyle = normalProbaStyle;
+                numberStyle = normalNumberStyle;
+            } else {
+                style = primaryStyle;
+                probaStyle = primaryProbaStyle;
+                numberStyle = primaryNumberStyle;
+            }
+
             if ((row = sheet.getRow(i)) == null)
                 row = sheet.createRow(i);
 
             // Set Dinicludotide
-            row.createCell(0).setCellValue(key);
+            tmpCell = row.createCell(0);
+            tmpCell.setCellValue(key);
+            tmpCell.setCellStyle(style);
 
             // NB phase 0
             tmpCell = row.createCell(1);
@@ -499,30 +662,32 @@ public class DefaultFileService implements FileService {
             i++;
         }
 
-        if ((row = sheet.getRow(i)) == null)
-            row = sheet.createRow(i);
+        if ((row = sheet.getRow(i + 1)) == null)
+            row = sheet.createRow(i + 1);
 
-        row.createCell(0).setCellValue("Total");
+        tmpCell = row.createCell(0);
+        tmpCell.setCellValue("Total");
+        tmpCell.setCellStyle(primaryStyle);
 
         tmpCell = row.createCell(1);
         tmpCell.setCellValue(g.getTotalDinucleotide());
         tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(numberStyle);
+        tmpCell.setCellStyle(primaryNumberStyle);
 
         tmpCell = row.createCell(2);
         tmpCell.setCellValue(g.getTotalProbaDinu0());
         tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(probaStyle);
+        tmpCell.setCellStyle(primaryProbaStyle);
 
         tmpCell = row.createCell(3);
         tmpCell.setCellValue(g.getTotalDinucleotide());
         tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(numberStyle);
+        tmpCell.setCellStyle(primaryNumberStyle);
 
         tmpCell = row.createCell(4);
         tmpCell.setCellValue(g.getTotalProbaDinu1());
         tmpCell.setCellType(CellType.NUMERIC);
-        tmpCell.setCellStyle(probaStyle);
+        tmpCell.setCellStyle(primaryProbaStyle);
 
         sheet.autoSizeColumn(1);
         sheet.autoSizeColumn(2);

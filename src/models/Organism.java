@@ -11,11 +11,8 @@ import java.util.List;
  */
 public class Organism {
 
-    public static final int EUKA=0;
-    public static final int PROKA=1;
-    public static final int VIRUS=2;
-
     private String name;
+    private String bioProject;
     private String group;
     private String subGroup;
     private Date updatedDate;
@@ -29,8 +26,9 @@ public class Organism {
     private List<Tuple<String, String>> geneIds;
     private int idIndex=9;
 
-    public Organism(String name, String group, String subGroup, Date updateDate, List<Tuple<String, String>> geneIds, String kingdomId) {
+    public Organism(String name, String bioProject, String group, String subGroup, Date updateDate, List<Tuple<String, String>> geneIds, String kingdomId) {
         this.name = name;
+        this.bioProject = bioProject;
         this.group = group;
         this.subGroup = subGroup;
         this.updatedDate = updateDate;
@@ -171,5 +169,13 @@ public class Organism {
 
     public void setGeneIds(List<Tuple<String, String>> geneIds) {
         this.geneIds = geneIds;
+    }
+
+    public String getBioProject() {
+        return bioProject;
+    }
+
+    public void setBioProject(String bioProject) {
+        this.bioProject = bioProject;
     }
 }

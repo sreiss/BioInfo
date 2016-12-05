@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface OrganismService {
-    Organism createOrganism(String name, String group, String subGroup, Date updateDate, List<Tuple<String, String>> geneIds, String kingdomId);
+    Organism createOrganism(String name, String bioProject, String group, String subGroup, Date updateDate, List<Tuple<String, String>> geneIds, String kingdomId);
 
     DateFormat getUpdateDateFormat();
 

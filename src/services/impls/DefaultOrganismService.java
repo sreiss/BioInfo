@@ -38,8 +38,8 @@ public class DefaultOrganismService extends NucleotideHolderService implements O
     }
 
     @Override
-    public Organism createOrganism(final String name, final String group, final String subGroup, final Date updateDate, final List<Tuple<String, String>> geneIds, final String kingdomId) {
-        return new Organism(name, group, subGroup, updateDate, geneIds, kingdomId);
+    public Organism createOrganism(final String name, final String bioProject, final String group, final String subGroup, final Date updateDate, final List<Tuple<String, String>> geneIds, final String kingdomId) {
+        return new Organism(name, bioProject, group, subGroup, updateDate, geneIds, kingdomId);
     }
 
     @Override
