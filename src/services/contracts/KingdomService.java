@@ -14,4 +14,5 @@ public interface KingdomService {
 
     void interrupt();
 
+    boolean getShouldInterrupt();
 }

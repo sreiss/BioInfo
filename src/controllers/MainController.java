@@ -125,7 +125,11 @@ public class MainController implements Observer {
         Futures.addCallback(acquireFuture, new FutureCallback<List<Kingdom>>(){
             @Override
             public void onSuccess(@Nullable List<Kingdom> kingdoms) {
-                view.updateGlobalProgressionText("Update finished.");
+                if (!kingdomService.getShouldInterrupt()) {
+                    view.updateGlobalProgressionText("Update finished.");
+                } else {
+                    view.updateGlobalProgressionText("Processing interrupted.");
+                }
                 progressService.getCurrentProgress().getTotal().set(0);
                 progressService.getCurrentProgress().getProgress().set(0);
                 programStatsService.endAcquisitionTimeEstimation();

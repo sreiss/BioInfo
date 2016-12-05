@@ -33,6 +33,7 @@ public class DefaultKingdomService implements KingdomService {
     private final ProgramStatsService programStatsService;
     private HashMap<Kingdom, Map<String, Date>> updates = new HashMap<>();
     private HashMap<Kingdom, ListenableFuture<List<Organism>>> currentFutures = new HashMap<>();
+    private boolean shouldInterrupt = false;
 
     @Inject
     public DefaultKingdomService(FileService fileService,
@@ -78,6 +79,7 @@ public class DefaultKingdomService implements KingdomService {
         for (Map.Entry<Kingdom, ListenableFuture<List<Organism>>> currentFuture: currentFutures.entrySet()) {
             currentFuture.getValue().cancel(true);
             currentFuture.getKey().setOrganisms(null);
+            shouldInterrupt = true;
         }
     }
 
@@ -112,6 +114,7 @@ public class DefaultKingdomService implements KingdomService {
 
     private ListenableFuture<Kingdom> createKingdomTree(Kingdom kingdom) {
         return executorService.submit(() -> {
+            shouldInterrupt = false;
             Kingdom modifiedKingdom = loadUpdateFile(kingdom).get();
             String url = generateKingdomGeneListUrl(kingdom);
             HttpResponse httpResponse = httpService.get(url).get();
@@ -140,27 +143,29 @@ public class DefaultKingdomService implements KingdomService {
     }
 
     private Kingdom processKingdom(Kingdom kingdom, int index) throws ExecutionException, InterruptedException {
-        int nextIndex = index + PROCESS_STACK_SIZE;
-        if (nextIndex > kingdom.getOrganisms().size()) {
-            nextIndex = kingdom.getOrganisms().size();
-        }
-        if (index < kingdom.getOrganisms().size()) {
-            List<ListenableFuture<Organism>> organismFutures = new ArrayList<>();
-            for (Organism organism: kingdom.getOrganisms().subList(index, nextIndex)) {
-                organismFutures.add(organismService.processOrganism(kingdom, organism));
+        if (!shouldInterrupt) {
+            int nextIndex = index + PROCESS_STACK_SIZE;
+            if (nextIndex > kingdom.getOrganisms().size()) {
+                nextIndex = kingdom.getOrganisms().size();
             }
-
-            ListenableFuture<List<Organism>> currentKingdomFuture = Futures.successfulAsList(organismFutures);
-            currentFutures.put(kingdom, currentKingdomFuture);
-            List<Organism> organisms = currentKingdomFuture.get();
-            for (Organism organism: organisms) {
-                if (organism != null) {
-                    updates.get(kingdom).put(organism.getName(), new Date());
-                    writeUpdateFile(kingdom);
+            if (index < kingdom.getOrganisms().size()) {
+                List<ListenableFuture<Organism>> organismFutures = new ArrayList<>();
+                for (Organism organism : kingdom.getOrganisms().subList(index, nextIndex)) {
+                    organismFutures.add(organismService.processOrganism(kingdom, organism));
                 }
-            }
 
-            return processKingdom(kingdom, index + PROCESS_STACK_SIZE);
+                ListenableFuture<List<Organism>> currentKingdomFuture = Futures.successfulAsList(organismFutures);
+                currentFutures.put(kingdom, currentKingdomFuture);
+                List<Organism> organisms = currentKingdomFuture.get();
+                for (Organism organism : organisms) {
+                    if (organism != null) {
+                        updates.get(kingdom).put(organism.getName(), new Date());
+                        writeUpdateFile(kingdom);
+                    }
+                }
+
+                return processKingdom(kingdom, index + PROCESS_STACK_SIZE);
+            }
         }
         return kingdom;
     }
@@ -263,5 +268,10 @@ public class DefaultKingdomService implements KingdomService {
                 return kingdoms;
             }
         }, executorService);
+    }
+
+    @Override
+    public boolean getShouldInterrupt() {
+        return shouldInterrupt;
     }
 }
