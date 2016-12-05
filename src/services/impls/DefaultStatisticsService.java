@@ -89,6 +89,14 @@ public class DefaultStatisticsService implements StatisticsService {
             sum.setTrinuStatPhase0(addHashMaps(sum.getTrinuStatPhase0(), gene.getTrinuStatPhase0()));
             sum.setTrinuStatPhase1(addHashMaps(sum.getTrinuStatPhase1(), gene.getTrinuStatPhase1()));
             sum.setTrinuStatPhase2(addHashMaps(sum.getTrinuStatPhase2(), gene.getTrinuStatPhase2()));
+            
+            sum.setTrinuPrefPhase0(addHashMaps(sum.getTrinuPrefPhase0(), gene.getTrinuPrefPhase0()));
+            sum.setTrinuPrefPhase1(addHashMaps(sum.getTrinuPrefPhase1(), gene.getTrinuPrefPhase1()));
+            sum.setTrinuPrefPhase2(addHashMaps(sum.getTrinuPrefPhase2(), gene.getTrinuPrefPhase2()));
+            
+            sum.setTotalPrefTrinu0(sum.getTotalPrefTrinu0() + gene.getTotalPrefTrinu0());
+            sum.setTotalPrefTrinu1(sum.getTotalPrefTrinu1() + gene.getTotalPrefTrinu1());
+            sum.setTotalPrefTrinu2(sum.getTotalPrefTrinu2() + gene.getTotalPrefTrinu2());
 
             sum.setTotalDinucleotide(sum.getTotalDinucleotide() + gene.getTotalDinucleotide());
             sum.setTotalTrinucleotide(sum.getTotalTrinucleotide() + gene.getTotalTrinucleotide());
