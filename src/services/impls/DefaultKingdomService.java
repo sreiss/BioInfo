@@ -28,7 +28,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class DefaultKingdomService implements KingdomService {
-    private final int PROCESS_STACK_SIZE = 1;
+    private final int PROCESS_STACK_SIZE = 50;
     private final GeneService geneService;
     private final ParseService parseService;
     private final FileService fileService;
