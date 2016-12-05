@@ -5,13 +5,19 @@ import com.google.common.base.Function;
 import com.google.common.primitives.Booleans;
 import com.google.common.util.concurrent.*;
 import com.google.inject.Inject;
+
+import models.Gene;
 import models.Kingdom;
 import models.Organism;
+
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import services.contracts.*;
 
 import javax.annotation.Nullable;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -22,7 +28,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class DefaultKingdomService implements KingdomService {
-    private final int PROCESS_STACK_SIZE = 50;
+    private final int PROCESS_STACK_SIZE = 1;
+    private final GeneService geneService;
     private final ParseService parseService;
     private final FileService fileService;
     private final ConfigService configService;
@@ -36,7 +43,8 @@ public class DefaultKingdomService implements KingdomService {
     private boolean shouldInterrupt = false;
 
     @Inject
-    public DefaultKingdomService(FileService fileService,
+    public DefaultKingdomService(GeneService geneService,
+    							 FileService fileService,
                                  ParseService parseService,
                                  ConfigService configService,
                                  OrganismService organismService,
@@ -44,6 +52,7 @@ public class DefaultKingdomService implements KingdomService {
                                  ListeningExecutorService listeningExecutorService,
                                  ProgressService progressService,
                                  ProgramStatsService programStatsService) {
+    	this.geneService = geneService;
         this.fileService = fileService;
         this.parseService = parseService;
         this.configService = configService;
@@ -80,6 +89,10 @@ public class DefaultKingdomService implements KingdomService {
             currentFuture.getValue().cancel(true);
             currentFuture.getKey().setOrganisms(null);
             shouldInterrupt = true;
+            // temp Test
+//            createParents(currentFuture.getKey(), new ArrayList<String>(),configService.getProperty("dataDir"),currentFuture.getKey().getLabel(),0,0);
+//            createParents(currentFuture.getKey(), new ArrayList<String>(),configService.getProperty("dataDir"),currentFuture.getKey().getLabel(),1,0);
+//            createParents(currentFuture.getKey(), new ArrayList<String>(),configService.getProperty("dataDir"),currentFuture.getKey().getLabel(),2,0);
             writeUpdateFile(currentFuture.getKey());
         }
     }
@@ -167,6 +180,9 @@ public class DefaultKingdomService implements KingdomService {
 
                 return processKingdom(kingdom, index + PROCESS_STACK_SIZE);
             }
+            createParents(kingdom, new ArrayList<String>(),configService.getProperty("dataDir"),kingdom.getLabel(),0,0);
+            createParents(kingdom, new ArrayList<String>(),configService.getProperty("dataDir"),kingdom.getLabel(),1,0);
+            createParents(kingdom, new ArrayList<String>(),configService.getProperty("dataDir"),kingdom.getLabel(),2,0);
         }
         return kingdom;
     }
@@ -241,6 +257,56 @@ public class DefaultKingdomService implements KingdomService {
         }, executorService);
     }
     */
+    
+    private void createParents(Kingdom kingdom, ArrayList<String> list, String folderPath, String folderName, int level, int max)
+    {
+    	System.out.println("I'm here "+folderPath+"/"+folderName);
+    	File folder=new File(folderPath+"/"+folderName);
+		File[] childrenFolders=folder.listFiles();
+		boolean good=true;
+		
+		if(level==0 || level==1 && max<1)
+		{
+			for(File childFolder : childrenFolders)
+			{
+				if(childFolder.isDirectory())
+				{
+					good=false;
+					break;
+				}
+			}
+		}
+		else if(level==1 && max==1 || level==2)
+		{
+			good=true;
+		}
+		
+		if(good)
+		{
+			Gene gene=geneService.createGene(folder.getName(), "Total", folderPath+"/"+folderName, 0, 0);
+			Organism org=organismService.createOrganism(folder.getName(), "", "", "", new Date(), new ArrayList<Tuple<String,String>>(), kingdom.getId());
+			org.setPath(folderPath);
+			organismService.processOrganismWithoutGene(gene,kingdom, org);
+		}
+		else
+		{
+			for(File childFolder : childrenFolders)
+			{
+				if(childFolder.isDirectory())
+				{
+					if(level==0)
+					{
+						createParents(kingdom,list,folder.getPath(),childFolder.getName(),0,0);
+					}
+					else
+					{
+						createParents(kingdom,list,folder.getPath(),childFolder.getName(),level,max+1);
+					}
+					
+				}
+			}
+		}
+    }
 
     private void writeUpdateFile(Kingdom kingdom) {
         try {

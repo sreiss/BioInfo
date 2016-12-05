@@ -46,6 +46,29 @@ public class DefaultOrganismService extends NucleotideHolderService implements O
     public DateFormat getUpdateDateFormat() {
         return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     }
+    
+    @Override
+    public ListenableFuture<Organism> processOrganismWithoutGene(Gene gene, Kingdom kingdom, Organism organism) {
+        return executorService.submit(() -> {
+            HashMap<String, Sum> organismSums = new HashMap<>();
+
+            XSSFWorkbook workbook = fileService.createWorkbook();
+            
+            if (gene != null) {
+                String type = gene.getType();
+                if (type == null) {
+                    type = "unknown";
+                }
+                organismSums.putIfAbsent(type, createSum(gene.getType(), organism.getPath(), 0, 0));
+                fileService.fillWorkbook(organism, gene, workbook);
+            }
+            fileService.writeWorkbook(workbook, organism.getPath(), organism.getName());
+
+            System.out.print(organism.getName());
+
+            return organism;
+        });
+    }
 
     @Override
     public ListenableFuture<Organism> processOrganism(Kingdom kingdom, Organism organism) {

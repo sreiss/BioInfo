@@ -11,5 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public interface GeneService {
+	Gene createGene(final String name, final String type, final String path, final int totalDinucleotides, final int totalTrinucleotides);
+	
     ListenableFuture<Gene> processGene(Kingdom kingdom, Organism organism, Tuple<String, String> geneId);
 }
