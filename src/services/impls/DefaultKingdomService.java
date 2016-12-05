@@ -80,6 +80,7 @@ public class DefaultKingdomService implements KingdomService {
             currentFuture.getValue().cancel(true);
             currentFuture.getKey().setOrganisms(null);
             shouldInterrupt = true;
+            writeUpdateFile(currentFuture.getKey());
         }
     }
 
