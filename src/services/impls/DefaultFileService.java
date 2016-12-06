@@ -12,6 +12,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import services.contracts.FileService;
+import services.contracts.GeneService;
 import services.contracts.OrganismService;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -30,11 +31,13 @@ public class DefaultFileService implements FileService {
     private final short SECONDARY_COLOR = IndexedColors.CORAL.getIndex();
     private final short PRIMARY_INFO_COLOR = IndexedColors.AQUA.getIndex();
     private final short SECONDARY_INFO_COLOR = IndexedColors.CORAL.getIndex();
+    private final GeneService geneService;
     private final ListeningExecutorService executorService;
     private final OrganismService organismService;
 
     @Inject
-    public DefaultFileService(ListeningExecutorService listeningExecutorService, OrganismService organismService) {
+    public DefaultFileService(GeneService geneService, ListeningExecutorService listeningExecutorService, OrganismService organismService) {
+    	this.geneService=geneService;
         this.executorService = listeningExecutorService;
         this.organismService = organismService;
     }
@@ -124,6 +127,153 @@ public class DefaultFileService implements FileService {
         File file = Paths.get(path, kingdom.getLabel() + ".json").toFile();
         file.createNewFile();
         return file;
+    }
+    
+    public boolean GoodLevel(String folderPath, String folderName, int level, int max)
+    {
+    	boolean good=true;
+    	File folder=new File(folderPath+"/"+folderName);
+		File[] childrenFolders=folder.listFiles();
+		
+		if(level==0 || level==1 && max<1)
+		{
+			for(File childFolder : childrenFolders)
+			{
+				if(childFolder.isDirectory())
+				{
+					good=false;
+					break;
+				}
+			}
+		}
+		else if(level==1 && max==1 || level==2)
+		{
+			good=true;
+		}
+    	
+    	return good;
+    }
+    
+    public Map<String,Gene> readWorkbooks(Map<String,Gene> map, File parent, File excel,int level)
+    {
+    	XSSFWorkbook workbook=null;
+    	try
+    	{
+    		if(level==0)
+    		{
+    			workbook=new XSSFWorkbook(new FileInputStream(excel.getPath()));
+    		}
+    		else
+    		{
+    			workbook=new XSSFWorkbook(new FileInputStream(excel.getPath()+".xlsx"));
+    		}
+			
+			XSSFSheet currentSheet;
+			XSSFRow row;
+			XSSFCell tmpCell;
+			
+			for(int i=workbook.getNumberOfSheets()-1;i>=0;i--)
+			{
+				currentSheet=workbook.getSheetAt(i);
+				if(currentSheet.getSheetName().contains("Sum") || currentSheet.getSheetName().contains("Total"))
+				{
+					String[] split=currentSheet.getSheetName().split("_");
+					String type="";
+					if(split.length>1)
+					{
+						type=split[1];
+					}
+					
+					Gene gene;
+					if(map.get(type)!=null)
+					{
+						gene=map.get(type);
+					}
+					else
+					{
+						gene=geneService.createGene("Sum_", type, "", 0, 0);
+						map.put(type, gene);
+					}
+					
+					gene.setTotalCds(gene.getTotalCds()+(int) workbook.getSheetAt(i).getRow(2).getCell(1).getNumericCellValue());
+					gene.setTotalUnprocessedCds((int)workbook.getSheetAt(i).getRow(3).getCell(1).getNumericCellValue());
+					int j = 1;
+					Set<String> keys = gene.getTrinuStatPhase0().keySet();
+					
+					for(String key: keys)
+					{
+						row=currentSheet.getRow(j);
+						tmpCell=row.getCell(1);
+						int temp=gene.getTrinuStatPhase0().get(key);
+						gene.getTrinuStatPhase0().put(key, temp+(int)tmpCell.getNumericCellValue());
+						
+						tmpCell=row.getCell(3);
+						temp=gene.getTrinuStatPhase1().get(key);
+						gene.getTrinuStatPhase1().put(key, temp+(int)tmpCell.getNumericCellValue());
+						
+						tmpCell=row.getCell(5);
+						temp=gene.getTrinuStatPhase2().get(key);
+						gene.getTrinuStatPhase2().put(key, temp+(int)tmpCell.getNumericCellValue());
+						
+						tmpCell=row.getCell(7);
+						temp=gene.getTrinuPrefPhase0().get(key);
+						gene.getTrinuPrefPhase0().put(key, temp+(int)tmpCell.getNumericCellValue());
+						gene.setTotalPrefTrinu0(temp+(int)tmpCell.getNumericCellValue()+gene.getTotalPrefTrinu0());
+						
+						tmpCell=row.getCell(8);
+						temp=gene.getTrinuPrefPhase1().get(key);
+						gene.getTrinuPrefPhase1().put(key, temp+(int)tmpCell.getNumericCellValue());
+						gene.setTotalPrefTrinu1(temp+(int)tmpCell.getNumericCellValue()+gene.getTotalPrefTrinu1());
+						
+						tmpCell=row.getCell(9);
+						temp=gene.getTrinuPrefPhase2().get(key);
+						gene.getTrinuPrefPhase2().put(key, temp+(int)tmpCell.getNumericCellValue());
+						gene.setTotalPrefTrinu2(temp+(int)tmpCell.getNumericCellValue()+gene.getTotalPrefTrinu2());
+						
+						j++;
+					}
+					
+					keys=gene.getDinuStatPhase0().keySet();
+					j = 70;
+					for(String key : keys)
+					{
+						row=currentSheet.getRow(j);
+						tmpCell=row.getCell(1);
+						int temp=gene.getDinuStatPhase0().get(key);
+						gene.getDinuStatPhase0().put(key, temp+(int)tmpCell.getNumericCellValue());
+						
+						tmpCell=row.getCell(3);
+						temp=gene.getDinuStatPhase1().get(key);
+						gene.getDinuStatPhase1().put(key, temp+(int)tmpCell.getNumericCellValue());
+						
+						j++;
+					}
+					gene.setTotalTrinucleotide(gene.getTotalTrinucleotide()+(int)currentSheet.getRow(66).getCell(1).getNumericCellValue());
+					gene.setTotalDinucleotide(gene.getTotalDinucleotide()+(int)currentSheet.getRow(87).getCell(1).getNumericCellValue());
+				}
+				else // optimisation qui fonctionne tant qu'on ne modifie pas l'ordre des sums dans le workbook
+				{
+					break;
+				}
+			}
+		}
+    	catch (IOException e)
+    	{
+			e.printStackTrace();
+		}
+    	finally
+    	{
+    		try
+    		{
+				workbook.close();
+			}
+    		catch (IOException e)
+    		{
+				e.printStackTrace();
+			}
+    	};
+    	
+    	return map;
     }
 
     private String sanitizeFileName(String fileName) {

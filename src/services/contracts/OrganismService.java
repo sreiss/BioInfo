@@ -18,7 +18,7 @@ public interface OrganismService {
 
     ListenableFuture<Organism> processOrganism(Kingdom kingdom, Organism organism);
     
-    ListenableFuture<Organism> processOrganismWithoutGene(Gene gene, Kingdom kingdom, Organism organism);
+    ListenableFuture<Organism> processOrganismWithoutGene(Map<String,Gene> genes, Kingdom kingdom, Organism organism);
 //    ListenableFuture<List<Organism>> extractGenes(List<Organism> organisms);
 //    ListenableFuture<Organism> extractGenes(Organism organism);
 //    ListenableFuture<List<Organism>> processGenes(List<Organism> organisms);

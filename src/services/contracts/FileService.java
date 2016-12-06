@@ -9,6 +9,8 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import javax.swing.tree.TreeModel;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Date;
@@ -24,6 +26,10 @@ public interface FileService {
     XSSFSheet fillWorkbook(Organism organism, Gene gene, XSSFWorkbook workbook);
 
     void writeWorkbook(XSSFWorkbook workbook, String path, String fileName) throws IOException;
+    
+    boolean GoodLevel(String folderPath, String folderName, int level, int max);
+    
+    Map<String,Gene> readWorkbooks(Map<String,Gene> map, File parent, File excel, int level);
 
     Map<String, Date> readUpdateFile(Kingdom kingdom) throws IOException;
 

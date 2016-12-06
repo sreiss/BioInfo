@@ -48,20 +48,30 @@ public class DefaultOrganismService extends NucleotideHolderService implements O
     }
     
     @Override
-    public ListenableFuture<Organism> processOrganismWithoutGene(Gene gene, Kingdom kingdom, Organism organism) {
+    public ListenableFuture<Organism> processOrganismWithoutGene(Map<String,Gene> genes, Kingdom kingdom, Organism organism) {
         return executorService.submit(() -> {
-            HashMap<String, Sum> organismSums = new HashMap<>();
-
+        	HashMap<String, Sum> organismSums = new HashMap<>();
             XSSFWorkbook workbook = fileService.createWorkbook();
             
-            if (gene != null) {
-                String type = gene.getType();
-                if (type == null) {
-                    type = "unknown";
+            for(String key : genes.keySet())
+            {
+            	Gene gene=genes.get(key);
+            	if (gene != null) {
+                    String type = gene.getType();
+                    if (type == null) {
+                        type = "unknown";
+                    }
+                    organismSums.putIfAbsent(type, createSum(gene.getType(), organism.getPath(), 0, 0));
+                    Sum sum = organismSums.get(gene.getType());
+                    statisticsService.computeSum(kingdom, organism, sum, gene).get();
                 }
-                organismSums.putIfAbsent(type, createSum(gene.getType(), organism.getPath(), 0, 0));
-                fileService.fillWorkbook(organism, gene, workbook);
             }
+            
+            for (Map.Entry<String, Sum> organismSumEntry: organismSums.entrySet()) {
+                organismSumEntry.setValue(statisticsService.computeProbabilitiesFromSum(organism, organismSumEntry.getValue()).get());
+            }
+            fileService.fillWorkbookSum(organism, organismSums, workbook);
+            
             fileService.writeWorkbook(workbook, organism.getPath(), organism.getName());
 
             System.out.print(organism.getName());
