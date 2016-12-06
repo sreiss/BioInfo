@@ -22,7 +22,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 public class DefaultKingdomService implements KingdomService {
-    private final int PROCESS_STACK_SIZE = 1;
+    private final int PROCESS_STACK_SIZE = 50;
     private final StatisticsService statisticsService;
     private final ParseService parseService;
     private final FileService fileService;
@@ -93,14 +93,14 @@ public class DefaultKingdomService implements KingdomService {
             List<String> list=new ArrayList<String>();
             list.add(configService.getProperty("dataDir")+"/"+currentFuture.getKey());
             map.put(0, list);
-            createParents(currentFuture.getKey(), map,configService.getProperty("dataDir"),currentFuture.getKey().getLabel(),0,0);
-            for(int i=map.keySet().size()-1;i>=0;i--)
-            {
-            	for(int j=0;j<map.get(i).size();j++)
-            	{
-            		createParents(currentFuture.getKey(),map,null,null,i+1,j);
-            	}
-            }
+//            createParents(currentFuture.getKey(), map,configService.getProperty("dataDir"),currentFuture.getKey().getLabel(),0,0);
+//            for(int i=map.keySet().size()-1;i>=0;i--)
+//            {
+//            	for(int j=0;j<map.get(i).size();j++)
+//            	{
+//            		createParents(currentFuture.getKey(),map,null,null,i+1,j);
+//            	}
+//            }
 //            createParents(currentFuture.getKey(),map,configService.getProperty("dataDir"),currentFuture.getKey().getLabel(),1,0);
 //            createParents(currentFuture.getKey(), map,configService.getProperty("dataDir"),currentFuture.getKey().getLabel(),2,0);
             writeUpdateFile(currentFuture.getKey());
@@ -225,7 +225,11 @@ public class DefaultKingdomService implements KingdomService {
 
                 return processKingdom(kingdom, index + PROCESS_STACK_SIZE);
             }
-//            createParents(kingdom, new ArrayList<String>(),configService.getProperty("dataDir"),kingdom.getLabel(),0,0);
+            Map<Integer,List<String>> map=new Hashtable<Integer, List<String>>();
+            List<String> list=new ArrayList<String>();
+            list.add(configService.getProperty("dataDir")+"/"+kingdom);
+            map.put(0, list);
+            createParents(kingdom, map,configService.getProperty("dataDir"),kingdom.getLabel(),0,0);
 //            createParents(kingdom, new ArrayList<String>(),configService.getProperty("dataDir"),kingdom.getLabel(),1,0);
 //            createParents(kingdom, new ArrayList<String>(),configService.getProperty("dataDir"),kingdom.getLabel(),2,0);
         }
