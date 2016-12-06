@@ -165,7 +165,7 @@ public class DefaultKingdomService implements KingdomService {
                         Date remoteUpdate = organism.getUpdatedDate();
                         Date localUpdate = updates.get(kingdom).get(organism.getName());
                         // No local update found
-                        return (bioProject != null && organism.getBioProject() != null && bioProject.equals(organism.getBioProject()))
+                        return (bioProject == null || (bioProject != null && organism.getBioProject() != null && bioProject.equals(organism.getBioProject())))
                                 && (remoteUpdate == null || localUpdate == null || localUpdate.before(remoteUpdate));
                     })
                     .collect(Collectors.toList());
