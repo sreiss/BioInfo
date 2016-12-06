@@ -154,19 +154,12 @@ public class DefaultFileService implements FileService {
     	return good;
     }
     
-    public Map<String,Gene> readWorkbooks(Map<String,Gene> map, File parent, File excel,int level)
+    public Map<String,Gene> readWorkbooks(Map<String,Gene> map, File excel)
     {
     	XSSFWorkbook workbook=null;
     	try
     	{
-    		if(level==0)
-    		{
-    			workbook=new XSSFWorkbook(new FileInputStream(excel.getPath()));
-    		}
-    		else
-    		{
-    			workbook=new XSSFWorkbook(new FileInputStream(excel.getPath()+".xlsx"));
-    		}
+			workbook=new XSSFWorkbook(new FileInputStream(excel.getPath()));
 			
 			XSSFSheet currentSheet;
 			XSSFRow row;

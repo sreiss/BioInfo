@@ -29,7 +29,7 @@ public interface FileService {
     
     boolean GoodLevel(String folderPath, String folderName, int level, int max);
     
-    Map<String,Gene> readWorkbooks(Map<String,Gene> map, File parent, File excel, int level);
+    Map<String,Gene> readWorkbooks(Map<String,Gene> map, File excel);
 
     Map<String, Date> readUpdateFile(Kingdom kingdom) throws IOException;
 

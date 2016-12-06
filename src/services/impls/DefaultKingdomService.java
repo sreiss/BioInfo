@@ -89,10 +89,10 @@ public class DefaultKingdomService implements KingdomService {
             currentFuture.getKey().setOrganisms(null);
             shouldInterrupt = true;
             // temp Test
-            Map<Integer,List<String>> map=new Hashtable<Integer, List<String>>();
-            List<String> list=new ArrayList<String>();
-            list.add(configService.getProperty("dataDir")+"/"+currentFuture.getKey());
-            map.put(0, list);
+//            Map<Integer,List<String>> map=new Hashtable<Integer, List<String>>();
+//            List<String> list=new ArrayList<String>();
+//            list.add(configService.getProperty("dataDir")+"/"+currentFuture.getKey());
+//            map.put(0, list);
 //            createParents(currentFuture.getKey(), map,configService.getProperty("dataDir"),currentFuture.getKey().getLabel(),0,0);
 //            for(int i=map.keySet().size()-1;i>=0;i--)
 //            {
@@ -101,8 +101,6 @@ public class DefaultKingdomService implements KingdomService {
 //            		createParents(currentFuture.getKey(),map,null,null,i+1,j);
 //            	}
 //            }
-//            createParents(currentFuture.getKey(),map,configService.getProperty("dataDir"),currentFuture.getKey().getLabel(),1,0);
-//            createParents(currentFuture.getKey(), map,configService.getProperty("dataDir"),currentFuture.getKey().getLabel(),2,0);
             writeUpdateFile(currentFuture.getKey());
         }
     }
@@ -230,8 +228,13 @@ public class DefaultKingdomService implements KingdomService {
             list.add(configService.getProperty("dataDir")+"/"+kingdom);
             map.put(0, list);
             createParents(kingdom, map,configService.getProperty("dataDir"),kingdom.getLabel(),0,0);
-//            createParents(kingdom, new ArrayList<String>(),configService.getProperty("dataDir"),kingdom.getLabel(),1,0);
-//            createParents(kingdom, new ArrayList<String>(),configService.getProperty("dataDir"),kingdom.getLabel(),2,0);
+            for(int i=map.keySet().size()-1;i>=0;i--)
+            {
+            	for(int j=0;j<map.get(i).size();j++)
+            	{
+            		createParents(kingdom,map,null,null,i+1,j);
+            	}
+            }
         }
         return kingdom;
     }
@@ -309,99 +312,15 @@ public class DefaultKingdomService implements KingdomService {
     
     private void createParents(Kingdom kingdom, Map<Integer, List<String>> map, String folderPath, String folderName, int level, int max)
     {
-//    	System.out.println("I'm here "+folderPath+"/"+folderName);
-//    	File folder=new File(folderPath+"/"+folderName);
-//		File[] childrenFolders=folder.listFiles();
-//		boolean good=true;
-//		
-//		if(level==0 || level==1 && max<1)
-//		{
-//			for(File childFolder : childrenFolders)
-//			{
-//				if(childFolder.isDirectory())
-//				{
-//					good=false;
-//					break;
-//				}
-//			}
-//		}
-//		else if(level==1 && max==1 || level==2)
-//		{
-//			good=true;
-//		}
-//		
-//		if(good)
-//		{
-//			Gene gene=geneService.createGene(folder.getName(), "Total", folderPath+"/"+folderName, 0, 0);
-//			Organism org=organismService.createOrganism(folder.getName(), "", "", "", new Date(), new ArrayList<Tuple<String,String>>(), kingdom.getId());
-//			org.setPath(folderPath);
-//			
-//			for(File excel : childrenFolders)
-//			{
-//				boolean ok=true;
-//				if(level>0 && excel.isFile())
-//				{
-//					ok=false;
-//				}
-//				
-//				traitement:
-//				if(ok)
-//				{
-//					fileService.readWorkbooks(excel,gene,level);
-//					try
-//					{
-//						statisticsService.computeStatistics(kingdom, org, gene).get();
-//					}
-//					catch (InterruptedException e)
-//					{
-//						e.printStackTrace();
-//					} catch (ExecutionException e)
-//					{
-//						e.printStackTrace();
-//					}
-//				}
-//			}
-//			organismService.processOrganismWithoutGene(gene,kingdom, org);
-//		}
-//		else
-//		{
-//			for(File childFolder : childrenFolders)
-//			{
-//				if(childFolder.isDirectory())
-//				{
-//					if(level==0)
-//					{
-//						if(list.get(max+1)==null)
-//						{
-//							list.put(max+1, new ArrayList<String>());
-//						}
-//						else
-//						{
-//							List<String> liste=list.get(max+1);
-//							if(!liste.contains(childFolder.getPath()))
-//							{
-//								liste.add(childFolder.getPath());
-//							}
-//							
-//						}
-//						createParents(kingdom,list,folder.getPath(),childFolder.getName(),0,max+1);
-//					}
-//					else
-//					{
-//						createParents(kingdom,list,folder.getPath(),childFolder.getName(),level,max+1);
-//					}
-//					
-//				}
-//			}
-//		}
+    	File folder;
+    	File[] childrenFolders;
     	
-    	System.out.println("I'm here "+folderPath+"/"+folderName);
-    	File folder=new File(folderPath+"/"+folderName);
-		File[] childrenFolders=folder.listFiles();
 		boolean good=true;
 		
 		if(level==0)
 		{
+			folder=new File(folderPath+"/"+folderName);
+			childrenFolders=folder.listFiles();
 			for(File childFolder : childrenFolders)
 			{
 				if(childFolder.isDirectory())
@@ -414,19 +333,29 @@ public class DefaultKingdomService implements KingdomService {
 		else
 		{
 			good=true;
+			folder=new File(map.get(level-1).get(max));
+			childrenFolders=folder.listFiles();
 		}
 		
 		if(good)
 		{
 			Organism org=organismService.createOrganism("Total_"+folder.getName(), "", "", "", new Date(), new ArrayList<Tuple<String,String>>(), kingdom.getId());
-			org.setPath(folderPath);
 			
 			if(level==0)
 			{
-				Map<String,Gene> mapGene=new Hashtable<String,Gene>();
-				for(File excel : childrenFolders)
+				org.setPath(folderPath);
+			}
+			else
+			{
+				org.setPath(folder.getParent());
+			}
+			
+			Map<String,Gene> mapGene=new Hashtable<String,Gene>();
+			for(File excel : childrenFolders)
+			{
+				if(excel.isFile()) // only necessary on level >0
 				{
-					mapGene=fileService.readWorkbooks(mapGene,folder,excel,level);
+					mapGene=fileService.readWorkbooks(mapGene,excel);
 					for(String key : mapGene.keySet())
 					{
 						try
@@ -442,24 +371,8 @@ public class DefaultKingdomService implements KingdomService {
 						}
 					}
 				}
-				organismService.processOrganismWithoutGene(mapGene,kingdom, org);
 			}
-			else
-			{
-				/*fileService.readWorkbooks(new File(map.get(level).get(max)),level);
-				try
-				{
-					statisticsService.computeStatistics(kingdom, org, gene).get();
-				}
-				catch (InterruptedException e)
-				{
-					e.printStackTrace();
-				} catch (ExecutionException e)
-				{
-					e.printStackTrace();
-				}
-				organismService.processOrganismWithoutGene(gene,kingdom, org);*/
-			}
+			organismService.processOrganismWithoutGene(mapGene,kingdom, org);
 		}
 		else
 		{
@@ -476,9 +389,9 @@ public class DefaultKingdomService implements KingdomService {
 						else
 						{
 							List<String> liste=map.get(max+1);
-							if(!liste.contains(childFolder.getPath()))
+							if(!liste.contains(folder.getPath()))
 							{
-								liste.add(childFolder.getPath());
+								liste.add(folder.getPath());
 							}
 							
 						}
