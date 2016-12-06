@@ -33,7 +33,7 @@ public class DefaultParseService implements ParseService {
     private final OrganismService organismService;
     private final ListeningExecutorService executorService;
     private final ConfigService configService;
-	private final KingdomService kingdomService;
+    private final KingdomService kingdomService;
 
     private Date parseDateColumn(String column) throws ParseException {
         if (column == null || column.equals("-")) return null;
@@ -54,7 +54,7 @@ public class DefaultParseService implements ParseService {
         this.organismService = organismService;
         this.executorService = listeningExecutorService;
         this.configService = configService;
-		this.kingdomService = kingdomService;
+        this.kingdomService = kingdomService;
     }
 
     private static boolean checkLocator(String locator) {
@@ -87,135 +87,133 @@ public class DefaultParseService implements ParseService {
             System.out.println("Extracting : " + gene.getName());
 
             //Gene
-			FileWriter fwGene = null;
-			BufferedWriter bwGene = null;
-			String zipGenePath = configService.getProperty("gene");
-			//Genome
-			FileWriter fwGenome = null;
-			BufferedWriter bwGenome = null;
-			String zipGenomePath = configService.getProperty("genome");
-			File fileGenome = null;
+            FileWriter fwGene = null;
+            BufferedWriter bwGene = null;
+            String zipGenePath = configService.getProperty("gene");
+            //Genome
+            FileWriter fwGenome = null;
+            BufferedWriter bwGenome = null;
+            String zipGenomePath = configService.getProperty("genome");
+            File fileGenome = null;
 
             String[] explodePath = gene.getPath().split("/");
-			
-			if(kingdomService.getGenesCkBIsSelected()){
-				for(int i = 2; i < explodePath.length; i++){
-					zipGenePath += explodePath[i] + "/";
-				}
-				
-				fwGene = new FileWriter(new File(zipGenePath + gene.getName() + ".txt")); 
-				bwGene =  new BufferedWriter(fwGene);
-			}
-			
-			if(kingdomService.getGenomesCkBIsSelected()){
-				for(int i = 2; i < explodePath.length; i++){
-					zipGenomePath += explodePath[i] + "/";
-				}
-				
-				fileGenome = new File(zipGenomePath + explodePath[5] + ".txt");
-				
-				if(fileGenome.exists()){
-					fwGenome = new FileWriter(fileGenome,true); 
-					bwGenome =  new BufferedWriter(fwGenome);
-					bwGenome.newLine();
-					bwGenome.newLine();
-				} else {
-					fwGenome = new FileWriter(fileGenome);
-					bwGenome =  new BufferedWriter(fwGenome);
-				}
-			}
 
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-                while ((line = reader.readLine()) != null) {
+            if(kingdomService.getGenesCkBIsSelected()){
+                for(int i = 2; i < explodePath.length; i++){
+                    zipGenePath += explodePath[i] + "/";
+                }
 
-                    if(kingdomService.getGenesCkBIsSelected()){
-						bwGene.write(line);
-						bwGene.newLine();
-					}
-					
-					if(kingdomService.getGenomesCkBIsSelected()){
-						bwGenome.write(line);
-						bwGenome.newLine();
-					}
+                fwGene = new FileWriter(new File(zipGenePath + gene.getName() + ".txt"));
+                bwGene =  new BufferedWriter(fwGene);
+            }
 
-                    if (line.startsWith(CodingSequence.START_CDS_INFO)) {
-                        Pattern p = Pattern.compile(CodingSequence.REGEX_COMPLETE);
-                        Matcher m = p.matcher(line);
+            if(kingdomService.getGenomesCkBIsSelected()){
+                for(int i = 2; i < explodePath.length; i++){
+                    zipGenomePath += explodePath[i] + "/";
+                }
 
-                        if (m.find()) {
-                            String s = m.group();
-                            p = Pattern.compile(CodingSequence.REGEX_LOCATOR);
-                            m = p.matcher(s);
-                            boolean locators_ok = true;
-                            while (m.find() && locators_ok) {
-                                locators_ok = checkLocator(m.group());
-                            }
-                            if (locators_ok) {
-                                String sequence = "", line2 = null;
+                fileGenome = new File(zipGenomePath + explodePath[5] + ".txt");
 
-                                running = true;
-                                while (running) {
-                                    reader.mark(1);
-                                    int temp = reader.read();
-                                    if (temp == -1) {
+                if(fileGenome.exists()){
+                    fwGenome = new FileWriter(fileGenome,true);
+                    bwGenome =  new BufferedWriter(fwGenome);
+                    bwGenome.newLine();
+                    bwGenome.newLine();
+                } else {
+                    fwGenome = new FileWriter(fileGenome);
+                    bwGenome =  new BufferedWriter(fwGenome);
+                }
+            }
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            while ((line = reader.readLine()) != null) {
+
+                if(kingdomService.getGenesCkBIsSelected()){
+                    bwGene.write(line);
+                    bwGene.newLine();
+                }
+
+                if(kingdomService.getGenomesCkBIsSelected()){
+                    bwGenome.write(line);
+                    bwGenome.newLine();
+                }
+
+                if (line.startsWith(CodingSequence.START_CDS_INFO)) {
+                    Pattern p = Pattern.compile(CodingSequence.REGEX_COMPLETE);
+                    Matcher m = p.matcher(line);
+
+                    if (m.find()) {
+                        String s = m.group();
+                        p = Pattern.compile(CodingSequence.REGEX_LOCATOR);
+                        m = p.matcher(s);
+                        boolean locators_ok = true;
+                        while (m.find() && locators_ok) {
+                            locators_ok = checkLocator(m.group());
+                        }
+                        if (locators_ok) {
+                            String sequence = "", line2 = null;
+
+                            running = true;
+                            while (running) {
+                                reader.mark(1);
+                                int temp = reader.read();
+                                if (temp == -1) {
+                                    running = false;
+                                } else {
+                                    reader.reset();
+                                    if (temp == CodingSequence.START_CDS_INFO.charAt(0)) {
                                         running = false;
                                     } else {
-                                        reader.reset();
-                                        if (temp == CodingSequence.START_CDS_INFO.charAt(0)) {
+                                        try {
+                                            line2 = reader.readLine();
+
+                                            if(kingdomService.getGenesCkBIsSelected()){
+                                                bwGene.write(line2);
+                                                bwGene.newLine();
+                                            }
+
+                                            if(kingdomService.getGenomesCkBIsSelected()){
+                                                bwGenome.write(line2);
+                                                bwGenome.newLine();
+                                            }
+
+                                        } catch (SocketException e) {
+                                            e.printStackTrace();
+                                        } catch (IOException e) {
+                                            running = false;
+                                        }
+                                        if (line2 == null) {
                                             running = false;
                                         } else {
-                                            try {
-                                                line2 = reader.readLine();
-
-                                                if(kingdomService.getGenesCkBIsSelected()){
-													bwGene.write(line2);
-													bwGene.newLine();
-												}
-												
-												if(kingdomService.getGenomesCkBIsSelected()){
-													bwGenome.write(line2);
-													bwGenome.newLine();
-												}
-
-                                            } catch (SocketException e) {
-                                                e.printStackTrace();
-                                            } catch (IOException e) {
-                                                running = false;
-                                            }
-                                            if (line2 == null) {
-                                                running = false;
-                                            } else {
-                                                sequence += line2;
-                                            }
+                                            sequence += line2;
                                         }
                                     }
                                 }
+                            }
 
-                                if (checkSequence(sequence)) {
-                                    gene.setTotalCds(gene.getTotalCds() + 1);
+                            if (checkSequence(sequence)) {
+                                gene.setTotalCds(gene.getTotalCds() + 1);
 
-                                    sequences.add(sequence);
-                                } else {
-                                    gene.setTotalCds(gene.getTotalCds() + 1);
-                                    gene.setTotalUnprocessedCds(gene.getTotalUnprocessedCds() + 1);
-                                }
+                                sequences.add(sequence);
+                            } else {
+                                gene.setTotalCds(gene.getTotalCds() + 1);
+                                gene.setTotalUnprocessedCds(gene.getTotalUnprocessedCds() + 1);
                             }
                         }
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                inputStream.close();
-                
-                if(kingdomService.getGenesCkBIsSelected()){
-					bwGene.close();
-				}
-				
-				if(kingdomService.getGenomesCkBIsSelected()){
-					bwGenome.close();
-				}
             }
+
+            inputStream.close();
+
+            if(kingdomService.getGenesCkBIsSelected()){
+                bwGene.close();
+            }
+
+            if(kingdomService.getGenomesCkBIsSelected()){
+                bwGenome.close();
+            }
+
             return sequences;
         });
     }
@@ -311,36 +309,36 @@ public class DefaultParseService implements ParseService {
                 e.printStackTrace();
             }
 
-			return organisms.stream().filter(organism -> organism.getGeneIds() != null && organism.getGeneIds().size() > 0).collect(Collectors.toList());
-		});
+            return organisms.stream().filter(organism -> organism.getGeneIds() != null && organism.getGeneIds().size() > 0).collect(Collectors.toList());
+        });
 
-	}
+    }
 
-	/**
-	 * Extracts the geneIds from the given entry in the organism list file. It returns a tuple containing the gene name, and it's type (chromosome, mitochondrion...)
-	 */
-	private List<Tuple<String, String>> extractGeneIds(String segmentsColumn){
-		String[] tmpSegments;
-		List<Tuple<String, String>> segments;
-		if (segmentsColumn.compareTo("-") == 0) {
-			return null;
-		} else {
-			tmpSegments = segmentsColumn.split(";");
-			segments = new ArrayList<>(tmpSegments.length);
-			if (tmpSegments.length > 0) {
-				Tuple<String, String> tuple;
-				for (String segment : tmpSegments) {
-					String[] segmentParts = segment.split(":");
-					if (segmentParts.length == 2) {
-						tuple = new Tuple<>(segmentParts[1].trim().split("/")[0], segmentParts[0].trim().split(" ")[0]);
-					} else {
-						tuple = new Tuple<>(segmentParts[0].trim().split("/")[0], null);
-					}
-					segments.add(tuple);
-				}
-			}
-			return segments;
-		}
+    /**
+     * Extracts the geneIds from the given entry in the organism list file. It returns a tuple containing the gene name, and it's type (chromosome, mitochondrion...)
+     */
+    private List<Tuple<String, String>> extractGeneIds(String segmentsColumn){
+        String[] tmpSegments;
+        List<Tuple<String, String>> segments;
+        if (segmentsColumn.compareTo("-") == 0) {
+            return null;
+        } else {
+            tmpSegments = segmentsColumn.split(";");
+            segments = new ArrayList<>(tmpSegments.length);
+            if (tmpSegments.length > 0) {
+                Tuple<String, String> tuple;
+                for (String segment : tmpSegments) {
+                    String[] segmentParts = segment.split(":");
+                    if (segmentParts.length == 2) {
+                        tuple = new Tuple<>(segmentParts[1].trim().split("/")[0], segmentParts[0].trim().split(" ")[0]);
+                    } else {
+                        tuple = new Tuple<>(segmentParts[0].trim().split("/")[0], null);
+                    }
+                    segments.add(tuple);
+                }
+            }
+            return segments;
+        }
 		/*
         String[] res;
         if(line.compareTo("-") != 0)
@@ -368,5 +366,5 @@ public class DefaultParseService implements ParseService {
         }
         return res;
 		 */
-	}
+    }
 }

@@ -122,7 +122,7 @@
         <children>
           <grid id="fe584" layout-manager="GridBagLayout">
             <constraints>
-              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false"/>
+              <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false"/>
               <gridbag weightx="0.0" weighty="0.0"/>
             </constraints>
             <properties/>
@@ -196,7 +196,7 @@
           </grid>
           <grid id="6a972" layout-manager="GridBagLayout">
             <constraints>
-              <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false"/>
+              <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false"/>
               <gridbag weightx="0.0" weighty="0.0"/>
             </constraints>
             <properties/>
@@ -272,7 +272,7 @@
           </grid>
           <grid id="8eca9" layout-manager="GridBagLayout">
             <constraints>
-              <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false"/>
+              <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false"/>
               <gridbag weightx="0.0" weighty="1.0"/>
             </constraints>
             <properties/>
@@ -302,8 +302,45 @@
               </grid>
             </children>
           </grid>
+          <grid id="8252e" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="1">
+            <constraints>
+              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+              <gridbag weightx="0.0" weighty="0.0"/>
+            </constraints>
+            <properties/>
+            <border type="none" title="Statistics" title-justification="2"/>
+            <children>
+              <component id="78ed" class="javax.swing.JRadioButton" binding="filterFullStatisticsCheckBox">
+                <constraints/>
+                <properties>
+                  <selected value="true"/>
+                  <text value="Full"/>
+                </properties>
+              </component>
+              <component id="756b9" class="javax.swing.JRadioButton" binding="filterBioProjectCheckBox">
+                <constraints/>
+                <properties>
+                  <text value="BioProject"/>
+                </properties>
+              </component>
+              <component id="2143a" class="javax.swing.JTextField" binding="filterBioProjectTextField">
+                <constraints/>
+                <properties>
+                  <columns value="10"/>
+                  <text value="BioProject..."/>
+                  <toolTipText value=""/>
+                </properties>
+              </component>
+            </children>
+          </grid>
         </children>
       </grid>
     </children>
   </grid>
+  <buttonGroups>
+    <group name="filterButtonGroup">
+      <member id="756b9"/>
+      <member id="78ed"/>
+    </group>
+  </buttonGroups>
 </form>

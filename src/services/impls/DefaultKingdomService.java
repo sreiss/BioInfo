@@ -2,7 +2,6 @@ package services.impls;
 
 import com.google.api.client.http.HttpResponse;
 import com.google.common.base.Function;
-import com.google.common.primitives.Booleans;
 import com.google.common.util.concurrent.*;
 import com.google.inject.Inject;
 
@@ -10,9 +9,6 @@ import models.Gene;
 import models.Kingdom;
 import models.Organism;
 
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
 import services.contracts.*;
 import javax.annotation.Nullable;
 
@@ -23,7 +19,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class DefaultKingdomService implements KingdomService {
@@ -45,7 +40,7 @@ public class DefaultKingdomService implements KingdomService {
 
     @Inject
     public DefaultKingdomService(GeneService geneService,
-    							 FileService fileService,
+                                 FileService fileService,
                                  ParseService parseService,
                                  ConfigService configService,
                                  OrganismService organismService,
@@ -53,7 +48,7 @@ public class DefaultKingdomService implements KingdomService {
                                  ListeningExecutorService listeningExecutorService,
                                  ProgressService progressService,
                                  ProgramStatsService programStatsService) {
-    	this.geneService = geneService;
+        this.geneService = geneService;
         this.fileService = fileService;
         this.parseService = parseService;
         this.configService = configService;
@@ -62,14 +57,14 @@ public class DefaultKingdomService implements KingdomService {
         this.executorService = listeningExecutorService;
         this.progressService = progressService;
         this.programStatsService = programStatsService;
-        
+
         this.genomesCkBIsSelected = false;
         this.genesCkBIsSelected = false;
     }
 
     @Override
     public String generateKingdomGeneListUrl(Kingdom kingdom) {
-    	try {
+        try {
             URL url;
             String urlString;
             if(Kingdom.Plasmids.equals(kingdom.getId())) {
@@ -119,22 +114,22 @@ public class DefaultKingdomService implements KingdomService {
                 paths.add(path);
 
                 String zipPath = null;
-                
-                if(tmpGenesCkBIsSelected){                    	
+
+                if(tmpGenesCkBIsSelected){
                     zipPath = zipGene
                             + kingdom.getLabel()
                             + "/" + organism.getGroup()
                             + "/" + organism.getSubGroup()
-                            + "/" + organism.getName();                    
+                            + "/" + organism.getName();
                     paths.add(zipPath);
                 }
 
-                if(tmpGenomesCkBIsSelected){                    	
+                if(tmpGenomesCkBIsSelected){
                     zipPath = zipGenome
                             + kingdom.getLabel()
                             + "/" + organism.getGroup()
                             + "/" + organism.getSubGroup()
-                            + "/" + organism.getName();                    
+                            + "/" + organism.getName();
                     paths.add(zipPath);
                 }
             }
@@ -155,7 +150,7 @@ public class DefaultKingdomService implements KingdomService {
         });
     }
 
-    private ListenableFuture<Kingdom> createKingdomTree(Kingdom kingdom) {
+    private ListenableFuture<Kingdom> createKingdomTree(Kingdom kingdom, String bioProject) {
         return executorService.submit(() -> {
             shouldInterrupt = false;
             Kingdom modifiedKingdom = loadUpdateFile(kingdom).get();
@@ -164,12 +159,22 @@ public class DefaultKingdomService implements KingdomService {
             InputStream content = httpResponse.getContent();
             List<Boolean> creationResults = createDirectories(kingdom, content).get();
 
-            kingdom.setOrganisms(kingdom.getOrganisms().stream().filter(organism -> {
-                Date remoteUpdate = organism.getUpdatedDate();
-                Date localUpdate = updates.get(kingdom).get(organism.getName());
-                // No local update found
-                return remoteUpdate == null || localUpdate == null || localUpdate.before(remoteUpdate);
-            }).collect(Collectors.toList()));
+            List<Organism> filteredOrganisms = kingdom.getOrganisms()
+                    .stream()
+                    .filter(organism -> {
+                        Date remoteUpdate = organism.getUpdatedDate();
+                        Date localUpdate = updates.get(kingdom).get(organism.getName());
+                        // No local update found
+                        return (bioProject != null && organism.getBioProject() != null && bioProject.equals(organism.getBioProject()))
+                                && (remoteUpdate == null || localUpdate == null || localUpdate.before(remoteUpdate));
+                    })
+                    .collect(Collectors.toList());
+
+            if (filteredOrganisms.size() == 0) {
+                throw new NothingToProcesssException();
+            }
+
+            kingdom.setOrganisms(filteredOrganisms);
 
             progressService.getCurrentProgress().setStep(TaskProgress.Step.DirectoriesCreationFinished);
             progressService.invalidateProgress();
@@ -286,55 +291,55 @@ public class DefaultKingdomService implements KingdomService {
         }, executorService);
     }
     */
-    
+
     private void createParents(Kingdom kingdom, ArrayList<String> list, String folderPath, String folderName, int level, int max)
     {
-    	System.out.println("I'm here "+folderPath+"/"+folderName);
-    	File folder=new File(folderPath+"/"+folderName);
-		File[] childrenFolders=folder.listFiles();
-		boolean good=true;
-		
-		if(level==0 || level==1 && max<1)
-		{
-			for(File childFolder : childrenFolders)
-			{
-				if(childFolder.isDirectory())
-				{
-					good=false;
-					break;
-				}
-			}
-		}
-		else if(level==1 && max==1 || level==2)
-		{
-			good=true;
-		}
-		
-		if(good)
-		{
-			Gene gene=geneService.createGene(folder.getName(), "Total", folderPath+"/"+folderName, 0, 0);
-			Organism org=organismService.createOrganism(folder.getName(), "", "", "", new Date(), new ArrayList<Tuple<String,String>>(), kingdom.getId());
-			org.setPath(folderPath);
-			organismService.processOrganismWithoutGene(gene,kingdom, org);
-		}
-		else
-		{
-			for(File childFolder : childrenFolders)
-			{
-				if(childFolder.isDirectory())
-				{
-					if(level==0)
-					{
-						createParents(kingdom,list,folder.getPath(),childFolder.getName(),0,0);
-					}
-					else
-					{
-						createParents(kingdom,list,folder.getPath(),childFolder.getName(),level,max+1);
-					}
-					
-				}
-			}
-		}
+        System.out.println("I'm here "+folderPath+"/"+folderName);
+        File folder=new File(folderPath+"/"+folderName);
+        File[] childrenFolders=folder.listFiles();
+        boolean good=true;
+
+        if(level==0 || level==1 && max<1)
+        {
+            for(File childFolder : childrenFolders)
+            {
+                if(childFolder.isDirectory())
+                {
+                    good=false;
+                    break;
+                }
+            }
+        }
+        else if(level==1 && max==1 || level==2)
+        {
+            good=true;
+        }
+
+        if(good)
+        {
+            Gene gene=geneService.createGene(folder.getName(), "Total", folderPath+"/"+folderName, 0, 0);
+            Organism org=organismService.createOrganism(folder.getName(), "", "", "", new Date(), new ArrayList<Tuple<String,String>>(), kingdom.getId());
+            org.setPath(folderPath);
+            organismService.processOrganismWithoutGene(gene,kingdom, org);
+        }
+        else
+        {
+            for(File childFolder : childrenFolders)
+            {
+                if(childFolder.isDirectory())
+                {
+                    if(level==0)
+                    {
+                        createParents(kingdom,list,folder.getPath(),childFolder.getName(),0,0);
+                    }
+                    else
+                    {
+                        createParents(kingdom,list,folder.getPath(),childFolder.getName(),level,max+1);
+                    }
+
+                }
+            }
+        }
     }
 
     private void writeUpdateFile(Kingdom kingdom) {
@@ -349,12 +354,12 @@ public class DefaultKingdomService implements KingdomService {
      * Creates the file trees for the given kingdoms and starts the time estimation.
      * The remaining time is estimated over the 100 last processings.
      */
-    public ListenableFuture<List<Kingdom>> createKingdomTrees(final List<Kingdom> kingdoms) {
+    public ListenableFuture<List<Kingdom>> createKingdomTrees(final List<Kingdom> kingdoms, String bioProject) {
         programStatsService.resetAcquisitionTime();
         programStatsService.beginAcquisitionTimeEstimation();
         List<ListenableFuture<Kingdom>> acquireFutures = new ArrayList<>();
         for (Kingdom kingdom: kingdoms) {
-            acquireFutures.add(createKingdomTree(kingdom));
+            acquireFutures.add(createKingdomTree(kingdom, bioProject));
         }
         return Futures.transform(Futures.successfulAsList(acquireFutures), new Function<List<Kingdom>, List<Kingdom>>() {
             @Nullable
@@ -370,20 +375,20 @@ public class DefaultKingdomService implements KingdomService {
     public boolean getShouldInterrupt() {
         return shouldInterrupt;
     }
-    
+
     public void setGenomesCkBIsSelected(Boolean isSelected){
-    	this.genomesCkBIsSelected = isSelected;
+        this.genomesCkBIsSelected = isSelected;
     }
-    
+
     public Boolean getGenomesCkBIsSelected(){
-    	return this.genomesCkBIsSelected;
+        return this.genomesCkBIsSelected;
     }
-    
+
     public void setGenesCkBIsSelected(Boolean isSelected){
-    	this.genesCkBIsSelected = isSelected;
+        this.genesCkBIsSelected = isSelected;
     }
-    
+
     public Boolean getGenesCkBIsSelected(){
-    	return this.genesCkBIsSelected;
+        return this.genesCkBIsSelected;
     }
 }

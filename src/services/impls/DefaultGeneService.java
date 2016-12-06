@@ -17,13 +17,14 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DefaultGeneService extends NucleotideHolderService implements GeneService {
+    private final int MAX_RETRIES = 10;
     private final StatisticsService statisticsService;
     private final HttpService httpService;
     private final ParseService parseService;
     private final ListeningExecutorService executorService;
     private final ProgramStatsService programStatsService;
     private final ProgressService progressService;
-    private HashMap<Organism, AtomicInteger> organismOffsets = new HashMap<>();
+    private final HashMap<Gene, Integer> retries = new HashMap<>();
 
     @Inject
     public DefaultGeneService(StatisticsService statisticsService, HttpService httpService, ParseService parseService, ListeningExecutorService listeningExecutorService, ProgramStatsService programStatsService, ProgressService progressService) {
@@ -84,7 +85,21 @@ public class DefaultGeneService extends NucleotideHolderService implements GeneS
             progressService.invalidateDownloadProgress();
 
             InputStream inputStream = httpResponse.getContent();
-            List<String> sequences = parseService.extractSequences(inputStream, gene).get();
+            List<String> sequences;
+            try {
+                sequences = parseService.extractSequences(inputStream, gene).get();
+            } catch (Exception e) {
+                retries.putIfAbsent(gene, 0);
+                Integer currentRetryCount = retries.get(gene);
+                if (currentRetryCount < MAX_RETRIES) {
+                    currentRetryCount++;
+                    retries.put(gene, currentRetryCount);
+                    return processGene(kingdom, organism, geneId).get();
+                } else {
+                    retries.remove(gene);
+                    throw e;
+                }
+            }
 
             gene = extractStatisticsSequenceForDinucleotides(sequences, gene, 0);
             gene = extractStatisticsSequenceForTrinucleotides(sequences, gene, 0);

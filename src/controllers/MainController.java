@@ -8,12 +8,13 @@ import com.google.inject.Inject;
 import Utils.ZipUtils;
 import models.Kingdom;
 import services.contracts.*;
+import services.impls.NothingToProcesssException;
 import views.MainWindow;
 import javax.annotation.Nullable;
 import javax.swing.*;
 import javax.swing.tree.TreeModel;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
+
 import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
@@ -80,6 +81,24 @@ public class MainController implements Observer {
         view.getKingdomTree().setModel(null);
         view.getKingdomTree().setRootVisible(false);
 
+        view.getFilterBioProjectTextField().addFocusListener(new FocusListener() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                JTextField textField = (JTextField) e.getSource();
+                if (textField.getText().equals("BioProject...")) {
+                    textField.setText("");
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                JTextField textField = (JTextField) e.getSource();
+                if (textField.getText().trim().equals("")) {
+                    textField.setText("BioProject...");
+                }
+            }
+        });
+
         refreshTree();
     }
 
@@ -106,11 +125,12 @@ public class MainController implements Observer {
     }
 
     private void acquire() {
-        
-    	view.getTimeRemainingLabel().setText("Estimating ETA...");
+
+        view.getTimeRemainingLabel().setText("Estimating ETA...");
         view.updateGlobalProgressionText("Begining the acquisition, the startup might take some time...");
 
         List<Kingdom> kingdoms = new ArrayList<Kingdom>();
+        String bioProject = null;
 
         if (view.getEukaryotaCheckBox().isSelected()) {
             kingdoms.add(Kingdom.Eukaryota);
@@ -124,27 +144,30 @@ public class MainController implements Observer {
         if (view.getPlasmidsCheckBox().isSelected()) {
             kingdoms.add(Kingdom.Plasmids);
         }
-        
+        if (view.getFilterBioProjectCheckBox().isSelected()) {
+            bioProject = view.getFilterBioProjectTextField().getText();
+        }
+
         // Necessaire au zippage
         JCheckBox genomesCkb = view.getGenomesCheckBox();
-    	JCheckBox genesCkb = view.getGenesCheckBox();
-    	kingdomService.setGenesCkBIsSelected(genesCkb.isSelected());
-    	kingdomService.setGenomesCkBIsSelected(genomesCkb.isSelected());
-    	
-    	//gene
+        JCheckBox genesCkb = view.getGenesCheckBox();
+        kingdomService.setGenesCkBIsSelected(genesCkb.isSelected());
+        kingdomService.setGenomesCkBIsSelected(genomesCkb.isSelected());
+
+        //gene
         String zipGene = configService.getProperty("gene");
-    	String[] explodeGenePath = zipGene.split("/");
-    	//genome
+        String[] explodeGenePath = zipGene.split("/");
+        //genome
         String zipGenome = configService.getProperty("genome");
-    	String[] explodeGenomePath = zipGenome.split("/");
-    	
-    	ZipUtils.cleanSaveFolder(zipGene,explodeGenePath);
-    	ZipUtils.cleanSaveFolder(zipGenome,explodeGenomePath);
+        String[] explodeGenomePath = zipGenome.split("/");
+
+        ZipUtils.cleanSaveFolder(zipGene,explodeGenePath);
+        ZipUtils.cleanSaveFolder(zipGenome,explodeGenomePath);
 
         Boolean genesBool = genesCkb.isSelected();
         Boolean genomesBool = genomesCkb.isSelected();
 
-        ListenableFuture<List<Kingdom>> acquireFuture = kingdomService.createKingdomTrees(kingdoms);
+        ListenableFuture<List<Kingdom>> acquireFuture = kingdomService.createKingdomTrees(kingdoms, bioProject);
         currentFuture = acquireFuture;
         Futures.addCallback(acquireFuture, new FutureCallback<List<Kingdom>>(){
             @Override
@@ -162,18 +185,18 @@ public class MainController implements Observer {
                 view.getTimeRemainingLabel().setText("");
 
                 if(genesBool){
-                	if (new File(zipGene).exists()) {
-                		ZipUtils zip = new ZipUtils(zipGene, explodeGenePath[1] + ".zip");
-                		zip.ExecuteZip();
-                	}
+                    if (new File(zipGene).exists()) {
+                        ZipUtils zip = new ZipUtils(zipGene, explodeGenePath[1] + ".zip");
+                        zip.ExecuteZip();
+                    }
                 }
 
                 if(genomesBool){
-                	if (new File(zipGenome).exists()) {
-                		ZipUtils zip = new ZipUtils(zipGenome, explodeGenomePath[1] + ".zip");
-                		zip.createGenomeDirectory(new File(zipGenome));
+                    if (new File(zipGenome).exists()) {
+                        ZipUtils zip = new ZipUtils(zipGenome, explodeGenomePath[1] + ".zip");
+                        zip.createGenomeDirectory(new File(zipGenome));
                         zip.ExecuteZip();
-                	}
+                    }
                 }
             }
 
@@ -185,24 +208,19 @@ public class MainController implements Observer {
 
                 if (throwable instanceof CancellationException) {
                     view.updateGlobalProgressionText("Processing interrupted.");
-                    progressService.getCurrentProgress().getTotal().set(0);
-                    progressService.getCurrentProgress().getProgress().set(0);
-                    programStatsService.endAcquisitionTimeEstimation();
-                    view.setGlobalProgressionBar(0);
-                    view.getExecuteButton().setEnabled(true);
-                    view.getInterruptButton().setEnabled(false);
-                    view.getTimeRemainingLabel().setText("");
+                } else if (throwable instanceof NothingToProcesssException) {
+                    view.updateGlobalProgressionText("Nothing to process.");
                 } else {
-                    System.err.println(throwable.toString());
                     view.updateGlobalProgressionText("An error occured.");
-                    progressService.getCurrentProgress().getTotal().set(0);
-                    progressService.getCurrentProgress().getProgress().set(0);
-                    programStatsService.endAcquisitionTimeEstimation();
-                    view.setGlobalProgressionBar(0);
-                    view.getExecuteButton().setEnabled(true);
-                    view.getInterruptButton().setEnabled(false);
-                    view.getTimeRemainingLabel().setText("");
                 }
+                progressService.getCurrentProgress().getTotal().set(0);
+                progressService.getCurrentProgress().getProgress().set(0);
+                programStatsService.endAcquisitionTimeEstimation();
+                view.setGlobalProgressionBar(0);
+                view.getExecuteButton().setEnabled(true);
+                view.getInterruptButton().setEnabled(false);
+                view.getTimeRemainingLabel().setText("");
+
 
                 if(new File(zipGene).exists() && genesBool){
                     if (new File(zipGene).exists()) {
