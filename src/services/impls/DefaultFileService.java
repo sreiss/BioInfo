@@ -129,31 +129,6 @@ public class DefaultFileService implements FileService {
         return file;
     }
     
-    public boolean GoodLevel(String folderPath, String folderName, int level, int max)
-    {
-    	boolean good=true;
-    	File folder=new File(folderPath+"/"+folderName);
-		File[] childrenFolders=folder.listFiles();
-		
-		if(level==0 || level==1 && max<1)
-		{
-			for(File childFolder : childrenFolders)
-			{
-				if(childFolder.isDirectory())
-				{
-					good=false;
-					break;
-				}
-			}
-		}
-		else if(level==1 && max==1 || level==2)
-		{
-			good=true;
-		}
-    	
-    	return good;
-    }
-    
     public Map<String,Gene> readWorkbooks(Map<String,Gene> map, File excel)
     {
     	XSSFWorkbook workbook=null;

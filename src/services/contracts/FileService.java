@@ -27,8 +27,6 @@ public interface FileService {
 
     void writeWorkbook(XSSFWorkbook workbook, String path, String fileName) throws IOException;
     
-    boolean GoodLevel(String folderPath, String folderName, int level, int max);
-    
     Map<String,Gene> readWorkbooks(Map<String,Gene> map, File excel);
 
     Map<String, Date> readUpdateFile(Kingdom kingdom) throws IOException;
