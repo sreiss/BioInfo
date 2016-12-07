@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 public class DefaultKingdomService implements KingdomService {
-    private final int PROCESS_STACK_SIZE = 1;
+    private final int PROCESS_STACK_SIZE = 50;
     private final StatisticsService statisticsService;
     private final ParseService parseService;
     private final FileService fileService;
@@ -90,48 +90,6 @@ public class DefaultKingdomService implements KingdomService {
             currentFuture.getValue().cancel(true);
             currentFuture.getKey().setOrganisms(null);
             shouldInterrupt = true;
-            // temp Test
-            Map<Integer,List<String>> map=new Hashtable<Integer, List<String>>();
-            List<String> list=new ArrayList<String>();
-            list.add(configService.getProperty("dataDir")+"/"+currentFuture.getKey());
-            map.put(0, list);
-            ListenableFuture<Boolean> bottoms=createParents(currentFuture.getKey(), map,configService.getProperty("dataDir"),currentFuture.getKey().getLabel(),0,0);
-            
-        	executorService.submit(()->
-        	{
-        		try
-        		{
-        			bottoms.get();
-				}
-        		catch (InterruptedException | ExecutionException e)
-        		{
-					e.printStackTrace();
-				}
-    		});
-            
-            for(int i=map.keySet().size()-1;i>=0;i--)
-            {
-            	ListenableFuture<List<Boolean>> levels;
-            	List<ListenableFuture<Boolean>> listFutures=new ArrayList<ListenableFuture<Boolean>>(map.get(i).size());
-            	for(int j=0;j<map.get(i).size();j++)
-            	{
-            		ListenableFuture<Boolean> levelCurrent=createParents(currentFuture.getKey(),map,null,null,i+1,j);
-            		listFutures.add(levelCurrent);
-            	}
-            	levels=Futures.allAsList(listFutures);
-            	
-            	executorService.submit(()->
-            	{
-            		try
-            		{
-            			levels.get();
-    				}
-            		catch (InterruptedException | ExecutionException e)
-            		{
-    					e.printStackTrace();
-    				}
-        		});
-            }
             writeUpdateFile(currentFuture.getKey());
         }
     }
@@ -263,18 +221,47 @@ public class DefaultKingdomService implements KingdomService {
 
                 return processKingdom(kingdom, index + PROCESS_STACK_SIZE);
             }
-//            Map<Integer,List<String>> map=new Hashtable<Integer, List<String>>();
-//            List<String> list=new ArrayList<String>();
-//            list.add(configService.getProperty("dataDir")+"/"+kingdom);
-//            map.put(0, list);
-//            createParents(kingdom, map,configService.getProperty("dataDir"),kingdom.getLabel(),0,0);
-//            for(int i=map.keySet().size()-1;i>=0;i--)
-//            {
-//            	for(int j=0;j<map.get(i).size();j++)
-//            	{
-//            		createParents(kingdom,map,null,null,i+1,j);
-//            	}
-//            }
+            Map<Integer,List<String>> map=new Hashtable<Integer, List<String>>();
+            List<String> list=new ArrayList<String>();
+            list.add(configService.getProperty("dataDir")+"/"+kingdom);
+            map.put(0, list);
+            ListenableFuture<Boolean> bottoms=createParents(kingdom, map,configService.getProperty("dataDir"),kingdom.getLabel(),0,0);
+            
+        	executorService.submit(()->
+        	{
+        		try
+        		{
+        			bottoms.get();
+				}
+        		catch (InterruptedException | ExecutionException e)
+        		{
+					e.printStackTrace();
+				}
+    		});
+            
+            for(int i=map.keySet().size()-1;i>=0;i--)
+            {
+            	ListenableFuture<List<Boolean>> levels;
+            	List<ListenableFuture<Boolean>> listFutures=new ArrayList<ListenableFuture<Boolean>>(map.get(i).size());
+            	for(int j=0;j<map.get(i).size();j++)
+            	{
+            		ListenableFuture<Boolean> levelCurrent=createParents(kingdom,map,null,null,i+1,j);
+            		listFutures.add(levelCurrent);
+            	}
+            	levels=Futures.allAsList(listFutures);
+            	
+            	executorService.submit(()->
+            	{
+            		try
+            		{
+            			levels.get();
+    				}
+            		catch (InterruptedException | ExecutionException e)
+            		{
+    					e.printStackTrace();
+    				}
+        		});
+            }
         }
         return kingdom;
     }
