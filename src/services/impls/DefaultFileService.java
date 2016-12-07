@@ -27,8 +27,8 @@ import java.util.*;
 
 public class DefaultFileService implements FileService {
     private final short NORMAL_COLOR = IndexedColors.WHITE.getIndex();
-    private final short PRIMARY_COLOR = IndexedColors.AQUA.getIndex();
-    private final short SECONDARY_COLOR = IndexedColors.CORAL.getIndex();
+    private final short PRIMARY_COLOR = IndexedColors.YELLOW.getIndex();
+    private final short SECONDARY_COLOR = IndexedColors.LIGHT_GREEN.getIndex();
     private final short PRIMARY_INFO_COLOR = IndexedColors.AQUA.getIndex();
     private final short SECONDARY_INFO_COLOR = IndexedColors.CORAL.getIndex();
     private final GeneService geneService;
