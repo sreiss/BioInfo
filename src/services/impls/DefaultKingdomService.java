@@ -10,6 +10,8 @@ import models.Kingdom;
 import models.Organism;
 
 import services.contracts.*;
+import services.exceptions.NothingToProcesssException;
+
 import javax.annotation.Nullable;
 
 import java.io.File;
@@ -159,6 +161,13 @@ public class DefaultKingdomService implements KingdomService {
         });
     }
 
+    /**
+     * This is one of the most important methods.
+     * It first loads the update file associated to the kingdom (under "./updates/{kingdomLabel}")
+     * then it retrieves it from the eutils API, then reads the response, then creates or check if the directories exist,
+     * then checks if an update is needed, then notifies the user interface through the progressService of the number of organisms to process,
+     * then processes the organisms, and if the later is a success or a failure, writes the current updates file.
+     */
     private ListenableFuture<Kingdom> createKingdomTree(Kingdom kingdom, String bioProject) {
         return executorService.submit(() -> {
             shouldInterrupt = false;
@@ -171,19 +180,21 @@ public class DefaultKingdomService implements KingdomService {
             List<Organism> filteredOrganisms = kingdom.getOrganisms()
                     .stream()
                     .filter(organism -> {
+                        if (organism == null) {
+                            return false;
+                        }
                         Date remoteUpdate = organism.getUpdatedDate();
                         Date localUpdate = updates.get(kingdom).get(organism.getName());
                         // No local update found
-                        return (bioProject == null || (bioProject != null && organism.getBioProject() != null && bioProject.equals(organism.getBioProject())))
+                        return (bioProject == null || (organism.getBioProject() != null && bioProject.equals(organism.getBioProject())))
                                 && (remoteUpdate == null || localUpdate == null || localUpdate.before(remoteUpdate));
                     })
                     .collect(Collectors.toList());
+            kingdom.setOrganisms(filteredOrganisms);
 
             if (filteredOrganisms.size() == 0) {
                 throw new NothingToProcesssException();
             }
-
-            kingdom.setOrganisms(filteredOrganisms);
 
             progressService.getCurrentProgress().setStep(TaskProgress.Step.DirectoriesCreationFinished);
             progressService.invalidateProgress();
@@ -238,77 +249,6 @@ public class DefaultKingdomService implements KingdomService {
         }
         return kingdom;
     }
-
-    /**
-     * This is one of the most important methods.
-     * It first loads the update file associated to the kingdom (under "./updates/{kingdomLabel}")
-     * then it retrieves it from the eutils API, then reads the response, then creates or check if the directories exist,
-     * then checks if an update is needed, then notifies the user interface through the progressService of the number of organisms to process,
-     * then processes the organisms, and if the later is a success or a failure, writes the current updates file.
-     */
-    /*
-    private ListenableFuture<Kingdom> createKingdomTree(final Kingdom kingdom) {
-        ListenableFuture<Kingdom> loadUpdateFileFuture = loadUpdateFile(kingdom);
-        ListenableFuture<HttpResponse> responseFuture = Futures.transformAsync(loadUpdateFileFuture, this::retrieveKingdom, executorService);
-        ListenableFuture<InputStream> inputStreamFuture = Futures.transform(responseFuture, new Function<HttpResponse, InputStream>() {
-            @Nullable
-            @Override
-            public InputStream apply(@Nullable HttpResponse httpResponse) {
-                try {
-                    return httpResponse.getContent();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    return null;
-                }
-            }
-        }, executorService);
-        ListenableFuture<List<Boolean>> createDirectoriesFuture = Futures.transformAsync(inputStreamFuture, inputStream -> createDirectories(kingdom, inputStream), executorService);
-        ListenableFuture<List<Organism>> checkIfNeedsUpdateFuture = Futures.transform(createDirectoriesFuture, new Function<List<Boolean>, List<Organism>>() {
-            @Nullable
-            @Override
-            public List<Organism> apply(@Nullable List<Boolean> booleans) {
-                // Here we check if the organism has been updated since the last program run.
-                kingdom.setOrganisms(kingdom.getOrganisms().stream().filter(organism -> {
-                    Date remoteUpdate = organism.getUpdatedDate();
-                    Date localUpdate = updates.get(kingdom).get(organism.getName());
-                    // No local update found
-                    return remoteUpdate == null || localUpdate == null || localUpdate.before(remoteUpdate);
-                }).collect(Collectors.toList()));
-                return kingdom.getOrganisms();
-            }
-        }, executorService);
-        ListenableFuture<Kingdom> progressFuture = Futures.transform(checkIfNeedsUpdateFuture, new Function<List<Organism>, Kingdom>() {
-            @Nullable
-            @Override
-            public Kingdom apply(@Nullable List<Organism> organisms) {
-                progressService.getCurrentProgress().setStep(TaskProgress.Step.DirectoriesCreationFinished);
-                progressService.invalidateProgress();
-
-                TaskProgress progress = progressService.getCurrentProgress();
-                progress.setStep(TaskProgress.Step.OrganismProcessing);
-                progress.getTotal().addAndGet(kingdom.getOrganisms().size());
-                progressService.invalidateProgress();
-
-                programStatsService.setRemainingRequests(programStatsService.getRemainingRequests() + kingdom.getOrganisms().size());
-
-                return kingdom;
-            }
-        }, executorService);
-        ListenableFuture<Kingdom> kingdomProcessedFuture = Futures.transformAsync(progressFuture, kingdom1 -> organismService.processOrganisms(kingdom, updates.getOrDefault(kingdom, new HashMap<>())), executorService);
-
-        kingdomProcessedFuture.addListener(() -> {
-            writeUpdateFile(kingdom);
-        }, executorService);
-        return Futures.catching(kingdomProcessedFuture, Throwable.class, new Function<Throwable, Kingdom>() {
-            @Nullable
-            @Override
-            public Kingdom apply(@Nullable Throwable throwable) {
-                writeUpdateFile(kingdom);
-                return kingdom;
-            }
-        }, executorService);
-    }
-    */
     
     private void createParents(Kingdom kingdom, Map<Integer, List<String>> map, String folderPath, String folderName, int level, int max)
     {
@@ -426,13 +366,19 @@ public class DefaultKingdomService implements KingdomService {
         for (Kingdom kingdom: kingdoms) {
             acquireFutures.add(createKingdomTree(kingdom, bioProject));
         }
-        return Futures.transform(Futures.successfulAsList(acquireFutures), new Function<List<Kingdom>, List<Kingdom>>() {
-            @Nullable
-            @Override
-            public List<Kingdom> apply(@Nullable List<Kingdom> kingdoms) {
-                programStatsService.endAcquisitionTimeEstimation();
-                return kingdoms;
+        return Futures.transformAsync(Futures.successfulAsList(acquireFutures), processedKingdoms -> {
+            programStatsService.endAcquisitionTimeEstimation();
+            // We check if something was processed.
+            if (processedKingdoms == null) {
+                throw new NothingToProcesssException();
             }
+            List<Kingdom> succefullyProcessedKingdoms = kingdoms.stream()
+                    .filter(kingdom -> kingdom.getOrganisms().size() > 0)
+                    .collect(Collectors.toList());
+            if (succefullyProcessedKingdoms.size() == 0) {
+                throw new NothingToProcesssException();
+            }
+            return Futures.immediateFuture(kingdoms);
         }, executorService);
     }
 
