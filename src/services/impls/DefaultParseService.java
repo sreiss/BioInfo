@@ -334,7 +334,11 @@ public class DefaultParseService implements ParseService {
                     } else {
                         tuple = new Tuple<>(segmentParts[0].trim().split("/")[0], null);
                     }
-                    segments.add(tuple);
+
+                    //if ((tuple.getT1() != null && tuple.getT1().trim().toLowerCase().startsWith("nc"))
+                            //&& (tuple.getT2() == null || !tuple.getT2().trim().toLowerCase().equals("unknown"))) {
+                        segments.add(tuple);
+                    //}
                 }
             }
             return segments;

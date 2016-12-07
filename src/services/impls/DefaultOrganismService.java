@@ -11,13 +11,10 @@ import models.Organism;
 import models.Sum;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import services.contracts.*;
-
-import javax.annotation.Nullable;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 
 public class DefaultOrganismService extends NucleotideHolderService implements OrganismService {
     private final GeneService geneService;

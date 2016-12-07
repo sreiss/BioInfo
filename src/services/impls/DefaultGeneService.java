@@ -44,13 +44,17 @@ public class DefaultGeneService extends NucleotideHolderService implements GeneS
     	if(type!=null)
     	{
     		type = type.trim();
-    		if (!type.toLowerCase().equals("chromosome") && !type.toLowerCase().equals("mitochodrion") && !type.toLowerCase().equals("chloroplast") && !type.toLowerCase().equals("dna")) {
-                type = "Unknown";
+    		if (!type.toLowerCase().equals("chromosome")
+                    && !type.toLowerCase().equals("mitochodrion")
+                    && !type.toLowerCase().equals("chloroplast")
+                    && !type.toLowerCase().equals("dna")
+                    && !type.toLowerCase().equals("unknown")) {
+                type = "chromosome";
             }
     	}
     	else
     	{
-    		type="Unknown";
+    		type="chromosome";
     	}
 
         Gene gene = new Gene(name, type, path, totalDinucleotides, totalTrinucleotides);
