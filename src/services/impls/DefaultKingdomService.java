@@ -20,6 +20,8 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -93,6 +95,45 @@ public class DefaultKingdomService implements KingdomService {
             currentFuture.getValue().cancel(true);
             currentFuture.getKey().setOrganisms(null);
             shouldInterrupt = true;
+            executorService.submit(()->
+        	{
+        		Map<Integer,AbstractQueue<String>> map=new ConcurrentHashMap<Integer, AbstractQueue<String>>();
+        		AbstractQueue<String> queue=new ConcurrentLinkedQueue<String>();
+        		queue.add(configService.getProperty("dataDir")+"/"+currentFuture.getKey());
+                map.put(0, queue);
+                ListenableFuture<Boolean> bottoms=createParents(currentFuture.getKey(), map,configService.getProperty("dataDir"),currentFuture.getKey().getLabel(),0,0);
+        		try
+        		{
+        			bottoms.get();
+				}
+        		catch (InterruptedException | ExecutionException e)
+        		{
+					e.printStackTrace();
+				}
+        		// problem avec le map ici
+        		System.out.println(map.size());
+        		
+        		for(int i=map.size()-1;i>=0;i--)
+                {
+                	ListenableFuture<List<Boolean>> levels;
+                	List<ListenableFuture<Boolean>> listFutures=new ArrayList<ListenableFuture<Boolean>>(map.get(i).size());
+                	for(int j=0;j<map.get(i).size();j++)
+                	{
+                		ListenableFuture<Boolean> levelCurrent=createParents(currentFuture.getKey(),map,null,null,i+1,j);
+                		listFutures.add(levelCurrent);
+                	}
+                	levels=Futures.allAsList(listFutures);
+                	
+            		try
+            		{
+            			levels.get();
+    				}
+            		catch (InterruptedException | ExecutionException e)
+            		{
+    					e.printStackTrace();
+    				}
+                }
+    		});
             writeUpdateFile(currentFuture.getKey());
         }
     }
@@ -224,14 +265,14 @@ public class DefaultKingdomService implements KingdomService {
 
                 return processKingdom(kingdom, index + PROCESS_STACK_SIZE);
             }
-            Map<Integer,List<String>> map=new Hashtable<Integer, List<String>>();
-            List<String> list=new ArrayList<String>();
-            list.add(configService.getProperty("dataDir")+"/"+kingdom);
-            map.put(0, list);
-            ListenableFuture<Boolean> bottoms=createParents(kingdom, map,configService.getProperty("dataDir"),kingdom.getLabel(),0,0);
             
-        	executorService.submit(()->
+        	/*executorService.submit(()->
         	{
+        		Map<Integer,List<String>> map=new Hashtable<Integer, List<String>>();
+                List<String> list=new ArrayList<String>();
+                list.add(configService.getProperty("dataDir")+"/"+kingdom);
+                map.put(0, list);
+                ListenableFuture<Boolean> bottoms=createParents(kingdom, map,configService.getProperty("dataDir"),kingdom.getLabel(),0,0);
         		try
         		{
         			bottoms.get();
@@ -240,21 +281,18 @@ public class DefaultKingdomService implements KingdomService {
         		{
 					e.printStackTrace();
 				}
-    		});
-            
-            for(int i=map.keySet().size()-1;i>=0;i--)
-            {
-            	ListenableFuture<List<Boolean>> levels;
-            	List<ListenableFuture<Boolean>> listFutures=new ArrayList<ListenableFuture<Boolean>>(map.get(i).size());
-            	for(int j=0;j<map.get(i).size();j++)
-            	{
-            		ListenableFuture<Boolean> levelCurrent=createParents(kingdom,map,null,null,i+1,j);
-            		listFutures.add(levelCurrent);
-            	}
-            	levels=Futures.allAsList(listFutures);
-            	
-            	executorService.submit(()->
-            	{
+        		
+        		for(int i=map.size()-1;i>=0;i--)
+                {
+                	ListenableFuture<List<Boolean>> levels;
+                	List<ListenableFuture<Boolean>> listFutures=new ArrayList<ListenableFuture<Boolean>>(map.get(i).size());
+                	for(int j=0;j<map.get(i).size();j++)
+                	{
+                		ListenableFuture<Boolean> levelCurrent=createParents(kingdom,map,null,null,i+1,j);
+                		listFutures.add(levelCurrent);
+                	}
+                	levels=Futures.allAsList(listFutures);
+                	
             		try
             		{
             			levels.get();
@@ -263,13 +301,28 @@ public class DefaultKingdomService implements KingdomService {
             		{
     					e.printStackTrace();
     				}
-        		});
-            }
+                }
+    		});*/
         }
         return kingdom;
     }
     
-    private ListenableFuture<Boolean> createParents(Kingdom kingdom, Map<Integer, List<String>> map, String folderPath, String folderName, int level, int max)
+    /**
+     * Ne fonctionne pas
+     */
+    private synchronized void adding(Map<Integer,AbstractQueue<String>> map,int level, File childFolder)
+    {
+    	if(map.putIfAbsent(level+1, new ConcurrentLinkedQueue<String>())!=null)
+		{
+    		AbstractQueue<String> queue=map.get(level+1);
+			if(!queue.contains(childFolder.getPath()))
+			{
+				queue.add(childFolder.getPath());
+			}
+		}
+    }
+    
+    private ListenableFuture<Boolean> createParents(Kingdom kingdom, Map<Integer, AbstractQueue<String>> map, String folderPath, String folderName, int level, int max)
     {
     	return executorService.submit(()->{
     		File folder;
@@ -293,7 +346,7 @@ public class DefaultKingdomService implements KingdomService {
     		else
     		{
     			good=true;
-    			folder=new File(map.get(level-1).get(max));
+    			folder=new File(map.get(level-1).poll());
     			childrenFolders=folder.listFiles();
     		}
     		
@@ -342,26 +395,13 @@ public class DefaultKingdomService implements KingdomService {
     				{
     					if(level==0)
     					{
-    						if(map.get(max+1)==null)
-    						{
-    							map.put(max+1, new ArrayList<String>());
-    						}
-    						else
-    						{
-    							List<String> liste=map.get(max+1);
-    							if(!liste.contains(folder.getPath()))
-    							{
-    								liste.add(folder.getPath());
-    							}
-    							
-    						}
+    						adding(map,max,childFolder);
     						createParents(kingdom,map,folder.getPath(),childFolder.getName(),0,max+1);
     					}
     					else
     					{
     						createParents(kingdom,map,folder.getPath(),childFolder.getName(),level,max+1);
     					}
-    					
     				}
     			}
     		}
