@@ -117,11 +117,11 @@ public class DefaultParseService implements ParseService {
                 bwGenome =  new BufferedWriter(fwGenome);
             }
 
-            boolean isFirstIteration = true;
+            boolean fileIsEmpty = true;
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             while ((line = reader.readLine()) != null) {
                 if (!line.equals("")) {
-                    isFirstIteration = false;
+                    fileIsEmpty = false;
                 }
                 if(kingdomService.getGenesCkBIsSelected()){
                     bwGene.write(line);
@@ -202,7 +202,7 @@ public class DefaultParseService implements ParseService {
             inputStream.close();
 
             // If the file was empty, we throw an exception.
-            if (isFirstIteration) {
+            if (fileIsEmpty) {
                 throw new EmptyFileException();
             }
 
