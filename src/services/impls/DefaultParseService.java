@@ -13,6 +13,8 @@ import services.contracts.KingdomService;
 import services.contracts.OrganismService;
 import services.contracts.ParseService;
 import services.contracts.Tuple;
+import services.exceptions.EmptyFileException;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -115,9 +117,12 @@ public class DefaultParseService implements ParseService {
                 bwGenome =  new BufferedWriter(fwGenome);
             }
 
+            boolean isFirstIteration = true;
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             while ((line = reader.readLine()) != null) {
-
+                if (!line.equals("")) {
+                    isFirstIteration = false;
+                }
                 if(kingdomService.getGenesCkBIsSelected()){
                     bwGene.write(line);
                     bwGene.newLine();
@@ -195,6 +200,11 @@ public class DefaultParseService implements ParseService {
             }
 
             inputStream.close();
+
+            // If the file was empty, we throw an exception.
+            if (isFirstIteration) {
+                throw new EmptyFileException();
+            }
 
             if(kingdomService.getGenesCkBIsSelected()){
                 bwGene.close();
