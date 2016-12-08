@@ -94,7 +94,6 @@ public class DefaultParseService implements ParseService {
             FileWriter fwGenome = null;
             BufferedWriter bwGenome = null;
             String zipGenomePath = configService.getProperty("genome");
-            File fileGenome = null;
 
             String[] explodePath = gene.getPath().split("/");
 
@@ -106,23 +105,14 @@ public class DefaultParseService implements ParseService {
                 fwGene = new FileWriter(new File(zipGenePath + gene.getName() + ".txt"));
                 bwGene =  new BufferedWriter(fwGene);
             }
-
+            
             if(kingdomService.getGenomesCkBIsSelected()){
                 for(int i = 2; i < explodePath.length; i++){
-                    zipGenomePath += explodePath[i] + "/";
+                	zipGenomePath += explodePath[i] + "/";
                 }
 
-                fileGenome = new File(zipGenomePath + explodePath[5] + ".txt");
-
-                if(fileGenome.exists()){
-                    fwGenome = new FileWriter(fileGenome,true);
-                    bwGenome =  new BufferedWriter(fwGenome);
-                    bwGenome.newLine();
-                    bwGenome.newLine();
-                } else {
-                    fwGenome = new FileWriter(fileGenome);
-                    bwGenome =  new BufferedWriter(fwGenome);
-                }
+                fwGenome = new FileWriter(new File(zipGenomePath + gene.getName() + ".txt"));
+                bwGenome =  new BufferedWriter(fwGenome);
             }
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
