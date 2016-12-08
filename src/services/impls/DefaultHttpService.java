@@ -1,6 +1,7 @@
 package services.impls;
 
 import com.google.api.client.http.*;
+import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.*;
 import com.google.inject.Inject;
@@ -13,6 +14,8 @@ import services.contracts.ProgressService;
 import javax.annotation.Nullable;
 import java.awt.*;
 import java.io.*;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.time.ZonedDateTime;
@@ -29,7 +32,11 @@ public class DefaultHttpService implements HttpService {
 
     @Inject
     public DefaultHttpService(HttpTransport transport, RateLimiter rateLimiter, @Named("HttpExecutor") ListeningExecutorService listeningExecutorService, ProgramStatsService programStatsService, ProgressService progressService) {
-        this.requestFactory = transport.createRequestFactory(new HttpRequestInitializer());
+    	
+//    	Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("193.56.47.8", 8080));
+//    	HttpTransport transport = new NetHttpTransport.Builder().setProxy(proxy).build();
+    	
+    	this.requestFactory = transport.createRequestFactory(new HttpRequestInitializer());
         this.rateLimiter = rateLimiter;
         this.executorService = listeningExecutorService;
         this.programStatsService = programStatsService;

@@ -34,6 +34,7 @@ public class DefaultKingdomService implements KingdomService {
     private final ListeningExecutorService executorService;
     private final ProgressService progressService;
     private final ProgramStatsService programStatsService;
+    private final ZipService zipService;
     private HashMap<Kingdom, Map<String, Date>> updates = new HashMap<>();
     private HashMap<Kingdom, ListenableFuture<List<Organism>>> currentFutures = new HashMap<>();
     private boolean shouldInterrupt = false;
@@ -49,7 +50,8 @@ public class DefaultKingdomService implements KingdomService {
                                  HttpService httpService,
                                  ListeningExecutorService listeningExecutorService,
                                  ProgressService progressService,
-                                 ProgramStatsService programStatsService) {
+                                 ProgramStatsService programStatsService,
+                                 ZipService zipService) {
     	this.statisticsService=statisticsService;
         this.fileService = fileService;
         this.parseService = parseService;
@@ -59,6 +61,7 @@ public class DefaultKingdomService implements KingdomService {
         this.executorService = listeningExecutorService;
         this.progressService = progressService;
         this.programStatsService = programStatsService;
+        this.zipService = zipService;
 
         this.genomesCkBIsSelected = false;
         this.genesCkBIsSelected = false;

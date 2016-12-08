@@ -24,7 +24,7 @@ public class ZipUtils
 	{
 		fileList = new ArrayList<String>();
 	}
-	
+
 	public ZipUtils(String source, String output)
 	{
 		fileList = new ArrayList<String>();
@@ -40,22 +40,6 @@ public class ZipUtils
 		ZipOutputStream zos = null;
 		try
 		{
-			try
-			{
-				// if(sourceFolder.contains("/")){
-				// 	source = sourceFolder;
-				// } else if (sourceFolder.contains("\\")){
-				// 	source = sourceFolder.substring(sourceFolder.lastIndexOf("\\") + 1, sourceFolder.length());
-				// } else{
-				// 	source = sourceFolder;
-				// }
-				
-				source = sourceFolder;
-			}
-			catch (Exception e)
-			{
-				source = sourceFolder;
-			}
 			fos = new FileOutputStream(zipFile);
 			zos = new ZipOutputStream(fos);
 
@@ -63,12 +47,10 @@ public class ZipUtils
 
 			for (String file : this.fileList)
 			{
-				//ZipEntry ze = new ZipEntry(source + File.separator + file);
-				ZipEntry ze = new ZipEntry(source + "/" + file);
+				ZipEntry ze = new ZipEntry(file);
 				zos.putNextEntry(ze);
 				try
 				{
-					//in = new FileInputStream(sourceFolder + File.separator + file);
 					in = new FileInputStream(sourceFolder + "/" + file);
 					int len;
 					while ((len = in.read(buffer)) > 0)
@@ -112,7 +94,11 @@ public class ZipUtils
 		// add file only
 		if (node.isFile())
 		{
-			fileList.add(generateZipEntry(node.toString()));
+			if(node.toString().contains("\\")){
+				fileList.add(generateZipEntry(node.toString().replace("\\","/")));
+			} else{				
+				fileList.add(generateZipEntry(node.toString()));
+			}
 		}
 
 		if (node.isDirectory())
@@ -127,17 +113,14 @@ public class ZipUtils
 
 	private String generateZipEntry(String file)
 	{
-		// if (sourceFolder.contains("\\")){
-		// 	return file.substring(sourceFolder.length() + 1, file.length());
-		// } 
-		return file.substring(sourceFolder.length(), file.length());
+		return file.substring(sourceFolder.length() + 1, file.length());
 	}
-	
+
 	public void ExecuteZip(){
 		this.generateFileList(new File(this.sourceFolder));
-    	this.zipIt(this.outputZipFile);
+		this.zipIt(this.outputZipFile);
 	}
-	
+
 	public String getOutputZipFile() {
 		return outputZipFile;
 	}
@@ -153,15 +136,15 @@ public class ZipUtils
 	public void setSourceFolder(String sourceFolder) {
 		this.sourceFolder = sourceFolder;
 	}
-	
+
 	public static void cleanSaveFolder(String pathFolder, String[] explodePath){
 		if (new File(pathFolder).exists()) {
-    		try {
+			try {
 				FileUtils.forceDelete(new File(pathFolder));
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-    	}
+		}
 		if(explodePath.length > 0){
 			if (new File(explodePath[1] + ".zip").exists()) {
 				try {
@@ -172,24 +155,24 @@ public class ZipUtils
 			}
 		}
 	}
-	
+
 	// à threader
 	public void createGenomeDirectory(File node){
-		
+
 		File fileGenome = null;
 		FileWriter fwGenome = null;
 		BufferedWriter bwGenome = null;
 		FileReader frGenome = null;
 		BufferedReader brGenome = null;
 		String line;
-		try{			
-			if (node.isFile())
-			{
+		if (node.isFile())
+		{
+			try{			
 				if(node.getName().compareTo(node.getParentFile().getName()+".zip") != 0)
 				{
 					frGenome = new FileReader(node);
 					brGenome =  new BufferedReader(frGenome);
-					
+
 					fileGenome = new File(node.getParent() + File.separator +  node.getParentFile().getName() + ".txt");
 					if(fileGenome.exists()){
 						fwGenome = new FileWriter(fileGenome,true);
@@ -200,24 +183,24 @@ public class ZipUtils
 						fwGenome = new FileWriter(fileGenome);
 						bwGenome =  new BufferedWriter(fwGenome);
 					}
-					
+
 					while ((line = brGenome.readLine()) != null) {
 						bwGenome.write(line);
 						bwGenome.newLine();
 					}
-					
+
 					bwGenome.close(); 
 					fwGenome.close();
 					brGenome.close();
 					frGenome.close();
-	
+
 					FileUtils.forceDelete(node);
 				}
+			} catch (Exception e){
+				e.printStackTrace();
 			}
-		} catch (Exception e){
-			e.printStackTrace();
 		}
-			
+
 		if (node.isDirectory())
 		{
 			String[] subNote = node.list();
@@ -226,28 +209,28 @@ public class ZipUtils
 				createGenomeDirectory(new File(node, filename));
 			}
 		}
-		
+
 	}
-	
-	// public static void main(String[] args){
-	// 	System.out.println("Start of Process");
-	// 	String zipGene = "./Gene/";
-	// 	String[] explodeGenePath = zipGene.split("/");
-	// 	if (new File(zipGene).exists()) {
-	// 		ZipUtils zip = new ZipUtils(zipGene, explodeGenePath[1] + ".zip");
-	// 		zip.ExecuteZip();
-	// 	}
-	// 	System.out.println("End of Process");
-		
-	// 	System.out.println("Start of Process");
-	// 	String zipGene = "./Gene/";
-    // 	String[] explodeGenePath = zipGene.split("/");
-    // 	if (new File(zipGene).exists()) {
-    // 		ZipUtils zip = new ZipUtils(zipGene, explodeGenePath[1] + ".zip");
-    // 		zip.createGenomeDirectory(new File(zipGene));
-    // 		zip.ExecuteZip();
-    // 	}
-    // 	System.out.println("End of Process");
-	// }
+
+	 public static void main(String[] args){
+	 	System.out.println("Start of Process");
+	 	String zipGene = "./Gene/";
+	 	String[] explodeGenePath = zipGene.split("/");
+	 	if (new File(zipGene).exists()) {
+	 		ZipUtils zip = new ZipUtils(explodeGenePath[1], explodeGenePath[1] + ".zip");
+	 		zip.ExecuteZip();
+	 	}
+	 	System.out.println("End of Process");
+
+//	 	System.out.println("Start of Process");
+//	 	String zipGene = "./Gene/";
+//	 	String[] explodeGenePath = zipGene.split("/");
+//	 	if (new File(zipGene).exists()) {
+//	 		ZipUtils zip = new ZipUtils(zipGene, explodeGenePath[1] + ".zip");
+//	 		zip.createGenomeDirectory(new File(zipGene));
+//	 		zip.ExecuteZip();
+//	 	}
+//	 	System.out.println("End of Process");
+	 }
 
 }    

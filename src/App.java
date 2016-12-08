@@ -28,6 +28,7 @@ public class App extends AbstractModule {
         bind(KingdomService.class).to(DefaultKingdomService.class).asEagerSingleton();
         bind(ProgressService.class).to(DefaultProgressService.class).asEagerSingleton();
         bind(ProgramStatsService.class).to(DefaultProgramStatsService.class).asEagerSingleton();
+        bind(ZipService.class).to(DefaultZipService.class).asEagerSingleton();
     }
 
     @Provides

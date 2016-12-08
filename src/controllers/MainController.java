@@ -30,16 +30,18 @@ public class MainController implements Observer {
     private final ProgressService progressService;
     private final ProgramStatsService programStatsService;
     private final ListeningExecutorService executorService;
+    private final ZipService zipService;
     ListenableFuture<List<Kingdom>> currentFuture;
 
     @Inject
-    public MainController(final KingdomService kingdomService, final FileService fileService, final ConfigService configService, final ProgressService progressService, final ProgramStatsService programStatsService, ListeningExecutorService executorService) throws InterruptedException {
+    public MainController(final KingdomService kingdomService, final FileService fileService, final ConfigService configService, final ProgressService progressService, final ProgramStatsService programStatsService, ListeningExecutorService executorService, final ZipService zipService) throws InterruptedException {
         this.kingdomService = kingdomService;
         this.fileService = fileService;
         this.configService = configService;
         this.progressService = progressService;
         this.programStatsService = programStatsService;
         this.executorService = executorService;
+        this.zipService = zipService;
 
         progressService.addObserver(this);
         programStatsService.addObserver(this);
@@ -162,9 +164,6 @@ public class MainController implements Observer {
         ZipUtils.cleanSaveFolder(zipGene,explodeGenePath);
         ZipUtils.cleanSaveFolder(zipGenome,explodeGenomePath);
 
-        Boolean genesBool = genesCkb.isSelected();
-        Boolean genomesBool = genomesCkb.isSelected();
-
         ListenableFuture<List<Kingdom>> acquireFuture = kingdomService.createKingdomTrees(kingdoms, bioProject);
         currentFuture = acquireFuture;
         Futures.addCallback(acquireFuture, new FutureCallback<List<Kingdom>>(){
@@ -182,27 +181,53 @@ public class MainController implements Observer {
                 view.getExecuteButton().setEnabled(true);
                 view.getTimeRemainingLabel().setText("");
 
-                if(genesBool){
+                if(genesCkb.isSelected()){
                     if (new File(zipGene).exists()) {
-                        ZipUtils zip = new ZipUtils(zipGene, explodeGenePath[1] + ".zip");
+                    	view.updateGlobalProgressionText("Zipping in progress.");
+                    	ZipUtils zip = new ZipUtils(explodeGenePath[1], explodeGenePath[1] + ".zip");
                         zip.ExecuteZip();
+                        view.updateGlobalProgressionText("Zipping finished.");
                     }
                 }
 
-                if(genomesBool){
-                    if (new File(zipGenome).exists()) {
-                        ZipUtils zip = new ZipUtils(zipGenome, explodeGenomePath[1] + ".zip");
-                        zip.createGenomeDirectory(new File(zipGenome));
-                        zip.ExecuteZip();
-                    }
+                if(genomesCkb.isSelected()){
+                	File folderGenome = new File(zipGenome);
+                    if (folderGenome.exists()) {
+//                    	view.updateGlobalProgressionText("Treatment Genome in progress.");
+//                    	ListenableFuture<Boolean> genomeDirectory = zipService.createGenomeDirectory(folderGenome);
+//                    	executorService.submit(() -> {
+//                    		try{
+//                    			genomeDirectory.get();
+//                    			view.updateGlobalProgressionText("Treatment Genome Finished.");
+//                    			
+//                    			view.updateGlobalProgressionText("Zipping in progress.");
+//                        		ZipUtils zip = new ZipUtils(explodeGenomePath[1], explodeGenomePath[1] + ".zip");
+//                            	view.updateGlobalProgressionText("Zipping in progress.");
+//                            	zip.ExecuteZip();
+//                            	view.updateGlobalProgressionText("Zipping finished.");
+//                    		} catch(Exception e){
+//                    			e.printStackTrace();
+//                    			view.updateGlobalProgressionText("Something goes wrong.");
+//                    		}
+//                    	});
+//                    	view.updateGlobalProgressionText("Zipping in progress.");
+//                    	                    	
+                		ZipUtils zip = new ZipUtils(explodeGenomePath[1], explodeGenomePath[1] + ".zip");
+                		
+                		view.updateGlobalProgressionText("Treatment Genome in progress.");
+                    	zip.createGenomeDirectory(new File(zipGenome));
+                    	view.updateGlobalProgressionText("Treatment Genome Finished.");
+                    	
+                    	view.updateGlobalProgressionText("Zipping in progress.");
+                    	zip.ExecuteZip();
+                    	view.updateGlobalProgressionText("Zipping finished.");
+                    
+                	}
                 }
             }
 
             @Override
             public void onFailure(Throwable throwable) {
-
-                String zipGene = configService.getProperty("zipDir");
-                String zipGenome = configService.getProperty("zipDir");
 
                 if (throwable instanceof CancellationException) {
                     view.updateGlobalProgressionText("Processing interrupted.");
@@ -219,20 +244,48 @@ public class MainController implements Observer {
                 view.getInterruptButton().setEnabled(false);
                 view.getTimeRemainingLabel().setText("");
 
-
-                if(new File(zipGene).exists() && genesBool){
+                if(genesCkb.isSelected()){
                     if (new File(zipGene).exists()) {
-                        ZipUtils zip = new ZipUtils(zipGene, explodeGenePath[1] + ".zip");
+                    	view.updateGlobalProgressionText("Zipping in progress.");
+                    	ZipUtils zip = new ZipUtils(explodeGenePath[1], explodeGenePath[1] + ".zip");
                         zip.ExecuteZip();
+                        view.updateGlobalProgressionText("Zipping finished.");
                     }
                 }
 
-                if(new File(zipGenome).exists() && genomesBool){
-                    if (new File(zipGenome).exists()) {
-                        ZipUtils zip = new ZipUtils(zipGenome, explodeGenomePath[1] + ".zip");
-                        zip.createGenomeDirectory(new File(zipGenome));
-                        zip.ExecuteZip();
-                    }
+                if(genomesCkb.isSelected()){
+                	File folderGenome = new File(zipGenome);
+                    if (folderGenome.exists()) {
+//                    	view.updateGlobalProgressionText("Treatment Genome in progress.");
+//                    	ListenableFuture<Boolean> genomeDirectory = zipService.createGenomeDirectory(folderGenome);
+//                    	executorService.submit(() -> {
+//                    		try{
+//                    			genomeDirectory.get();
+//                    			view.updateGlobalProgressionText("Treatment Genome Finished.");
+//                    			
+//                    			view.updateGlobalProgressionText("Zipping in progress.");
+//                        		ZipUtils zip = new ZipUtils(explodeGenomePath[1], explodeGenomePath[1] + ".zip");
+//                            	view.updateGlobalProgressionText("Zipping in progress.");
+//                            	zip.ExecuteZip();
+//                            	view.updateGlobalProgressionText("Zipping finished.");
+//                    		} catch(Exception e){
+//                    			e.printStackTrace();
+//                    			view.updateGlobalProgressionText("Something goes wrong.");
+//                    		}
+//                    	});
+//                    	view.updateGlobalProgressionText("Zipping in progress.");
+//                    	                    	
+                		ZipUtils zip = new ZipUtils(explodeGenomePath[1], explodeGenomePath[1] + ".zip");
+                		
+                		view.updateGlobalProgressionText("Treatment Genome in progress.");
+                    	zip.createGenomeDirectory(new File(zipGenome));
+                    	view.updateGlobalProgressionText("Treatment Genome Finished.");
+                    	
+                    	view.updateGlobalProgressionText("Zipping in progress.");
+                    	zip.ExecuteZip();
+                    	view.updateGlobalProgressionText("Zipping finished.");
+                    
+                	}
                 }
 
                 resetProgressService();
