@@ -24,7 +24,7 @@ public class DefaultGeneService extends NucleotideHolderService implements GeneS
     private final ListeningExecutorService executorService;
     private final ProgramStatsService programStatsService;
     private final ProgressService progressService;
-    private final HashMap<Gene, Integer> retries = new HashMap<>();
+    private final HashMap<String, Integer> retries = new HashMap<>();
 
     @Inject
     public DefaultGeneService(StatisticsService statisticsService, HttpService httpService, ParseService parseService, ListeningExecutorService listeningExecutorService, ProgramStatsService programStatsService, ProgressService progressService) {
@@ -82,7 +82,7 @@ public class DefaultGeneService extends NucleotideHolderService implements GeneS
 
     @Override
     public ListenableFuture<Gene> processGene(Kingdom kingdom, Organism organism, Tuple<String, String> geneId) {
-        return executorService.submit(() -> {
+        ListenableFuture<Gene> processGeneFuture = executorService.submit(() -> {
             Gene gene = createGene(geneId.getT1(), geneId.getT2(), organism.getPath(), 0, 0);
 
             progressService.getCurrentDownloadProgress().setDownloading(geneId.getT1());
@@ -97,6 +97,9 @@ public class DefaultGeneService extends NucleotideHolderService implements GeneS
 
             InputStream inputStream = httpResponse.getContent();
             List<String> sequences;
+
+            sequences = parseService.extractSequences(inputStream, gene).get();
+            /*
             try {
                 sequences = parseService.extractSequences(inputStream, gene).get();
             } catch (Exception e) {
@@ -111,6 +114,7 @@ public class DefaultGeneService extends NucleotideHolderService implements GeneS
                     throw e;
                 }
             }
+            */
 
             gene = extractStatisticsSequenceForDinucleotides(sequences, gene, 0);
             gene = extractStatisticsSequenceForTrinucleotides(sequences, gene, 0);
@@ -118,6 +122,18 @@ public class DefaultGeneService extends NucleotideHolderService implements GeneS
 
             return gene;
         });
+
+        return Futures.catchingAsync(processGeneFuture, Throwable.class, throwable -> {
+            retries.putIfAbsent(geneId.getT1(), 0);
+            Integer currentRetryCount = retries.get(geneId.getT1());
+            if (currentRetryCount < MAX_RETRIES) {
+                currentRetryCount++;
+                retries.put(geneId.getT1(), currentRetryCount);
+                return processGene(kingdom, organism, geneId);
+            } else {
+                return Futures.immediateFuture(null);
+            }
+        }, executorService);
     }
 
     @SuppressWarnings("unchecked")
