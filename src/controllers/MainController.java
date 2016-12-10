@@ -333,7 +333,7 @@ public class MainController implements Observer {
 
             int seconds = (int) (programStat.getTimeRemaining() / 1000) % 60 ;
             int minutes = (int) ((programStat.getTimeRemaining() / (1000*60)) % 60);
-            int hours   = (int) ((programStat.getTimeRemaining() / (1000*60*60)) % 24);
+            int hours   = (int) ((programStat.getTimeRemaining() / (1000*60*60)));
 
             view.getTimeRemainingLabel().setText("ETA: " + hours + "h " + minutes + "min " + seconds + "s");
         }
