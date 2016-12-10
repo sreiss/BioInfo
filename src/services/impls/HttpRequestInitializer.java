@@ -20,7 +20,7 @@ class HttpRequestInitializer implements com.google.api.client.http.HttpRequestIn
     @Override
     public void initialize(HttpRequest httpRequest) throws IOException {
         httpRequest.setReadTimeout(60000);
-        httpRequest.setUnsuccessfulResponseHandler(new HttpBackOffUnsuccessfulResponseHandler(buildBackOff()));
-        httpRequest.setIOExceptionHandler(new HttpBackOffIOExceptionHandler(buildBackOff()));
+//        httpRequest.setUnsuccessfulResponseHandler(new HttpBackOffUnsuccessfulResponseHandler(buildBackOff()));
+//        httpRequest.setIOExceptionHandler(new HttpBackOffIOExceptionHandler(buildBackOff()));
     }
 }
