@@ -1,5 +1,6 @@
 package services.impls;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -27,6 +28,7 @@ public class DefaultProgramStatsService extends Observable implements ProgramSta
     private AtomicLong averageMilliseconds = new AtomicLong(0);
     private AtomicLong numberOfRequests = new AtomicLong(0);
     private ZonedDateTime lastDate = null;
+    private ListenableFuture currentFuture = null;
 
 
     @Inject
@@ -41,7 +43,7 @@ public class DefaultProgramStatsService extends Observable implements ProgramSta
 
     @Override
     public void addDate(ZonedDateTime date) {
-        executorService.submit(() -> {
+        currentFuture = executorService.submit(() -> {
             if (lastDate != null) {
                 long currentNumberOfRequests = numberOfRequests.incrementAndGet();
                 long currentAverageMilliseconds = averageMilliseconds.get();
@@ -80,5 +82,15 @@ public class DefaultProgramStatsService extends Observable implements ProgramSta
         remainingRequests.set(number);
     }
 
+    @Override
+    public void endAcquisitionTimeEstimation() {
+        if (currentFuture != null) {
+            currentFuture.cancel(true);
+        }
+        lastDate = null;
+        averageMilliseconds.set(0);
+        numberOfRequests.set(0);
+        remainingRequests.set(0);
+    }
 
 }

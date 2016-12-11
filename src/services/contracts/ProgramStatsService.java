@@ -10,4 +10,5 @@ public interface ProgramStatsService {
     int getRemainingRequests();
     void setRemainingRequests(int number);
     void addObserver(Observer o);
+    void endAcquisitionTimeEstimation();
 }
