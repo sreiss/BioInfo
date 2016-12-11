@@ -12,15 +12,20 @@ import services.exceptions.NothingToProcesssException;
 import views.MainWindow;
 import javax.annotation.Nullable;
 import javax.swing.*;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.TreeModel;
+import java.awt.*;
 import java.awt.event.*;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.List;
-import java.util.Observable;
-import java.util.Observer;
 import java.util.concurrent.CancellationException;
+import java.util.stream.Collectors;
 
 public class MainController implements Observer {
     private final KingdomService kingdomService;
@@ -80,6 +85,24 @@ public class MainController implements Observer {
 
         view.getKingdomTree().setModel(null);
         view.getKingdomTree().setRootVisible(false);
+        view.getKingdomTree().addTreeSelectionListener(e -> {
+            Object[] nodePath = e.getPath().getPath();
+            if (nodePath.length > 0) {
+                String fileName = nodePath[nodePath.length - 1].toString();
+                if (fileName.endsWith(".xlsx")) {
+                    Path pathToOpen = Paths.get(".");
+                    for (Object node : nodePath) {
+                        pathToOpen = pathToOpen.resolve(node.toString());
+                    }
+
+                    try {
+                        Desktop.getDesktop().open(new File(pathToOpen.toAbsolutePath().toString()));
+                    } catch (IOException e1) {
+                        JOptionPane.showMessageDialog(view, "Unable to open the selected file " + fileName, "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        });
 
         view.getFilterBioProjectTextField().addFocusListener(new FocusListener() {
             @Override
@@ -180,6 +203,7 @@ public class MainController implements Observer {
                 view.setGlobalProgressionBar(0);
                 view.getExecuteButton().setEnabled(true);
                 view.getTimeRemainingLabel().setText("");
+                refreshTree();
 
                 if(genesCkb.isSelected()){
                     if (new File(zipGene).exists()) {
@@ -236,6 +260,7 @@ public class MainController implements Observer {
                 } else {
                     view.updateGlobalProgressionText("An error occured.");
                 }
+                refreshTree();
                 progressService.getCurrentProgress().getTotal().set(0);
                 progressService.getCurrentProgress().getProgress().set(0);
                 //programStatsService.endAcquisitionTimeEstimation();

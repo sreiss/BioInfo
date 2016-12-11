@@ -46,18 +46,18 @@ public class DefaultFileService implements FileService {
         if (root == null) {
             root = new DefaultMutableTreeNode(file.getName());
         }
-        DefaultMutableTreeNode children = new DefaultMutableTreeNode(file.getName());
+        DefaultMutableTreeNode child = new DefaultMutableTreeNode(file.getName());
         if (file.isDirectory()) {
             File[] files = file.listFiles();
             if (files != null) {
                 for (File f : files) {
                     if (file.isDirectory()) {
-                        root.add(buildTreeRoot(children, f));
-                    } else {
-                        root.add(children);
+                        root.add(buildTreeRoot(child, f));
                     }
                 }
             }
+        } else {
+            root.add(child);
         }
         return root;
     }
