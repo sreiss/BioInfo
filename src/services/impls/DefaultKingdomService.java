@@ -237,6 +237,7 @@ public class DefaultKingdomService implements KingdomService {
 
             programStatsService.setRemainingRequests(programStatsService.getRemainingRequests() + kingdom.getOrganisms().size());
 
+
             return processKingdom(modifiedKingdom, 0);
         });
     }
@@ -425,13 +426,13 @@ public class DefaultKingdomService implements KingdomService {
      */
     public ListenableFuture<List<Kingdom>> createKingdomTrees(final List<Kingdom> kingdoms, String bioProject) {
         programStatsService.resetAcquisitionTime();
-        programStatsService.beginAcquisitionTimeEstimation();
+        //programStatsService.beginAcquisitionTimeEstimation();
         List<ListenableFuture<Kingdom>> acquireFutures = new ArrayList<>();
         for (Kingdom kingdom: kingdoms) {
             acquireFutures.add(createKingdomTree(kingdom, bioProject));
         }
         return Futures.transformAsync(Futures.successfulAsList(acquireFutures), processedKingdoms -> {
-            programStatsService.endAcquisitionTimeEstimation();
+            //programStatsService.endAcquisitionTimeEstimation();
             // We check if something was processed.
             if (processedKingdoms == null) {
                 throw new NothingToProcesssException();

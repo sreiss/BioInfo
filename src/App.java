@@ -51,9 +51,9 @@ public class App extends AbstractModule {
         return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(12));
     }
 
-    @Provides
-    ScheduledExecutorService scheduledExecutorService() {
-        return  Executors.newScheduledThreadPool(1);
+    @Provides @Named("ProgramStatsExecutor")
+    ListeningExecutorService provideProgramStatsExecutor() {
+        return  MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
     }
 
     public static void main(String[] args) {

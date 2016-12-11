@@ -7,8 +7,6 @@ import java.util.Observer;
 public interface ProgramStatsService {
     void resetAcquisitionTime();
     void addDate(ZonedDateTime date);
-    void beginAcquisitionTimeEstimation();
-    void endAcquisitionTimeEstimation();
     int getRemainingRequests();
     void setRemainingRequests(int number);
     void addObserver(Observer o);

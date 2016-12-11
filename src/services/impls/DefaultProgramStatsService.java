@@ -1,12 +1,15 @@
 package services.impls;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import services.contracts.ProgramStat;
 import services.contracts.ProgramStatsService;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAccessor;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Date;
@@ -16,72 +19,66 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class DefaultProgramStatsService extends Observable implements ProgramStatsService {
-    private final ScheduledExecutorService scheduler;
-    private ScheduledFuture currentFuture;
-    private int remainingRequests;
+    private final ListeningExecutorService executorService;
+    private AtomicInteger remainingRequests = new AtomicInteger(0);
+    private AtomicLong averageMilliseconds = new AtomicLong(0);
+    private AtomicLong numberOfRequests = new AtomicLong(0);
+    private ZonedDateTime lastDate = null;
 
-    private List<ZonedDateTime> requestDates = new ArrayList<>();
 
     @Inject
-    public DefaultProgramStatsService(ScheduledExecutorService scheduler) {
-        this.scheduler = scheduler;
+    public DefaultProgramStatsService(@Named("ProgramStatsExecutor") ListeningExecutorService executorService) {
+        this.executorService = executorService;
     }
 
     @Override
     public void resetAcquisitionTime() {
-        requestDates = new ArrayList<>();
+
     }
 
     @Override
     public void addDate(ZonedDateTime date) {
-        requestDates.add(date);
-        if (requestDates.size() > 100) {
-            requestDates.remove(0);
-        }
-    }
+        executorService.submit(() -> {
+            if (lastDate != null) {
+                long currentNumberOfRequests = numberOfRequests.incrementAndGet();
+                long currentAverageMilliseconds = averageMilliseconds.get();
+                long nextNumberOfRequests = currentNumberOfRequests + 1;
 
-    @Override
-    public void beginAcquisitionTimeEstimation() {
-        currentFuture = scheduler.scheduleAtFixedRate(() -> {
-            int j;
-            ZonedDateTime zonedDateTime1;
-            ZonedDateTime zonedDateTime2;
-            Duration duration;
-            long totalMilliSeconds = 0;
-            for (int i = 0; i < requestDates.size(); i++) {
-                if ((j = i+1) <= requestDates.size() - 1) {
-                    zonedDateTime1 = requestDates.get(i);
-                    zonedDateTime2 = requestDates.get(j);
-                    duration = Duration.between(zonedDateTime1, zonedDateTime2);
-                    totalMilliSeconds += duration.toMillis();
+                Duration difference = Duration.between(lastDate, date);
+
+                long newAverageMilliseconds = ((currentAverageMilliseconds * currentNumberOfRequests) + difference.toMillis()) / nextNumberOfRequests;
+
+                if (newAverageMilliseconds < 0) {
+                    newAverageMilliseconds = 0;
                 }
+
+                averageMilliseconds.set(newAverageMilliseconds);
+            } else {
+                averageMilliseconds.set(0);
+                numberOfRequests.incrementAndGet();
             }
-            if (requestDates.size() > 0) {
-                long averageMilliSecondes = totalMilliSeconds / requestDates.size();
-                long totalRemaining = averageMilliSecondes * remainingRequests;
-                ProgramStat programStat = new ProgramStat();
-                programStat.setTimeRemaining(totalRemaining);
-                setChanged();
-                notifyObservers(programStat);
-                requestDates.clear();
-            }
-        }, 1, 1, TimeUnit.MINUTES);
+
+            lastDate = ZonedDateTime.now();
+
+            ProgramStat programStat = new ProgramStat();
+            programStat.setTimeRemaining(averageMilliseconds.get() * remainingRequests.get());
+            setChanged();
+            notifyObservers(programStat);
+        });
     }
 
     @Override
-    public void endAcquisitionTimeEstimation() {
-        if (currentFuture != null) {
-            currentFuture.cancel(true);
-        }
-    }
-
     public int getRemainingRequests() {
-        return remainingRequests;
+        return remainingRequests.get();
     }
 
-    public void setRemainingRequests(int remainingRequests) {
-        this.remainingRequests = remainingRequests;
+    @Override
+    public void setRemainingRequests(int number) {
+        remainingRequests.set(number);
     }
+
+
 }

@@ -176,7 +176,7 @@ public class MainController implements Observer {
                 }
                 progressService.getCurrentProgress().getTotal().set(0);
                 progressService.getCurrentProgress().getProgress().set(0);
-                programStatsService.endAcquisitionTimeEstimation();
+                //programStatsService.endAcquisitionTimeEstimation();
                 view.setGlobalProgressionBar(0);
                 view.getExecuteButton().setEnabled(true);
                 view.getTimeRemainingLabel().setText("");
@@ -238,7 +238,7 @@ public class MainController implements Observer {
                 }
                 progressService.getCurrentProgress().getTotal().set(0);
                 progressService.getCurrentProgress().getProgress().set(0);
-                programStatsService.endAcquisitionTimeEstimation();
+                //programStatsService.endAcquisitionTimeEstimation();
                 view.setGlobalProgressionBar(0);
                 view.getExecuteButton().setEnabled(true);
                 view.getInterruptButton().setEnabled(false);
