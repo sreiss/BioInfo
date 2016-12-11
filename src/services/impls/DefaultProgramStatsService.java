@@ -44,31 +44,33 @@ public class DefaultProgramStatsService extends Observable implements ProgramSta
     @Override
     public void addDate(ZonedDateTime date) {
         currentFuture = executorService.submit(() -> {
-            if (lastDate != null) {
-                long currentNumberOfRequests = numberOfRequests.incrementAndGet();
-                long currentAverageMilliseconds = averageMilliseconds.get();
-                long nextNumberOfRequests = currentNumberOfRequests + 1;
+            if (currentFuture.isCancelled()) {
+                if (lastDate != null) {
+                    long currentNumberOfRequests = numberOfRequests.incrementAndGet();
+                    long currentAverageMilliseconds = averageMilliseconds.get();
+                    long nextNumberOfRequests = currentNumberOfRequests + 1;
 
-                Duration difference = Duration.between(lastDate, date);
+                    Duration difference = Duration.between(lastDate, date);
 
-                long newAverageMilliseconds = ((currentAverageMilliseconds * currentNumberOfRequests) + difference.toMillis()) / nextNumberOfRequests;
+                    long newAverageMilliseconds = ((currentAverageMilliseconds * currentNumberOfRequests) + difference.toMillis()) / nextNumberOfRequests;
 
-                if (newAverageMilliseconds < 0) {
-                    newAverageMilliseconds = 0;
+                    if (newAverageMilliseconds < 0) {
+                        newAverageMilliseconds = 0;
+                    }
+
+                    averageMilliseconds.set(newAverageMilliseconds);
+                } else {
+                    averageMilliseconds.set(0);
+                    numberOfRequests.incrementAndGet();
                 }
 
-                averageMilliseconds.set(newAverageMilliseconds);
-            } else {
-                averageMilliseconds.set(0);
-                numberOfRequests.incrementAndGet();
+                lastDate = ZonedDateTime.now();
+
+                ProgramStat programStat = new ProgramStat();
+                programStat.setTimeRemaining(averageMilliseconds.get() * remainingRequests.get());
+                setChanged();
+                notifyObservers(programStat);
             }
-
-            lastDate = ZonedDateTime.now();
-
-            ProgramStat programStat = new ProgramStat();
-            programStat.setTimeRemaining(averageMilliseconds.get() * remainingRequests.get());
-            setChanged();
-            notifyObservers(programStat);
         });
     }
 
