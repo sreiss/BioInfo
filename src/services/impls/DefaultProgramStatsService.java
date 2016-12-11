@@ -44,7 +44,7 @@ public class DefaultProgramStatsService extends Observable implements ProgramSta
     @Override
     public void addDate(ZonedDateTime date) {
         currentFuture = executorService.submit(() -> {
-            if (currentFuture.isCancelled()) {
+            if (!currentFuture.isCancelled()) {
                 if (lastDate != null) {
                     long currentNumberOfRequests = numberOfRequests.incrementAndGet();
                     long currentAverageMilliseconds = averageMilliseconds.get();
