@@ -334,17 +334,23 @@ public class DefaultKingdomService implements KingdomService {
     						{
     							statisticsService.computeStatistics(kingdom, org, mapGene.get(key)).get();
     						}
-    						catch (InterruptedException e)
-    						{
-    							e.printStackTrace();
-    						} catch (ExecutionException e)
-    						{
-    							e.printStackTrace();
-    						}
+    						catch(InterruptedException | ExecutionException e)
+    		    			{
+    		    				e.printStackTrace();
+    		    			}
     					}
     				}
     			}
-    			organismService.processOrganismWithoutGene(mapGene,kingdom, org).get();
+    			
+    			ListenableFuture<Organism> orgFuture=organismService.processOrganismWithoutGene(mapGene,kingdom, org);
+    			try
+{
+    				orgFuture.get();
+    			}
+    			catch(InterruptedException | ExecutionException e)
+    			{
+    				e.printStackTrace();
+    			}
     		}
     		else
     		{
@@ -364,10 +370,11 @@ public class DefaultKingdomService implements KingdomService {
     					}
     				}
     			}
-    			try{
+    			try
+    			{
     				Futures.allAsList(list).get();
     			}
-    			catch(Exception e)
+    			catch(InterruptedException | ExecutionException e)
     			{
     				e.printStackTrace();
     			}
