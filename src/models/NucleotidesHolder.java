@@ -13,9 +13,9 @@ public abstract class NucleotidesHolder {
     private int totalPrefTrinu0;
     private int totalPrefTrinu1;
     private int totalPrefTrinu2;
-    private int totalTrinucleotide;
-    private int totalDinucleotide;
-    private int totalCds;
+    private long totalTrinucleotide;
+    private long totalDinucleotide;
+    private long totalCds;
     private int totalUnprocessedCds;
 
     // Trinucleotide
@@ -56,11 +56,11 @@ public abstract class NucleotidesHolder {
         this.totalUnprocessedCds = 0;
     }
 
-    public int getTotalTrinucleotide() {
+    public long getTotalTrinucleotide() {
         return totalTrinucleotide;
     }
 
-    public void setTotalTrinucleotide(int totalTrinucleotide) {
+    public void setTotalTrinucleotide(long totalTrinucleotide) {
         this.totalTrinucleotide = totalTrinucleotide;
     }
     
@@ -90,11 +90,11 @@ public abstract class NucleotidesHolder {
     }
 
 
-    public int getTotalDinucleotide() {
+    public long getTotalDinucleotide() {
         return totalDinucleotide;
     }
 
-    public void setTotalDinucleotide(int totalDinucleotide) {
+    public void setTotalDinucleotide(long totalDinucleotide) {
         this.totalDinucleotide = totalDinucleotide;
     }
 
@@ -202,11 +202,11 @@ public abstract class NucleotidesHolder {
         this.dinuProbaPhase1 = dinuProbaPhase1;
     }
 
-    public int getTotalCds() {
+    public long getTotalCds() {
         return totalCds;
     }
 
-    public void setTotalCds(int totalCds) {
+    public void setTotalCds(long totalCds) {
         this.totalCds = totalCds;
     }
 

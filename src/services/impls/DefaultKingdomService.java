@@ -95,45 +95,6 @@ public class DefaultKingdomService implements KingdomService {
             currentFuture.getValue().cancel(true);
             currentFuture.getKey().setOrganisms(null);
             shouldInterrupt = true;
-            executorService.submit(()->
-        	{
-        		Map<Integer,AbstractQueue<String>> map=new ConcurrentHashMap<Integer, AbstractQueue<String>>();
-        		AbstractQueue<String> queue=new ConcurrentLinkedQueue<String>();
-        		queue.add(configService.getProperty("dataDir")+"/"+currentFuture.getKey());
-                map.put(0, queue);
-                ListenableFuture<Boolean> bottoms=createParents(currentFuture.getKey(), map,configService.getProperty("dataDir"),currentFuture.getKey().getLabel(),0,0);
-        		try
-        		{
-        			bottoms.get();
-				}
-        		catch (InterruptedException | ExecutionException e)
-        		{
-					e.printStackTrace();
-				}
-        		// problem avec le map ici
-        		System.out.println(map.size());
-        		
-        		for(int i=map.size()-1;i>=0;i--)
-                {
-                	ListenableFuture<List<Boolean>> levels;
-                	List<ListenableFuture<Boolean>> listFutures=new ArrayList<ListenableFuture<Boolean>>(map.get(i).size());
-                	for(int j=0;j<map.get(i).size();j++)
-                	{
-                		ListenableFuture<Boolean> levelCurrent=createParents(currentFuture.getKey(),map,null,null,i+1,j);
-                		listFutures.add(levelCurrent);
-                	}
-                	levels=Futures.allAsList(listFutures);
-                	
-            		try
-            		{
-            			levels.get();
-    				}
-            		catch (InterruptedException | ExecutionException e)
-            		{
-    					e.printStackTrace();
-    				}
-                }
-    		});
             writeUpdateFile(currentFuture.getKey());
         }
     }
@@ -267,12 +228,9 @@ public class DefaultKingdomService implements KingdomService {
                 return processKingdom(kingdom, index + PROCESS_STACK_SIZE);
             }
             
-        	/*executorService.submit(()->
+            executorService.submit(()->
         	{
-        		Map<Integer,List<String>> map=new Hashtable<Integer, List<String>>();
-                List<String> list=new ArrayList<String>();
-                list.add(configService.getProperty("dataDir")+"/"+kingdom);
-                map.put(0, list);
+        		Map<Integer,AbstractQueue<String>> map=new ConcurrentHashMap<Integer, AbstractQueue<String>>();
                 ListenableFuture<Boolean> bottoms=createParents(kingdom, map,configService.getProperty("dataDir"),kingdom.getLabel(),0,0);
         		try
         		{
@@ -303,7 +261,7 @@ public class DefaultKingdomService implements KingdomService {
     					e.printStackTrace();
     				}
                 }
-    		});*/
+    		});
         }
         return kingdom;
     }
@@ -311,14 +269,14 @@ public class DefaultKingdomService implements KingdomService {
     /**
      * Ne fonctionne pas
      */
-    private synchronized void adding(Map<Integer,AbstractQueue<String>> map,int level, File childFolder)
+    private synchronized void adding(Map<Integer,AbstractQueue<String>> map,int level, File folder)
     {
-    	if(map.putIfAbsent(level+1, new ConcurrentLinkedQueue<String>())!=null)
+    	if(map.putIfAbsent(level, new ConcurrentLinkedQueue<String>())!=null)
 		{
-    		AbstractQueue<String> queue=map.get(level+1);
-			if(!queue.contains(childFolder.getPath()))
+    		AbstractQueue<String> queue=map.get(level);
+			if(!queue.contains(folder.getPath()))
 			{
-				queue.add(childFolder.getPath());
+				queue.add(folder.getPath());
 			}
 		}
     }
@@ -386,24 +344,32 @@ public class DefaultKingdomService implements KingdomService {
     					}
     				}
     			}
-    			organismService.processOrganismWithoutGene(mapGene,kingdom, org);
+    			organismService.processOrganismWithoutGene(mapGene,kingdom, org).get();
     		}
     		else
     		{
+    			List<ListenableFuture<Boolean>> list=new ArrayList<ListenableFuture<Boolean>>();
     			for(File childFolder : childrenFolders)
     			{
     				if(childFolder.isDirectory())
     				{
     					if(level==0)
     					{
-    						adding(map,max,childFolder);
-    						createParents(kingdom,map,folder.getPath(),childFolder.getName(),0,max+1);
+    						adding(map,max,folder);
+    						list.add(createParents(kingdom,map,folder.getPath(),childFolder.getName(),0,max+1));
     					}
     					else
     					{
-    						createParents(kingdom,map,folder.getPath(),childFolder.getName(),level,max+1);
+    						list.add(createParents(kingdom,map,folder.getPath(),childFolder.getName(),level,max+1));
     					}
     				}
+    			}
+    			try{
+    				Futures.allAsList(list).get();
+    			}
+    			catch(Exception e)
+    			{
+    				e.printStackTrace();
     			}
     		}
     		
