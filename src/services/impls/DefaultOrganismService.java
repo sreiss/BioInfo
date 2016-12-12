@@ -71,7 +71,7 @@ public class DefaultOrganismService extends NucleotideHolderService implements O
             
             fileService.writeWorkbook(workbook, organism.getPath(), organism.getName());
 
-            System.out.print(organism.getName());
+            System.out.println(organism.getName());
 
             return organism;
         });

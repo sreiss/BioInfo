@@ -225,7 +225,7 @@ public class DefaultFileService implements FileService {
 				}
 			}
 		}
-    	catch (IOException e)
+    	catch (Exception e)
     	{
 			e.printStackTrace();
 		}
