@@ -11,6 +11,7 @@ import models.Organism;
 
 import services.contracts.*;
 import services.exceptions.NothingToProcesssException;
+import views.MainWindow;
 
 import javax.annotation.Nullable;
 
@@ -42,6 +43,7 @@ public class DefaultKingdomService implements KingdomService {
     private boolean shouldInterrupt = false;
     private Boolean genesCkBIsSelected;
     private Boolean genomesCkBIsSelected;
+    private boolean creatingExcelParents = false;
 
     @Inject
     public DefaultKingdomService(StatisticsService statisticsService,
@@ -227,39 +229,16 @@ public class DefaultKingdomService implements KingdomService {
 
                 return processKingdom(kingdom, index + PROCESS_STACK_SIZE);
             }
-            
-            executorService.submit(()->
-        	{
-        		Map<Integer,List<String>> map=new Hashtable<Integer, List<String>>();
-                List<String> list=new ArrayList<String>();
-                list.add(configService.getProperty("dataDir")+"/"+kingdom);
-                map.put(0, list);
-                createParents(kingdom, map,configService.getProperty("dataDir"),kingdom.getLabel(),0,0);
-                for(int i=map.keySet().size()-1;i>=1;i--)
-                {
-                	for(int j=0;j<map.get(i).size();j++)
-                	{
-                		createParents(kingdom,map,null,null,i+1,j);
-                	}
-                }
-    		});
         }
         return kingdom;
     }
     
-    private synchronized void adding(Map<Integer,AbstractQueue<String>> map,int level, File folder)
+    public boolean getCreatingExcelParents()
     {
-    	if(map.putIfAbsent(level, new ConcurrentLinkedQueue<String>())!=null)
-		{
-    		AbstractQueue<String> queue=map.get(level);
-			if(!queue.contains(folder.getPath()))
-			{
-				queue.add(folder.getPath());
-			}
-		}
+    	return this.creatingExcelParents;
     }
     
-    private void createParents(Kingdom kingdom, Map<Integer, List<String>> map, String folderPath, String folderName, int level, int max)
+    public void createParents(Kingdom kingdom, Map<Integer, List<String>> map, String folderPath, String folderName, int level, int max)
     {
     	File folder;
     	File[] childrenFolders;

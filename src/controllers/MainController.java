@@ -204,7 +204,7 @@ public class MainController implements Observer {
                 view.getExecuteButton().setEnabled(true);
                 view.getTimeRemainingLabel().setText("");
                 refreshTree();
-
+                
                 if(genesCkb.isSelected()){
                     if (new File(zipGene).exists()) {
                     	view.updateGlobalProgressionText("Zipping in progress.");
@@ -248,6 +248,27 @@ public class MainController implements Observer {
                     
                 	}
                 }
+                /*executorService.submit(()->
+            	{*/
+            		for(Kingdom kingdom : kingdoms)
+            		{
+                		updateText(true);
+                		Map<Integer,List<String>> map=new Hashtable<Integer, List<String>>();
+                        List<String> list=new ArrayList<String>();
+                        list.add(configService.getProperty("dataDir")+"/"+kingdom);
+                        map.put(0, list);
+                        kingdomService.createParents(kingdom, map,configService.getProperty("dataDir"),kingdom.getLabel(),0,0);
+                        for(int i=map.keySet().size()-1;i>=1;i--)
+                        {
+                        	for(int j=0;j<map.get(i).size();j++)
+                        	{
+                        		kingdomService.createParents(kingdom,map,null,null,i+1,j);
+                        	}
+                        }
+                        updateText(false);
+            		}
+            		
+        		//});
             }
 
             @Override
@@ -316,6 +337,18 @@ public class MainController implements Observer {
                 resetProgressService();
             }
         }, executorService);
+    }
+    
+    public void updateText(boolean creatingExcelParents)
+    {
+    	if(creatingExcelParents)
+    	{
+    		view.updateGlobalProgressionText("Creating excel parents in progress ...");
+    	}
+    	else
+    	{
+    		view.updateGlobalProgressionText("excel parents done");
+    	}
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import models.Kingdom;
 
 import java.util.List;
+import java.util.Map;
 
 public interface KingdomService {
 
@@ -19,4 +20,6 @@ public interface KingdomService {
     Boolean getGenesCkBIsSelected();
     void setGenomesCkBIsSelected(Boolean isSelected);
     Boolean getGenomesCkBIsSelected();
+    public boolean getCreatingExcelParents();
+    public void createParents(Kingdom kingdom, Map<Integer, List<String>> map, String folderPath, String folderName, int level, int max);
 }

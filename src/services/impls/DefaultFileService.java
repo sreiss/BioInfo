@@ -143,9 +143,10 @@ public class DefaultFileService implements FileService {
 			for(int i=workbook.getNumberOfSheets()-1;i>=0;i--)
 			{
 				currentSheet=workbook.getSheetAt(i);
-				if(currentSheet.getSheetName().contains("Sum") || currentSheet.getSheetName().contains("Total"))
+				String sheetName=currentSheet.getSheetName();
+				if(sheetName.contains("Sum") || sheetName.contains("Total"))
 				{
-					String[] split=currentSheet.getSheetName().split("_");
+					String[] split=sheetName.split("_");
 					String type="";
 					if(split.length>1)
 					{
