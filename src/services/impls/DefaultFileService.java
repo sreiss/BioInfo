@@ -228,6 +228,7 @@ public class DefaultFileService implements FileService {
 		}
     	catch (Exception e)
     	{
+    		System.err.println("path :"+excel.getPath());
 			e.printStackTrace();
 		}
     	finally

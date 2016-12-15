@@ -283,20 +283,26 @@ public class DefaultKingdomService implements KingdomService {
 			{
 				if(excel.isFile()) // only necessary on level >0
 				{
-					mapGene=fileService.readWorkbooks(mapGene,excel);
-					for(String key : mapGene.keySet())
+					try{
+						mapGene=fileService.readWorkbooks(mapGene,excel);
+						for(String key : mapGene.keySet())
+						{
+							try
+							{
+								statisticsService.computeStatistics(kingdom, org, mapGene.get(key)).get();
+							}
+							catch (InterruptedException e)
+							{
+								e.printStackTrace();
+							} catch (ExecutionException e)
+							{
+								e.printStackTrace();
+							}
+						}
+					}
+					catch(Exception e)
 					{
-						try
-						{
-							statisticsService.computeStatistics(kingdom, org, mapGene.get(key)).get();
-						}
-						catch (InterruptedException e)
-						{
-							e.printStackTrace();
-						} catch (ExecutionException e)
-						{
-							e.printStackTrace();
-						}
+						
 					}
 				}
 			}
