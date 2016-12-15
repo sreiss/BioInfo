@@ -253,7 +253,6 @@ public class DefaultParseService implements ParseService {
                         group = data[4];
                         subGroup = data[5];
                         geneIds = extractGeneIds(data[9]);
-                        // TODO: udpateDate index: 15
                         updateDate = parseDateColumn(data[15]);
                     } else if (Kingdom.Prokaryotes.equals(kingdomId)) {
                         name = data[0];
@@ -261,7 +260,6 @@ public class DefaultParseService implements ParseService {
                         group = data[5];
                         subGroup = data[6];
                         geneIds = extractGeneIds(data[10]);
-                        // TODO: updateDate index: 16
                         updateDate = parseDateColumn(data[16]);
                     } else if (Kingdom.Viruses.equals(kingdomId)) {
                         name = data[0];
@@ -269,7 +267,6 @@ public class DefaultParseService implements ParseService {
                         group = data[2];
                         subGroup = data[3];
                         geneIds = extractGeneIds(data[7]);
-                        // TODO: updateDate index: 11
                         updateDate = parseDateColumn(data[11]);
                     } else if (Kingdom.Plasmids.equals(kingdomId)){
                         name = data[0];
@@ -335,7 +332,9 @@ public class DefaultParseService implements ParseService {
                         tuple = new Tuple<>(segmentParts[0].trim().split("/")[0], null);
                     }
 
-                    if (tuple.getT1() != null && tuple.getT1().trim().toLowerCase().startsWith("nc")) {
+                    if ((tuple.getT1() != null && tuple.getT2() != null && tuple.getT2().trim().toLowerCase().equals("chromosome") && tuple.getT1().trim().toLowerCase().startsWith("nc"))
+                            || (tuple.getT1() != null && tuple.getT2() != null && !tuple.getT2().trim().toLowerCase().equals("chromosome"))
+                            || (tuple.getT1() != null && tuple.getT2() == null)) {
                         segments.add(tuple);
                     }
                 }
