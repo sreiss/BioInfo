@@ -85,14 +85,14 @@ public class DefaultGeneService extends NucleotideHolderService implements GeneS
         ListenableFuture<Gene> processGeneFuture = executorService.submit(() -> {
             Gene gene = createGene(geneId.getT1(), geneId.getT2(), organism.getPath(), 0, 0);
 
-            progressService.getCurrentDownloadProgress().setDownloading(geneId.getT1());
+            progressService.getCurrentDownloadProgress().setDownloading(geneId.getT1() + " (" + kingdom.name() + ")");
             progressService.invalidateDownloadProgress();
 
             String url = generateUrlForGene(geneId.getT1());
             HttpResponse httpResponse = httpService.get(url).get();
 
             progressService.getCurrentDownloadProgress().getProgress().incrementAndGet();
-            progressService.getCurrentDownloadProgress().setDownloaded(geneId.getT1());
+            progressService.getCurrentDownloadProgress().setDownloaded(geneId.getT1() + " (" + kingdom.name() + ")");
             progressService.invalidateDownloadProgress();
 
             InputStream inputStream = httpResponse.getContent();
