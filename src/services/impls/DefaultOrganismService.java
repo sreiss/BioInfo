@@ -56,7 +56,7 @@ public class DefaultOrganismService extends NucleotideHolderService implements O
             	if (gene != null) {
                     String type = gene.getType();
                     if (type == null) {
-                        type = "unknown";
+                        type = "replicon";
                     }
                     organismSums.putIfAbsent(type, createSum(gene.getType(), organism.getPath(), 0, 0));
                     Sum sum = organismSums.get(gene.getType());
@@ -93,7 +93,7 @@ public class DefaultOrganismService extends NucleotideHolderService implements O
                 if (gene != null) {
                     String type = gene.getType();
                     if (type == null) {
-                        type = "unknown";
+                        type = "replicon";
                     }
                     organismSums.putIfAbsent(type, createSum(gene.getType(), organism.getPath(), 0, 0));
                     Sum sum = organismSums.get(gene.getType());
