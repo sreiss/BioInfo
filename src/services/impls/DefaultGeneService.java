@@ -49,12 +49,12 @@ public class DefaultGeneService extends NucleotideHolderService implements GeneS
                     && !type.toLowerCase().equals("chloroplast")
                     && !type.toLowerCase().equals("dna")
                     && !type.toLowerCase().equals("unknown")) {
-                type = "chromosome";
+                type = "replicon";
             }
     	}
     	else
     	{
-    		type="chromosome";
+    		type="replicon";
     	}
 
         Gene gene = new Gene(name, type, path, totalDinucleotides, totalTrinucleotides);
