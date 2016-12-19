@@ -267,6 +267,7 @@ public class MainController implements Observer {
                         }
                         updateText(false);
             		}
+            		view.getInterruptButton().setEnabled(false);
             		
         		//});
             }
@@ -347,7 +348,7 @@ public class MainController implements Observer {
     	}
     	else
     	{
-    		view.updateGlobalProgressionText("excel parents done");
+    		view.updateGlobalProgressionText("process finished");
     	}
     }
 
