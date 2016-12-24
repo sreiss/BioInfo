@@ -256,7 +256,7 @@ public class DefaultParseService implements ParseService {
                         name = data[0];
                         bioProject = data[4];
                         try {
-                            prokaryoteGroup = ProkaryoteGroup.valueOf(data[5]);
+                            prokaryoteGroup = ProkaryoteGroup.buildByName(data[5]);
                         } catch (Exception e) {
                             prokaryoteGroup = null;
                         }

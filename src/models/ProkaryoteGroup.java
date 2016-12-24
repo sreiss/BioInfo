@@ -31,6 +31,15 @@ public enum ProkaryoteGroup {
     private final String name;
     private final String type;
 
+    public static ProkaryoteGroup buildByName(String name) {
+        for (ProkaryoteGroup prokaryoteGroup: ProkaryoteGroup.values()) {
+            if (prokaryoteGroup.getName().trim().toLowerCase().equals(name.trim().toLowerCase())) {
+                return prokaryoteGroup;
+            }
+        }
+        return null;
+    }
+
     ProkaryoteGroup(String name, String type) {
         this.name = name;
         this.type = type;
