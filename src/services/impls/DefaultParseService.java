@@ -4,10 +4,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
-import models.CodingSequence;
-import models.Gene;
-import models.Kingdom;
-import models.Organism;
+import models.*;
 import services.contracts.ConfigService;
 import services.contracts.KingdomService;
 import services.contracts.OrganismService;
@@ -241,6 +238,7 @@ public class DefaultParseService implements ParseService {
                     }
 
                     String name;
+                    ProkaryoteGroup prokaryoteGroup = null;
                     String group;
                     String subGroup;
                     String bioProject;
@@ -257,6 +255,11 @@ public class DefaultParseService implements ParseService {
                     } else if (Kingdom.Prokaryotes.equals(kingdomId)) {
                         name = data[0];
                         bioProject = data[4];
+                        try {
+                            prokaryoteGroup = ProkaryoteGroup.valueOf(data[5]);
+                        } catch (Exception e) {
+                            prokaryoteGroup = null;
+                        }
                         group = data[5];
                         subGroup = data[6];
                         geneIds = extractGeneIds(data[10]);
@@ -283,7 +286,13 @@ public class DefaultParseService implements ParseService {
                         geneIds = null;
                     }
 
-                    organisms.add(organismService.createOrganism(name, bioProject, group, subGroup, updateDate, geneIds, kingdomId));
+                    Organism organism = organismService.createOrganism(name, bioProject, group, subGroup, updateDate, geneIds, kingdomId);
+
+                    if (Kingdom.Prokaryotes.equals(kingdomId)) {
+                        organism.setProkaryoteGroup(prokaryoteGroup);
+                    }
+
+                    organisms.add(organism);
                     /*
                     if (data.length > updatedDateIndex) {
                         if (data[updatedDateIndex].compareTo("-") == 0) {
@@ -306,7 +315,7 @@ public class DefaultParseService implements ParseService {
                 e.printStackTrace();
             }
 
-            return organisms.stream().filter(organism -> organism.getGeneIds() != null && organism.getGeneIds().size() > 0).collect(Collectors.toList());
+            return organisms.stream().filter(organism -> organism.getGeneIds() != null && organism.getGeneIds().size() > 0 && ((!Kingdom.Prokaryotes.equals(kingdomId)) || (Kingdom.Prokaryotes.equals(kingdomId) && organism.getProkaryoteGroup() != null))).collect(Collectors.toList());
         });
 
     }

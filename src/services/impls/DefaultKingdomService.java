@@ -9,6 +9,7 @@ import models.Gene;
 import models.Kingdom;
 import models.Organism;
 
+import models.ProkaryoteGroup;
 import services.contracts.*;
 import services.exceptions.NothingToProcesssException;
 import views.MainWindow;
@@ -111,10 +112,19 @@ public class DefaultKingdomService implements KingdomService {
         return Futures.transform(parseService.extractOrganismList(inputStream, kingdom.getId()), (Function<List<Organism>, List<Boolean>>) organisms -> {
             List < String > paths = new ArrayList<>();
             for (Organism organism : organisms) {
-                String path = dataDir
-                        + kingdom.getLabel()
-                        + "/" + organism.getGroup()
-                        + "/" + organism.getSubGroup();
+                String path;
+                if (kingdom.equals(Kingdom.Prokaryotes)) {
+                    path = dataDir
+                            + kingdom.getLabel()
+                            + "/" + organism.getProkaryoteGroup().getType()
+                            + "/" + organism.getGroup()
+                            + "/" + organism.getSubGroup();
+                } else {
+                    path = dataDir
+                            + kingdom.getLabel()
+                            + "/" + organism.getGroup()
+                            + "/" + organism.getSubGroup();
+                }
                 organism.setPath(path);
                 paths.add(path);
 

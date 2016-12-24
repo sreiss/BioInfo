@@ -13,6 +13,7 @@ public class Organism {
 
     private String name;
     private String bioProject;
+    private ProkaryoteGroup prokaryoteGroup;
     private String group;
     private String subGroup;
     private Date updatedDate;
@@ -177,5 +178,13 @@ public class Organism {
 
     public void setBioProject(String bioProject) {
         this.bioProject = bioProject;
+    }
+
+    public ProkaryoteGroup getProkaryoteGroup() {
+        return prokaryoteGroup;
+    }
+
+    public void setProkaryoteGroup(ProkaryoteGroup prokaryoteGroup) {
+        this.prokaryoteGroup = prokaryoteGroup;
     }
 }
