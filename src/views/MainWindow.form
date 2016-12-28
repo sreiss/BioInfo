@@ -158,13 +158,6 @@
                       <text value="Prokaryota"/>
                     </properties>
                   </component>
-                  <component id="678df" class="javax.swing.JCheckBox" binding="plasmidsCheckBox">
-                    <constraints/>
-                    <properties>
-                      <selected value="true"/>
-                      <text value="Plasmids"/>
-                    </properties>
-                  </component>
                 </children>
               </grid>
               <grid id="ada03" binding="zipPanel" layout-manager="FlowLayout" hgap="5" vgap="5" flow-align="0">

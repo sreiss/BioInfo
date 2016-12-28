@@ -45,6 +45,7 @@ public class DefaultGeneService extends NucleotideHolderService implements GeneS
     	{
     		type = type.trim();
     		if (!type.toLowerCase().equals("chromosome")
+                    && !type.toLowerCase().equals("plasmid")
                     && !type.toLowerCase().equals("mitochondrion")
                     && !type.toLowerCase().equals("chloroplast")
                     && !type.toLowerCase().equals("dna")

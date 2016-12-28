@@ -5,6 +5,7 @@ import com.google.common.base.Function;
 import com.google.common.util.concurrent.*;
 import com.google.inject.Inject;
 
+import com.sun.org.apache.xpath.internal.operations.Or;
 import models.Gene;
 import models.Kingdom;
 import models.Organism;
@@ -26,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DefaultKingdomService implements KingdomService {
     private final int PROCESS_STACK_SIZE = 50;
@@ -111,12 +113,12 @@ public class DefaultKingdomService implements KingdomService {
 
         return Futures.transform(parseService.extractOrganismList(inputStream, kingdom.getId()), (Function<List<Organism>, List<Boolean>>) organisms -> {
             List < String > paths = new ArrayList<>();
+
             for (Organism organism : organisms) {
                 String path;
                 if (kingdom.equals(Kingdom.Prokaryotes)) {
                     path = dataDir
-                            + kingdom.getLabel()
-                            + "/" + organism.getProkaryoteGroup().getType()
+                            + organism.getProkaryoteGroup().getType()
                             + "/" + organism.getGroup()
                             + "/" + organism.getSubGroup();
                 } else {
@@ -149,7 +151,9 @@ public class DefaultKingdomService implements KingdomService {
                 }
             }
             kingdom.setOrganisms(organisms);
+
             return fileService.createDirectories(paths);
+
         }, executorService);
     }
 
@@ -180,6 +184,38 @@ public class DefaultKingdomService implements KingdomService {
             HttpResponse httpResponse = httpService.get(url).get();
             InputStream content = httpResponse.getContent();
             List<Boolean> creationResults = createDirectories(kingdom, content).get();
+
+            // Merge plasmids to prokaryote organisms
+            if (kingdom.equals(Kingdom.Prokaryotes)) {
+                Kingdom plasmidsKingdom = Kingdom.Plasmids;
+                Kingdom modifiedPlasmidsKingdom = loadUpdateFile(plasmidsKingdom).get();
+                String plasmidsUrl = generateKingdomGeneListUrl(plasmidsKingdom);
+                HttpResponse httpPlasmidResponse = httpService.get(plasmidsUrl).get();
+                InputStream plasmidsContent = httpPlasmidResponse.getContent();
+                List<Organism> plasmids = parseService.extractOrganismList(plasmidsContent, plasmidsKingdom.getId()).get();
+                List<Organism> fullPlasmids = new ArrayList<>();
+                for (Organism plasmid: plasmids) {
+                    for (Tuple<String, String> geneId: plasmid.getGeneIds()) {
+                        Tuple<String, String> newGeneId = new Tuple<>(geneId.getT1(), "plasmid");
+                        plasmid.getGeneIds().remove(geneId);
+                        plasmid.getGeneIds().add(newGeneId);
+                    }
+                    if (!fullPlasmids.contains(plasmid)) {
+                        fullPlasmids.add(plasmid);
+                    } else {
+                        Organism existingPlasmid = fullPlasmids.get(fullPlasmids.indexOf(plasmid));
+                        existingPlasmid.getGeneIds().addAll(plasmid.getGeneIds());
+                    }
+                }
+
+                for (Organism prokaryote: kingdom.getOrganisms()) {
+                    for (Organism plasmid: fullPlasmids) {
+                        if (prokaryote.getName().startsWith(plasmid.getName())) {
+                            prokaryote.getGeneIds().addAll(plasmid.getGeneIds());
+                        }
+                    }
+                }
+            }
 
             List<Organism> filteredOrganisms = kingdom.getOrganisms()
                     .stream()

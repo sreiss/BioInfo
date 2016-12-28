@@ -37,7 +37,6 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
     private JCheckBox genomesCheckBox;
     private JCheckBox genesCheckBox;
     private JPanel optionsPanel;
-    private JCheckBox plasmidsCheckBox;
     private JLabel downloadingLabel;
     private JLabel downloadedLabel;
     private JLabel apiStatusLabel;
@@ -160,10 +159,6 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
         return genesCheckBox;
     }
 
-    public JCheckBox getPlasmidsCheckBox() {
-        return plasmidsCheckBox;
-    }
-
     public JLabel getDownloadedLabel() {
         return downloadedLabel;
     }
@@ -283,10 +278,6 @@ public class MainWindow extends JFrame implements PropertyChangeListener {
         prokaryotesCheckBox.setSelected(true);
         prokaryotesCheckBox.setText("Prokaryota");
         kingdomPanel.add(prokaryotesCheckBox);
-        plasmidsCheckBox = new JCheckBox();
-        plasmidsCheckBox.setSelected(true);
-        plasmidsCheckBox.setText("Plasmids");
-        kingdomPanel.add(plasmidsCheckBox);
         zipPanel = new JPanel();
         zipPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
         gbc = new GridBagConstraints();
