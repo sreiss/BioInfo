@@ -129,7 +129,7 @@ public class DefaultFileService implements FileService {
         return file;
     }
     
-    public Map<String,Gene> readWorkbooks(Map<String,Gene> map, File excel)
+    public Map<String,Gene> readWorkbooks(Map<String,Gene> map, File excel, int retry)
     {
     	XSSFWorkbook workbook=null;
     	try
@@ -228,8 +228,20 @@ public class DefaultFileService implements FileService {
 		}
     	catch (Exception e)
     	{
-    		System.err.println("path :"+excel.getPath());
-			e.printStackTrace();
+    		System.err.println(retry+" path :"+excel.getPath());
+    		if(retry>0)
+    		{
+    			try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+    			readWorkbooks(map,excel,retry-1);
+    		}
+    		else
+    		{
+    			e.printStackTrace();
+    		}
 		}
     	finally
     	{

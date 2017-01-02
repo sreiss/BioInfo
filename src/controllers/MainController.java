@@ -245,28 +245,32 @@ public class MainController implements Observer {
                     
                 	}
                 }
-                /*executorService.submit(()->
-            	{*/
-            		for(Kingdom kingdom : kingdoms)
-            		{
-                		updateText(true);
-                		Map<Integer,List<String>> map=new Hashtable<Integer, List<String>>();
-                        List<String> list=new ArrayList<String>();
-                        list.add(configService.getProperty("dataDir")+"/"+kingdom);
-                        map.put(0, list);
-                        kingdomService.createParents(kingdom, map,configService.getProperty("dataDir"),kingdom.getLabel(),0,0);
-                        for(int i=map.keySet().size()-1;i>=1;i--)
-                        {
-                        	for(int j=0;j<map.get(i).size();j++)
-                        	{
-                        		kingdomService.createParents(kingdom,map,null,null,i+1,j);
-                        	}
-                        }
-                        updateText(false);
-            		}
-            		view.getInterruptButton().setEnabled(false);
-            		
-        		//});
+                
+                if(kingdoms.contains(Kingdom.Prokaryotes)) // fix to create excel in Archaea and Bacteria folder instead of Prokaryota
+                {
+                	kingdoms.remove(Kingdom.Prokaryotes);
+                	kingdoms.add(Kingdom.Archaea);
+                	kingdoms.add(Kingdom.Bacteria);
+                }
+                
+        		for(Kingdom kingdom : kingdoms)
+        		{
+            		updateText(true);
+            		Map<Integer,List<String>> map=new Hashtable<Integer, List<String>>();
+                    List<String> list=new ArrayList<String>();
+                    list.add(configService.getProperty("dataDir")+"/"+kingdom);
+                    map.put(0, list);
+                    kingdomService.createParents(kingdom, map,configService.getProperty("dataDir"),kingdom.getLabel(),0,0);
+                    for(int i=map.keySet().size()-1;i>=1;i--)
+                    {
+                    	for(int j=0;j<map.get(i).size();j++)
+                    	{
+                    		kingdomService.createParents(kingdom,map,null,null,i+1,j);
+                    	}
+                    }
+                    updateText(false);
+        		}
+        		view.getInterruptButton().setEnabled(false);
             }
 
             @Override

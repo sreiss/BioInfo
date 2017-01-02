@@ -330,7 +330,7 @@ public class DefaultKingdomService implements KingdomService {
 				if(excel.isFile()) // only necessary on level >0
 				{
 					try{
-						mapGene=fileService.readWorkbooks(mapGene,excel);
+						mapGene=fileService.readWorkbooks(mapGene,excel,1);
 						for(String key : mapGene.keySet())
 						{
 							try

@@ -9,7 +9,9 @@ public enum Kingdom {
     Viruses("viruses", "Viruses"),
     Mitochondrion("euks_m", "Mitochondrion"),
     Chloroplast("euks_c", "Chloroplast"),
-    Plasmids("plasmids", "Plasmids");
+    Plasmids("plasmids", "Plasmids"),
+	Archaea("archaea","Archaea"),
+	Bacteria("bacteria","Bacteria");
 
     private final String id;
     private final String label;
