@@ -223,12 +223,14 @@ public class DefaultKingdomService implements KingdomService {
 
 
                 List<ListenableFuture<Gene>> geneFutures = new ArrayList<ListenableFuture<Gene>>();
+                int j = 0;
                 for (int i = 0; i < fullPlasmids.size(); i++) {
+                    j++;
                     Organism plasmid = fullPlasmids.get(i);
                     for (Tuple<String, String> geneId: plasmid.getGeneIds()) {
                         geneFutures.add(geneService.processGene(plasmidsKingdom, plasmid, geneId));
                     }
-                    if (i > 0 && i % PROCESS_STACK_SIZE == 0) {
+                    if ((i > 0 && i % PROCESS_STACK_SIZE == 0) || j >= fullPlasmids.size()) {
                         List<Gene> currentlyProcessedGenes = Futures.allAsList(geneFutures).get();
                         for (Gene gene: currentlyProcessedGenes) {
                             plasmidGenes.put(gene.getName(), gene);
