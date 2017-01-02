@@ -1,8 +1,10 @@
 package services.contracts;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import models.Gene;
 import models.Kingdom;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 

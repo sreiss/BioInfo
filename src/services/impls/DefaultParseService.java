@@ -94,9 +94,9 @@ public class DefaultParseService implements ParseService {
             BufferedWriter bwGenome = null;
             String zipGenomePath = configService.getProperty("genome");
 
-            String[] explodePath = gene.getPath().split("/");
+            String[] explodePath = (gene.getPath() != null) ? gene.getPath().split("/"): null;
 
-            if(kingdomService.getGenesCkBIsSelected()){
+            if(kingdomService.getGenesCkBIsSelected() && gene.getPath() != null){
                 for(int i = 2; i < explodePath.length; i++){
                     zipGenePath += explodePath[i] + "/";
                 }
@@ -105,7 +105,7 @@ public class DefaultParseService implements ParseService {
                 bwGene =  new BufferedWriter(fwGene);
             }
             
-            if(kingdomService.getGenomesCkBIsSelected()){
+            if(kingdomService.getGenomesCkBIsSelected() && gene.getPath() != null){
                 for(int i = 2; i < explodePath.length; i++){
                 	zipGenomePath += explodePath[i] + "/";
                 }
@@ -120,12 +120,12 @@ public class DefaultParseService implements ParseService {
                 if (!line.equals("")) {
                     fileIsEmpty = false;
                 }
-                if(kingdomService.getGenesCkBIsSelected()){
+                if(kingdomService.getGenesCkBIsSelected() && gene.getPath() != null){
                     bwGene.write(line);
                     bwGene.newLine();
                 }
 
-                if(kingdomService.getGenomesCkBIsSelected()){
+                if(kingdomService.getGenomesCkBIsSelected() && gene.getPath() != null){
                     bwGenome.write(line);
                     bwGenome.newLine();
                 }

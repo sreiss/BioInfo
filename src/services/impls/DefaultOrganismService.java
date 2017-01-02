@@ -77,14 +77,22 @@ public class DefaultOrganismService extends NucleotideHolderService implements O
         });
     }
 
-    @Override
     public ListenableFuture<Organism> processOrganism(Kingdom kingdom, Organism organism) {
+        return processOrganism(kingdom, organism, null);
+    }
+
+    @Override
+    public ListenableFuture<Organism> processOrganism(Kingdom kingdom, Organism organism, HashMap<String, Gene> plasmidGenesMap) {
         return executorService.submit(() -> {
             HashMap<String, Sum> organismSums = new HashMap<>();
             List<Tuple<String, String>> geneIds = organism.getGeneIds();
             List<ListenableFuture<Gene>> geneFutures = new ArrayList<>();
             for (Tuple<String, String> geneId: geneIds) {
-                geneFutures.add(geneService.processGene(kingdom, organism, geneId));
+                if (Kingdom.Prokaryotes.equals(kingdom) && plasmidGenesMap != null) {
+                    geneFutures.add(executorService.submit(() -> plasmidGenesMap.get(geneId.getT1())));
+                } else {
+                    geneFutures.add(geneService.processGene(kingdom, organism, geneId));
+                }
             }
             List<Gene> genes = Futures.successfulAsList(geneFutures).get();
 
